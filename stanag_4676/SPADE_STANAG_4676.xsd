@@ -1,0 +1,1605 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="urn:stanag4676.rya.afrl.afmc.af.mil:spade.icd.stanag4676" targetNamespace="urn:stanag4676.rya.afrl.afmc.af.mil:spade.icd.stanag4676" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- Defines the top level tag -->
+	<xs:element name="trackProduct" type="TrackProductType" block="#all"/>
+	<xs:complexType name="TrackProductType">
+		<xs:annotation>
+			<xs:documentation>This type represents the composite of track messages: 4676</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:annotation>
+				<xs:documentation>This contains the message payload, which can be one of any type of message.</xs:documentation>
+			</xs:annotation>
+			<xs:choice minOccurs="1" maxOccurs="1">
+				<xs:element name="trackMessage" type="TrackMessage"/>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Start SPADE additions -->
+	<xs:complexType name="TrackSource">
+		<xs:annotation>
+			<xs:documentation>Provides identification information about the specific tracker used to generate the tracks within the SPADE track message.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="trackerName" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the unique name of the tracker.  This is used to determine where tracks were derived from.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackerDescription" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides a description of the tracker.  This could be used to describe the tracker, its algorithm, or any other information about the tracker.  Limit to 4,000 characters.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="DataSource">
+		<xs:annotation>
+			<xs:documentation>Provides information about the source of data used to create the SPADE track message.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="sourceName" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the name of the data source.  This would be the image file name for WAMI or the frame number for FMV</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sourceTime" type="xs:dateTime">
+				<xs:annotation>
+					<xs:documentation>Provides the time of the data source.  This would be the time the image was collected for WAMI or the GPS time of the FMV frame.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="PixelPosition" type="PixelPosition"/>
+	<xs:complexType name="PixelPosition">
+		<xs:annotation>
+			<xs:documentation>Provides the pixel location of the track point in an image in x and y.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Position">
+				<xs:sequence>
+					<xs:element name="x" type="xs:integer">
+						<xs:annotation>
+							<xs:documentation>Provides the pixel x location of the track point in an image with the upper left corner being 0, 0.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="y" type="xs:integer">
+						<xs:annotation>
+							<xs:documentation>Provides the pixel y location of the track point in an image with the upper left corner being 0, 0.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- End SPADE additions -->
+
+	<!-- Start 2011_10_01_STANAG_4676_Edition_1_Final.xsd -->
+	<xs:annotation>
+		<xs:documentation>---------------------------------------------------------------------------------- &lt;SchemaInformation&gt; &lt;Purpose&gt;XML Schema for ISR Track data format STANAG 4676&lt;/Purpose&gt; &lt;SchemaVersion&gt;Version 1.0 as part of the Sprint Strategy&lt;/SchemaVersion&gt; &lt;RevisionDate&gt;04 February 2011&lt;/RevisionDate&gt; &lt;Developer&gt;STANAG 4676 Study Team&lt;/Developer&gt; &lt;SchemaComments&gt; Initial version of the schema automatically generated from the UML model (Enterprise Architect)&lt;/SchemaComments&gt; &lt;ChangeLog&gt;  &lt;li&gt;04/02/2011 version (C.Coman): included namespace and changed to dateTime type&lt;/li&gt; &lt;li&gt;1 Mar 2011 version (STANAG 4676 Study Team): included namespace and changed to dateTime type&lt;/li&gt; &lt;li&gt;2011_05_16 TST Proposed Model (TWG).EAP (STANAG 4676 Study Team): Changed “STANAG 4676 Track Development and Storage” block on use case diagrams to “ISR Track Development and Storage.” --- Changed solid lines and dashed lines in System-to Analyst Use Case 1 diagram. --- Added additional descriptions in the Use Case Scenarios --- Replaced 'sensor' with 'System' in the Use Case Models &lt;/li&gt; &lt;li&gt;2011_07_11 TST Proposed Model (TWG).EAP (STANAG 4676 Study Team):  Changed the definitions for the ESM, RADAR and MOTION IMAGERY systems to be the same in the Use Case Models --- Added additional definition descriptions to Acceleration, Velocity, Position, areaBoundaryPoints, ESMInformation  and IFFMode attributes --- Updated the 'Security' class definitions --- Updated the 'Area', 'Circular Area', and Polygon Area definitions --- Modified LocalCoordinateSystem class to clarify its use as the translation and rotation transformation xs:sequence from the defined local coordinate frame to ECEF reference --- Deleted Polar Classes and Attributes --- Modified relationship between Frequency class and SpectrumComponents class to aggregate only (removed generalization relationship), changed direction of relationship --- Changed DATALINK xs:enumeration value in ClassificationSource xs:enumeration class to OTHER --- Clarified definition of bandwidth attribute of Frequency class --- Changed type of attribute spectrum in ESMInformation class from frequency to SpectrumComponent --- Changed bandwidth attribute in Frequency class to optional --- Specified constraint to not report elevation in centre attribute of CircularArea class and z-component in attribute of areaBoundaryPoint in PolygonArea class --- Changed type for attribute origin in LocalCoordinateSystem class to GeodeticPosition ---deleted SIBLING from lineage relationship xs:enumeration --- added meters as units for local coordsystem x, y, z parameters --- Changed "altitude" to "elevation" for origin of localcoordsystem and throughout --- Deleted SecurityCategory attribute from Security class, created SecurityControlSystem, SecurityDissemination, and SecurityReleasibility attributes to fully address EAPC requirements&lt;/li&gt; &lt;li&gt;2011_09_01 STANAG 4676, Edition 1.EAP (STANAG 4676 Study Team):  Changed all occurrences of "Video" to "Motion Imagery"&lt;/li&gt;   &lt;/ChangeLog&gt; &lt;/SchemaInformation&gt; ----------------------------------------------------------------------------------</xs:documentation>
+	</xs:annotation>
+	<xs:element name="Velocity" type="Velocity"/>
+	<xs:complexType name="Velocity">
+		<xs:annotation>
+			<xs:documentation>Provides the three-dimensional components of velocity.  Description:  In a Cartesian Coordinate System the velocity components are velx, vely and velz where velocity is a vector measurement of the rate and direction of motion or, in other terms, the rate and direction of the change in the position of an object. The scalar (absolute value) magnitude of the velocity vector is the speed of the motion. In calculus terms, velocity is the first derivative of position with respect to time.   velx=d(x)/dt, vely =d(y)/dt, velz =d(z)\dt  The units for velocity are m/s (meters per second).</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:element name="SpectrumComponent" type="SpectrumComponent"/>
+	<xs:complexType name="SpectrumComponent">
+		<xs:annotation>
+			<xs:documentation>Provides the spectral components of an electromagnetic signal.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Frequency" type="Frequency"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Security" type="Security"/>
+	<xs:complexType name="Security">
+		<xs:annotation>
+			<xs:documentation>Provides parameters pertinent to security, in accordance with [EAPC(AC/322-SC/5)N(2006)0008].</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="securityClassification" type="ClassificationLevels">
+				<xs:annotation>
+					<xs:documentation>Provides security classification level.  Description:  A character string used to identify the security information applicable for the item or class being reported. The ˜Security" data type is defined in accordance with [EAPC(AC/322-SC/5)N(2006)0008].   Provides the HIGHEST Security designation of the Track Message, Track and/or Track Item. The attribute can be used to facilitate the exchange of information through Information Exchange Gateways and Guards.  A ‘TrackMessage’ xs:element contains a 'Track’ and each track contains zero or more ‘Track Items’, each of these xs:elements having its own security classification. This construction allows users to extract and disseminate information having a lower security classification level compared with the security level of the ‘TrackMessage’. For example, a ‘TrackMessage’ may contain tracks derived from Friendly Force Information which are classified as SECRET and non-cooperative tracks at UNCLASSIFIED level.   This approach is similar to that used in STANAG 4545.  The message security level shall not be lower than the highest security label of Track or Track Item Classes.  Security classification levels shall be in compliance with the security policy as specified in the attribute securityPolicyName.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="securityPolicyName" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides name of National policy under which security information is specified.  Description:  A character string used to identify the nation or enterprise (eg. NATO) responsible for creating, maintaining and implementing the security policy to be applied to the information,  in accordance with [EAPC(AC/322-SC/5)N(2006)0008]. Value for National policy shall be 3-letter country codes in compliance with STANAG 1059.  Value for Coalitions or other entities (e.g. "NATO" or "ISAF" or "EAPC") shall be expressed as a 4-character  alphanumeric string.  Examples -  NATO/EAPC, Security Policy: USA</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="securityControlSystem" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Provides control system under which reported data is protected.  Description:  A character string used to identify the applicable Control System in accordance with National policy specified in securityPolicyName attribute  Examples include but are not limited to: ATOMAL, CRYPTO, SIOP, SIOP ESI, TK.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="securityDissemination" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Provides dissemination instructions for reported data.  Description:  A character string used to identify Dissemination limitations in accordance with National policy specified in securityPolicyName attribute  Examples include but are not limited to: EXCLUSIVE, INTELLIGENCE, LOGISTICS, OPERATIONS, FOUO, RSEN, NOFORN, etc.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="securityReleasability" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Provides releasability xs:restrictions for the reported data.  Description:  A character string used to identify Releasability specifications.  Value(s) for Nation(s) shall be 3-letter country code(s) in compliance with STANAG 1059.  Allowed values for coalitions are: NATO, EU, PFP, MD, ISAF, 4 EYES, 5 EYES, and 9 EYES.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="FrequencyUnitType">
+		<xs:annotation>
+			<xs:documentation>Provides the frequency measurement unit.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="THz">
+				<xs:annotation>
+					<xs:documentation>Indicates TerraHertz (THz) = 1012 Hertz (Hz)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="GHz">
+				<xs:annotation>
+					<xs:documentation>Indicates GigaHertz (GHz) = 109 Hertz (Hz)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MHz">
+				<xs:annotation>
+					<xs:documentation>Indicates MegaHertz (MHz) = 106 Hertz (Hz)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="KHz">
+				<xs:annotation>
+					<xs:documentation>Indicates KiloHertz (KHz) = 103 Hertz (Hz)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="Hz">
+				<xs:annotation>
+					<xs:documentation>Indicates Hertz (Hz) = 100 Hertz (Hz)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="IDdata" type="IDdata"/>
+	<xs:complexType name="IDdata">
+		<xs:annotation>
+			<xs:documentation>Provides identification information for a given STANAG 4676 capable system.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="stationID" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides a unique station identification number/designator of a 4676 capable system. The “stationID” is determined by the nation owning the platform, whose responsibility is to ensure that all its platforms are uniquely identified within the set of platforms it owns. The combination of ‘stationID’ and ‘nationality’ xs:elements provides unique identification of any given STANAG 4676 capable system.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="nationality" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the nationality of a STANAG 4676 capable system.  The combination of ‘stationID’ and ‘nationality’ xs:elements provides unique identification of any given STANAG 4676 capable system. String of alphanumeric characters denoting 3-letter country codes, in accordance with STANAG 1059.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Area" type="Area"/>
+	<xs:complexType name="Area">
+		<xs:annotation>
+			<xs:documentation>Provides parameters of a bounded region on a plane or surface.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:simpleType name="ClassificationLevels">
+		<xs:annotation>
+			<xs:documentation>Provides security classification levels.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="TOP SECRET">
+				<xs:annotation>
+					<xs:documentation>Indicates TOP SECRET</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SECRET">
+				<xs:annotation>
+					<xs:documentation>Indicates SECRET</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="CONFIDENTIAL">
+				<xs:annotation>
+					<xs:documentation>Indicates CONFIDENTIAL</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="RESTRICTED">
+				<xs:annotation>
+					<xs:documentation>Indicates RESTRICTED</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="UNCLASSIFIED">
+				<xs:annotation>
+					<xs:documentation>Indicates UNCLASSIFIED</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="ObjectClassification">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="WHEELED">
+				<xs:annotation>
+					<xs:documentation>Indicates wheeled vehicle</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRACKED">
+				<xs:annotation>
+					<xs:documentation>Indicates tracked vehicle</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="HELICOPTER">
+				<xs:annotation>
+					<xs:documentation>Indicates helicopter</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="UAV">
+				<xs:annotation>
+					<xs:documentation>Indicates Unmanned Aerial Vehicle</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRAIN">
+				<xs:annotation>
+					<xs:documentation>Indicates train</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIRCRAFT">
+				<xs:annotation>
+					<xs:documentation>Indicates a general aircraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIRCRAFT - STRIKE">
+				<xs:annotation>
+					<xs:documentation>Indicates a strike aircraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIRCRAFT - TRANSPORT">
+				<xs:annotation>
+					<xs:documentation>Indicates a transport aircraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIRCRAFT - COMMERCIAL">
+				<xs:annotation>
+					<xs:documentation>Indicates a commercial aircraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="WATERCRAFT">
+				<xs:annotation>
+					<xs:documentation>Indicates a general watercraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="WATERCRAFT - GO-FAST">
+				<xs:annotation>
+					<xs:documentation>Indicates a "go-fast" watercraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="WATERCRAFT - PLEASURE">
+				<xs:annotation>
+					<xs:documentation>Indicates a pleasure watercraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="WATERCRAFT - NAVAL">
+				<xs:annotation>
+					<xs:documentation>Indicates a naval watercraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="WATERCRAFT - CARGO">
+				<xs:annotation>
+					<xs:documentation>Indicates a cargo watercraft</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="CAR">
+				<xs:annotation>
+					<xs:documentation>Indicates a car or sedan.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRUCK - PICKUP">
+				<xs:annotation>
+					<xs:documentation>Indicates a "pickup" type truck.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRUCK - TRACTOR-TRAILER">
+				<xs:annotation>
+					<xs:documentation>Indicates a tractor-trailor type truck</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRUCK - HUMVEE">
+				<xs:annotation>
+					<xs:documentation>Indicates a "Humvee" type truck</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="EMERGENCY VEHICLE">
+				<xs:annotation>
+					<xs:documentation>Indicates an emergency vehicle</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT">
+				<xs:annotation>
+					<xs:documentation>Indicates a general dismount</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT - COMBATANT">
+				<xs:annotation>
+					<xs:documentation>Indicates a combatant dismount</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT - NON-COMBATANT">
+				<xs:annotation>
+					<xs:documentation>Indicates a non-combatant dismount</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT - MALE">
+				<xs:annotation>
+					<xs:documentation>Indicates a male dismount</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT - FEMALE">
+				<xs:annotation>
+					<xs:documentation>Indicates a female dismount</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DISMOUNT - GROUP">
+				<xs:annotation>
+					<xs:documentation>Indicates a group of dismounts</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CovarianceMatrixPosition" type="CovarianceMatrixPosition"/>
+	<xs:complexType name="CovarianceMatrixPosition">
+		<xs:annotation>
+			<xs:documentation>Provides the matrix of covariances related to the estimated position vector.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="CovarianceMatrix">
+				<xs:sequence>
+					<xs:element name="covPosxPosx" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance in the x component of position at the time of the report, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosyPosy" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance in the y component of position at the time of the report, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPoszPosz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance in the z component of position at the time of the report, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosxPosy" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x and y components of position, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosxPosz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x and z components of position, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosyPosz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the y and z components of position, expressed in meters squared (m2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Position" type="Position"/>
+	<xs:complexType name="Position" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the position of an object or feature.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:element name="LocalCartesianAcceleration" type="LocalCartesianAcceleration"/>
+	<xs:complexType name="LocalCartesianAcceleration">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the three-dimensional components of acceleration, expressed in a Cartesian coordinate system.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Acceleration">
+				<xs:sequence>
+					<xs:element name="accx" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides the x-component of acceleration, expressed in meters per second squared (m/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="accy" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides the y-component of acceleration, expressed in meters per second squared (m/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="accz" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides the z-component of acceleration, expressed in meters per second squared (m/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="ModalityType">
+		<xs:annotation>
+			<xs:documentation>Provides the type and source of information from which information was computed or derived.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="DOPPLER SIGNATURE">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a radar Doppler source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="HRR SIGNATURE">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a radar High Range Resolution source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="IMAGE SIGNATURE">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Still or MOTION IMAGERY source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="HUMINT">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Human Intelligence source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MASINT">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Measurement and Signal Intelligence source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ELINT">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Electronics Intelligence source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="COMINT EXTERNALS">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Communications Intelligence Externals source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="COMINT INTERNALS">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Communications Intelligence Internals source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="OSINT">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Open Source Intelligence source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="BIOMETRICS">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Biometrics source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIS">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from an Automated Identification System source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="BFT">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a Blue Force Tracking source.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MIXED">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from a combination of two or more sources.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="OTHER">
+				<xs:annotation>
+					<xs:documentation>Indicates that the information, estimate, or determination is derived from other types of sources, such as Link 16.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="DateTime" type="DateTime"/>
+	<xs:complexType name="DateTime">
+		<xs:annotation>
+			<xs:documentation>Provides the date and time of an event.  The resolution is up to 1 microsecond in order to be able to represent Motion Imagery information.  Values and formats In accordance with the W3C recommendations of ISO 8601 standard.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:simpleType name="LineageRelationType">
+		<xs:annotation>
+			<xs:documentation>Provides the lineage relationship between two entities.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="PARENT">
+				<xs:annotation>
+					<xs:documentation>Indicates a parent relationship with another specified entity.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="CHILD">
+				<xs:annotation>
+					<xs:documentation>Indicates a child relationship with another specified entity.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="NONE">
+				<xs:annotation>
+					<xs:documentation>Indicates no relationship between tracks.    Description:  Used when an update is required to terminate an existing relationship.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="TrackerType">
+		<xs:annotation>
+			<xs:documentation>Provides the type of tracker that generated a track (i.e. manual, automatic, semi-automatic).</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="MANUAL TRACKER">
+				<xs:annotation>
+					<xs:documentation>Indicates that a track is approximated/estimated by a human operator/analyst.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AUTOMATIC TRACKER">
+				<xs:annotation>
+					<xs:documentation>Indicates a track generated by an automatic tracker, based on measured data.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SEMIAUTOMATIC TRACKER">
+				<xs:annotation>
+					<xs:documentation>Indicates a track generated by an automatic tracker in combination with information approximated/estimated by an operator/analyst.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="TrackItem" type="TrackItem"/>
+	<xs:complexType name="TrackItem" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Provides information either about a track point or about amplifying, non-kinematic parameters/features pertinent to a track  Description:  every track can hold multiple track items. One track item describes a single, timed event of the track. The TrackItem is abstract and has two specializations: 1. TrackPoint; the most common, frequently used type to store position information  2. TrackInformation; containing track information like identity etc.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="trackItemUUID" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides a 32-character hexidecimal  Universal Unique Identification (UUID), standardized by the Open Software Foundation, of a TrackItem. Reference ISO/IEC 9834-8:2005.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackItemSecurity" type="Security">
+				<xs:annotation>
+					<xs:documentation>Provides security and dissemination/control/releasibility information applicable at the Track Item level, in accordance with [EAPC(AC/322-SC/5)N(2006)0008].  Description:  used to facilitate the exchange of information through Information Exchange Gateways [NC3TA].  A ‘TrackMessage’ xs:element can contain multiple ‘Tracks’ and each track contain multiple ‘Track Items’, each of these xs:elements having its own security classification. This construction allows users to extract and disseminate information having a lower security classification level than a ‘TrackMessage’. For example, a ‘TrackMessage’ may contain tracks derived from Friendly Force Information which are classified as SECRET, as well as non-cooperative tracks that are UNCLASSIFIED. The message security level shall not be lower than the highest security classification of any contained track items. The approach is similar to that in STANAG 4545.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackItemTime" type="xs:dateTime">
+				<xs:annotation>
+					<xs:documentation>Provides the time of the event (track item).   Description:  for example, indicating the time when the tracked target was on a specific position. Or indicating on what time the tracked target was identified as FRIENDLY.  Values and formats In accordance with the W3C recommendation for implementation of ISO 8601 standard.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackItemSource" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides information related to the source data for a reported track item.     Description:  examples include: URI, or UUIDs</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackItemComment" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides a free text field to transmit information related to a track item.  Description:  examples of usage include commenting on identity, attaching comment(s) to MOTION IMAGERY track point.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Acceleration" type="Acceleration"/>
+	<xs:complexType name="Acceleration">
+		<xs:annotation>
+			<xs:documentation>Provides the three-dimensional components of acceleration.  Description:  Acceleration is the rate of change of velocity as a function of time. It is a vector.  In a Cartesian Coordinate System the velocity components are accx, accy and accz.  In calculus terms, acceleration is the second derivative of position with respect to time.  accx=d2(x)/dt2, accy=d2(y)/dt2, accz=d2(z)\dt2  Or, alternately, acceleration is the first derivative of the velocity with respect to time.  accx=d(velx)/dt, accy=d(vely)/dt, accz=d(velz)\dt  The units for acceleration are m/s2 (meters per second squared or meters per second per second).</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:simpleType name="IdentityAmplification">
+		<xs:annotation>
+			<xs:documentation>Provides additional identity/status information (amplification) of an object being tracked.  Values in accordance with STANAG 1241.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="FAKER">
+				<xs:annotation>
+					<xs:documentation>Indicates FAKER  Description:  Per STANAG 1241 - FRIENDLY TRACK, OBJECT OR ENTITY ACTING AS EXERCISE HOSTILE</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="JOKER">
+				<xs:annotation>
+					<xs:documentation>Indicates JOKER  Description:  Per STANAG 1241 - FRIENDLY TRACK, OBJECT OR ENTITY ACTING AS EXERCISE SUSPECT</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="KILO">
+				<xs:annotation>
+					<xs:documentation>Indicates KILO  Description:  Per STANAG 1241 - FRIENDLY HIGH VALUE OBJECT.  CAN ALSO BE REFERRED TO AS "SPECIAL."</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TRAVELLER">
+				<xs:annotation>
+					<xs:documentation>Indicates TRAVELLER  Description:  Per STANAG 1241 - A SUSPECT SURFACE TRACK FOLLOWING A RECOGNIZED SURFACE TRAFFIC ROUTE.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ZOMBIE">
+				<xs:annotation>
+					<xs:documentation>Indicates ZOMBIE  Description:  Per STANAG 1241 - A SUSPECT TRACK, OBJECT OR ENTITY OF SPECIAL INTEREST</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="SymbolicSpectralRange">
+		<xs:annotation>
+			<xs:documentation>Provides Imagery/Motion Imagery related feature data pertinent to a track.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="LWIR">
+				<xs:annotation>
+					<xs:documentation>Indicates Long-wavelength infrared (8-15 um).  Description: This is the "thermal imaging" region, in which sensors can obtain a completely passive picture of the outside world based on thermal emissions only and requiring no external light or thermal source such as the sun, moon or infrared illuminator.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MWIR">
+				<xs:annotation>
+					<xs:documentation>Indicates Mid-wavelength infrared (3-8 um).   Description:  In guided missile technology the 3-5 um portion of this band is the atmospheric window in which the homing heads of passive IR 'heat seeking' missiles are designed to work, homing on to the Infrared signature of the target aircraft, typically the jet engine exhaust plume.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SWIR">
+				<xs:annotation>
+					<xs:documentation>Indicates Short-wavelength infrared (1.4-3 um).   Description:  water absorption increases significantly at 1,450 nm. The 1,530 to 1,560 nm range is the dominant spectral region for long-distance telecommunications.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="NIR">
+				<xs:annotation>
+					<xs:documentation>Indicates Near-infrared (75-1.4 um) in wavelength  Description:  defined by the water absorption, and commonly used in fiber optic telecommunication because of low attenuation losses in the SiO2 glass (silica) medium. Image intensifiers are sensitive to this area of the spectrum. Examples include night vision devices such as night vision goggles.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="VIS">
+				<xs:annotation>
+					<xs:documentation>Indicates portion of electromagnetic spectrum that is visible to (can be detected by) the human eye.   Description:  visible light or simply light. A typical human eye will respond to wavelengths from about 390 to 750 nm.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="UV">
+				<xs:annotation>
+					<xs:documentation>Indicates Ultraviolet (UV) light is electromagnetic radiation with a wavelength shorter than that of visible light, but longer than X-rays, in the range 10 to 400 nm.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MSI">
+				<xs:annotation>
+					<xs:documentation>Indicates Multi-Spectral Imagery.   Description:  contains imagery data comprising multiple spectral bands.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="HSI">
+				<xs:annotation>
+					<xs:documentation>Indicates Hyper-Spectral Imagery.   Description:  contains imagery data comprising multiple spectral bands.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="UNKNOWN">
+				<xs:annotation>
+					<xs:documentation>Indicates the spectral band(s) are unknown.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="GeodeticPosition" type="GeodeticPosition"/>
+	<xs:complexType name="GeodeticPosition">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of geodetic position, expressed in latitude (decimal degrees), longitude (decimal degrees), and elevation (meters - height above ellipsoid).  WGS-84 datum.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Position">
+				<xs:sequence>
+					<xs:element name="latitude" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the latitude of an object or feature, expressed as decimal degrees North (positive) or South (negative) of the Equator.  WGS-84 datum.  Allowed values are -90 degrees to 90 degrees.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="longitude" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the longitude of an object or feature, expressed as decimal degrees East (positive) or West (negative) from the Prime Meridian. WGS-84 datum. Allowed values are -180 degrees to 180 degrees.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="elevation" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the elevation of an object or feature, expressed in meters (m) height above ellipsoid. WGS-84 datum.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="TrackPointType">
+		<xs:annotation>
+			<xs:documentation>Provides information about the type of track point (i.e. measured, estimated, predicted).</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="MEASURED">
+				<xs:annotation>
+					<xs:documentation>Indicates a measured track point.  Description:  a detection marked as a track point, with no additional adjustments, automatic/machine filtering, or estimation processing (i.e."raw" detection information, or input to the tracker).</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MANUAL ESTIMATED">
+				<xs:annotation>
+					<xs:documentation>Indicates a manual, estimated track point.  Description:  position is approximated by an operator/analyst, based on one or more measurements and his/her analytical judgement (example: "snap to road").</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MANUAL PREDICTED">
+				<xs:annotation>
+					<xs:documentation>Indicates a manual, predicted track point.  Description:  a point provided by operator/analyst that is based on prior track history, but is not associated with a direct measurement.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AUTOMATIC ESTIMATED">
+				<xs:annotation>
+					<xs:documentation>Indicates an automatic, estimated track point.  Description:  a point provided by automatic tracker, based on one or more measurements and automatic adjustments (example: "snap to road").</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AUTOMATIC PREDICTED">
+				<xs:annotation>
+					<xs:documentation>Indicates an automatic, predicted track point.  Description:  a point provided by automatic tracker, based on prior track history, but is not associated with a direct measurement.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="TrackInformation" type="TrackInformation"/>
+	<xs:complexType name="TrackInformation" abstract="true">
+		<xs:annotation>
+			<xs:documentation>Provides non-kinematic information about a track.   Description:  information is valid for multiple track points and can be used to indicate changes in track behavior (time marking used).  These information xs:elements are transmitted if a change occurs in the track status or at periodic intervals.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackItem">
+				<xs:sequence/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Confidence" type="Confidence"/>
+	<xs:complexType name="Confidence">
+		<xs:annotation>
+			<xs:documentation>Provides a measure of certainty that the correct value is assigned to given parameter.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="valueConfidence" type="xs:int">
+				<xs:annotation>
+					<xs:documentation>Provides a level of confidence or certainty.  Allowed values are 0 to 100, indicating a percentage of certainty.  No guidance is imposed on how this percentage is calculated, as it will vary depending on the class from which the xs:enumeration is called.  The value 0 indicates no confidence; a value of 100 indicates the highest possible confidence.  This field is intended to be analogous to credibility (of information) criteria specified in AJP 2.1, whose values range from 1 to 6, but no assignment of qualitative confidence statements is imposed on specific ranges of percentages.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sourceReliability" type="xs:int">
+				<xs:annotation>
+					<xs:documentation>Provides a measure of confidence in the reliability of the source that generated the confidence value. Source may be a person, algorithm, exploitation/tracker system, or unit/organization.   Allowed values are 0 to 100.  The value 0 indicates no reliability; a value of 100 indicates the highest possible reliability.  This field is intended to be analogous to reliability (of source) criteria specified in AJP 2.1, whose values range from A to F, but no assignment of qualitative reliability statements is imposed on specific ranges of percentages.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="PolygonArea" type="PolygonArea"/>
+	<xs:complexType name="PolygonArea">
+		<xs:annotation>
+			<xs:documentation>Provides the parameters of a bounded region defined by a series of 3 or more vertices or boundary points.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Area">
+				<xs:sequence>
+					<xs:element name="areaBoundaryPoints" type="Position" minOccurs="3" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>Provides a xs:sequence of 3 or more vertices that define a polygonal area.  Description:  In the case of TrackProductionArea, the vertices should be reported in geodetic coordinates (in the GeodeticPosition class), latitude and longitude only - no report for altitude. In the case of ObjectMask, the vertices should be reported in local Cartesian coordinates (in the LocalCartesianPosition class), x and y components only - no report for z-component.  Boundary points must be given in sequential order, and in a clockwise direction, to eliminate ambiguities.  The starting/end point shall be listed only once.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="TrackIdentityInformation" type="TrackIdentityInformation"/>
+	<xs:complexType name="TrackIdentityInformation">
+		<xs:annotation>
+			<xs:documentation>Provides information related to the identity of a track.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="identity" type="Identity" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides identity information about a track.    Description:  values are derived from STANAG 1241.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="identityAmplification" type="IdentityAmplification" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides identity amplifying/modifying descriptors of a track.    Description:  values are derived from STANAG 1241.  The ‘identityAmplification’ xs:element is transmitted only if the ‘identity’ is provided.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="identitySource" type="ModalityType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the source used to determine/estimate the identity.   Description:  transmitted only if the ‘identity’ is provided.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="identityCredibility" type="Confidence" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a value of probabilistic confidence of the assigned identity.    Description:  transmitted only if the 'identity' is provided.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="iffCode" type="IFFcode" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the identification friend foe (IFF) information associated with the track.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="unitName" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides name of unit being tracked per STANAG 5527 and AdatP-3.  Description: typical example is BFT, where identification of unit being tracked is well known.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="unitSymbol" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides symbol of unit being tracked per STANAG 5527 and APP-6A.  Description: typical example is BFT, where identification of unit being tracked is well known.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Track" type="Track"/>
+	<xs:complexType name="Track">
+		<xs:annotation>
+			<xs:documentation>Provides parameters related to a track.  Description:  Top-level information about the track is expressed in the Track class itself. Track points and other information are expressed in track items (see class TrackItem).</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="trackUUID" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides a 32-character hexidecimal Universal Unique Identification (UUID), standardized by the Open Software Foundation, of a Track.  Reference ISO/IEC 9834-8:2005</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackNumber" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides Track Number, in accordance with ADatP-33(A)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackStatus" type="TrackStatus" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides information related to the status of a track (e.g. initiating, maintaining, dropping or terminated).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackSecurity" type="Security">
+				<xs:annotation>
+					<xs:documentation>Provides security and dissemination/control/releasibility information applicable at the Track level, in accordance with [EAPC(AC/322-SC/5)N(2006)0008].  Description:  Used to facilitate the exchange of information through Information Exchange Gateways [NC3TA].  A ‘TrackMessage’ xs:element can contain multiple ‘Tracks’ and each track contain multiple ‘Track Items’, each of these xs:elements having its own security classification. This construction allows users to extract and disseminate information having a lower security classification level than a ‘TrackMessage’. For example, a ‘TrackMessage’ may contain tracks derived from Friendly Force Information which are classified as SECRET, as well as non-cooperative tracks that are UNCLASSIFIED. The message security level shall not be lower than the highest security classification of any contained track items. The approach is similar to that in STANAG 4545.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackComment" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides a free text field to express amplified information regarding the track, such as object identity, recognized activity/behavior, etc.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="exerciseIndicator" type="ExerciseIndicator">
+				<xs:annotation>
+					<xs:documentation>Provides an indication of whether a track is generated from operational, exercise, or test data.  Description:  partially compatible with the fields ‘Exercise Indicator’ of Link 11 and Link 16.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="simulationIndicator" type="SimulationIndicator">
+				<xs:annotation>
+					<xs:documentation>Provides an indication of whether a track is generated from real, simulated, or synthesized data.  Description:  partially compatible with the fields ‘Simulation Indicator’ of Link 11 and Link 16.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="items" type="TrackItem" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="IffMode">
+		<xs:annotation>
+			<xs:documentation>Provides mode of operation for an IFF system.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="MODE1">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode 1  Description:  provides 2-digit 5-bit mission code. (military only - cockpit selectable)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE2">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode 2  Description:  provides 4-digit octal unit code. (military only - set on ground for fighters, can be changed in flight by transport aircraft)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE3">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode 3.    Description:  Mode 3 is shared with civilian secondary surveillance radar (SSR).  Mode 3/A - provides a 4-digit octal identification code for the aircraft, assigned by the air traffic controller. (military and civilian)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE4">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode 4  Description:  provides a 3-pulse reply to crypto coded challenge. (military only).  Modes 4 and 5 are designated for use by NATO forces:</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE5">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode 5  Description:  provides a cryptographically secured version of Mode S and ADS-B GPS position. (military only). Mode 5 is divided into two levels. Both are crypto-secure with Enhanced encryption, Spread Spectrum Modulation, and Time of Day Authentication. Level 1 is similar to Mode 4 information but enhanced with an Aircraft Unique PIN. Level 2 is the same as Mode 5 level one but includes additional information such as Aircraft Position and Other. Modes 4 and 5 are designated for use by NATO forces:</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE_C">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode C  Description:  provides 4-digit octal code for aircraft's pressure altitude. (military and civilian)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MODE_S">
+				<xs:annotation>
+					<xs:documentation>Indicates Mode S  Description:  provides multiple information formats to a selective interrogation. Each aircraft is assigned a fixed 24-bit address. (military and civilian)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="ExerciseIndicator">
+		<xs:annotation>
+			<xs:documentation>Provides an indication of whether the information pertains to operational data, exercise data, or test data.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="OPERATIONAL">
+				<xs:annotation>
+					<xs:documentation>Indicates Operational Data</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="EXERCISE">
+				<xs:annotation>
+					<xs:documentation>Indicates Exercise Data</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TEST">
+				<xs:annotation>
+					<xs:documentation>Indicates Test Data</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CovarianceMatrixPositionVelocity" type="CovarianceMatrixPositionVelocity"/>
+	<xs:complexType name="CovarianceMatrixPositionVelocity">
+		<xs:annotation>
+			<xs:documentation>Provides the matrix of covariances related to the estimated position and velocity vectors.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="CovarianceMatrixPosition">
+				<xs:sequence>
+					<xs:element name="covVelxVelx" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance of the x component of velocity at the time of the report, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covVelyVely" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance of the y component of velocity at the time of the report, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covVelzVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the variance of the z component of velocity at the time of the report, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosxVelx" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x component of position and the x component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosxVely" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x component of position and the y component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosxVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x component of position and the z component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosyVelx" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the y component of position and the x component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosyVely" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the y component of position and the y component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPosyVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the y component of position and the z component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPoszVelx" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the z component of position and the x component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPoszVely" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the z component of position and the y component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covPoszVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the z component of position and the z component of velocity at the time of the report, expressed in meters squared per second (m2/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covVelxVely" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x and y components of velocity at the time of the report, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covVelxVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the x and z components of velocity at the time of the report,, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="covVelyVelz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the covariance between the y and z components of velocity at the time of the report,, expressed in meters squared per seconds squared (m2/s2).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Frequency" type="Frequency"/>
+	<xs:complexType name="Frequency">
+		<xs:annotation>
+			<xs:documentation>Provides the frequency and bandwidth of an electromagnetic signal</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="frequencyUnit" type="FrequencyUnitType">
+				<xs:annotation>
+					<xs:documentation>Provides the measurement unit of the frequency (GHz, MHz, KHz, etc.)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="frequency" type="xs:double">
+				<xs:annotation>
+					<xs:documentation>Provides a non-negative numerical value indicating the signal frequency. Example: A value of 1 along with a frequency unit of GHz indicates 1 GHz.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="bandwidth" type="xs:double" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides the bandwidth of an electromagnetic signal.  Description:  calculated as Fmax-Fmin, where Fmax is the upper -3 dB frequency of a spectral component and Fmin is the lower -3 dB frequency of a spectral component.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="TrackMessage" type="TrackMessage"/>
+	<xs:complexType name="TrackMessage">
+		<xs:annotation>
+			<xs:documentation>Provides top-level information about a track message.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="stanagVersion" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides information about the version and edition of STANAG 4676 used to encode the data.  Description: the identification of STANAG 4676 is based on the practice of NATO Standardization Agency to issue version and edition of a STANAG.  String containing two alphanumerical characters separated by period, in the format V.E.  Example: Version 3 Edition 1 is expressed in attribute ‘stanagVersion’ as “3.1”</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="messageSecurity" type="Security">
+				<xs:annotation>
+					<xs:documentation>Provides security and dissemination/control/releasibility information applicable at the Track Message level, in accordance with [EAPC(AC/322-SC/5)N(2006)0008].  Description:  used to facilitate the exchange of information through Information Exchange Gateways [NC3TA].  A ‘TrackMessage’ xs:element can contain multiple ‘Tracks’ and each track contain multiple ‘Track Items’, each of these xs:elements having its own security classification. This construction allows users to extract and disseminate information having a lower security classification level than a ‘TrackMessage’. For example, a ‘TrackMessage’ may contain tracks derived from Friendly Force Information which are classified as SECRET, as well as non-cooperative tracks that are UNCLASSIFIED. The message security level shall not be lower than the highest security classification of any contained track items. The approach is similar to that in STANAG 4545.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="msgCreatedTime" type="xs:dateTime">
+				<xs:annotation>
+					<xs:documentation>Provides the date and time of the moment a message was created, in Coordinated Universal Time (UTC) reference frame.  Values and formats In accordance with the W3C recommendation for implementation of ISO 8601 standard.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<!-- Provides information for SPADE track source and image file data -->
+			<xs:element name="dataSource" type="DataSource">
+			<xs:annotation>
+					<xs:documentation>Provides information about the source of data used to create the SPADE track message.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trackSource" type="TrackSource">
+				<xs:annotation>
+					<xs:documentation>Provides information about the tracker used to create the SPADE track message</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<!-- End SPADE -->
+			<xs:element name="senderId" type="IDdata">
+				<xs:annotation>
+					<xs:documentation>Provides identification information about the originator of a ‘TrackMessage’.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="tracks" type="Track" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="TrackStatus">
+		<xs:annotation>
+			<xs:documentation>Provides the status of a track (i.e. initiating, maintaining, dropping, terminated).</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="INITIATING">
+				<xs:annotation>
+					<xs:documentation>Indicates a track that is initiating.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="MAINTAINING">
+				<xs:annotation>
+					<xs:documentation>Indicates a track that is maintaining.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="DROPPING">
+				<xs:annotation>
+					<xs:documentation>Indicates a track that is dropping.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="TERMINATED">
+				<xs:annotation>
+					<xs:documentation>Indicates a track that has terminated.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="LocalCartesianPosition" type="LocalCartesianPosition"/>
+	<xs:complexType name="LocalCartesianPosition">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the position of an object, expressed in a local Cartesian reference frame (LocalCoordinateSystem).</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Position">
+				<xs:sequence>
+					<xs:element name="posx" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the x-component of position, expressed in a Local Coordinate System, unit of meters (m).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="posy" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the y-component of position, expressed in a Local Coordinate System, unit of meters (m)</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="posz" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the z-component of position, expressed in a Local Coordinate System, unit of meters (m)</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="localSystem" type="LocalCoordinateSystem">
+						<xs:annotation>
+							<xs:documentation>Provides parameters to define a local coordinate system, in terms of its translation and rotation with respect to the Earth Centered Earth Fixed (ECEF) reference frame.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="SimulationIndicator">
+		<xs:annotation>
+			<xs:documentation>Provides an indication of whether reported information is real, simulated, or synthesized.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="REAL">
+				<xs:annotation>
+					<xs:documentation>Indicates actual sensor collected data.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SIMULATED">
+				<xs:annotation>
+					<xs:documentation>Indicates computer-generated sensor data.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SYNTHESIZED">
+				<xs:annotation>
+					<xs:documentation>Indicates a combination of real and simulated data.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="TrackClassificationInformation" type="TrackClassificationInformation"/>
+	<xs:complexType name="TrackClassificationInformation">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the number and type of object(s) being tracked.  Description:  partially compatible with strength and footprint information found in NFFI, Link16, Link22 and Link11.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="classification" type="ObjectClassification" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the classification of an object being tracked.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="classificationSource" type="ModalityType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the source(s) used to determine/estimate the classification.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="classificationCredibility" type="Confidence" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a measure of confidence that a correct object classification is made.  Transmitted only when the xs:element classification is transmitted.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="numberofObjects" type="xs:int" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the estimated number of objects or entities represented by the track.   Description:  maps to Link 16 term "strength" but reports actual number of estimated entities versus a range of entities.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="Identity">
+		<xs:annotation>
+			<xs:documentation>Provides the estimated identity/status of an object being tracked.  Values in accordance with STANAG 1241.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="UNKNOWN">
+				<xs:annotation>
+					<xs:documentation>Indicates UNKNOWN  Description:  Per STANAG 1241 - AN EVALUATED TRACK, OBJECT OR ENTITY, WHICH DOES NOT MEET THE CRITERIA FOR ANY OTHER STANDARD IDENTITY.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ASSUMED FRIEND">
+				<xs:annotation>
+					<xs:documentation>Indicates ASSUMED FRIEND  Description:  Per STANAG 1241 - A TRACK, OBJECT OR ENTITY WHICH IS ASSUMED TO BE FRIEND OR NEUTRAL BECAUSE OF ITS CHARACTERISTICS, BEHAVIOUR OR ORIGIN.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="FRIEND">
+				<xs:annotation>
+					<xs:documentation>Indicates FRIEND  Description:  Per STANAG 1241 - AN ALLIED/COALITION MILITARY TRACK, OBJECT OR ENTITY;  - A TRACK, OBJECT OR ENTITY, SUPPORTING FRIENDLY FORCES AND BELONGING TO AN ALLIED/COALITION NATION OR A DECLARED OR RECOGNISED FRIENDLY FACTION OR GROUP.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="NEUTRAL">
+				<xs:annotation>
+					<xs:documentation>Indicates NEUTRAL  Description:  Per STANAG 1241 - MILITARY OR CIVILIAN TRACK, OBJECT OR ENTITY, NEITHER BELONGING TO ALLIED/COALITION MILITARY FORCES NOR TO OPPOSING MILITARY FORCES, WHOSE CHARACTERISTICS, BEHAVIOUR, ORIGIN OR NATIONALITY INDICATES THAT IT IS NEITHER SUPPORTING NOR OPPOSING FRIENDLY FORCES OR THEIR MISSION.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SUSPECT">
+				<xs:annotation>
+					<xs:documentation>Indicates SUSPECT  Description:  Per STANAG 1241 - A TRACK, OBJECT OR ENTITY WHOSE CHARACTERISTICS, BEHAVIOUR OR ORIGIN INDICATE THAT IT POTENTIALLY BELONGS TO OPPOSING FORCES OR POTENTIALLY POSES A THREAT TO FRIENDLY FORCES OR THEIR MISSION.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="HOSTILE">
+				<xs:annotation>
+					<xs:documentation>Indicates HOSTILE  Description:  Per STANAG 1241 - A TRACK, OBJECT OR ENTITY WHOSE CHARACTERISTICS, BEHAVIOUR OR ORIGIN INDICATE THAT IT BELONGS TO OPPOSING FORCES OR POSES A THREAT TO FRIENDLY FORCES OR THEIR MISSION.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CovarianceMatrix" type="CovarianceMatrix"/>
+	<xs:complexType name="CovarianceMatrix">
+		<xs:annotation>
+			<xs:documentation>Provides the matrix of covariances related to the estimated state vector.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence/>
+	</xs:complexType>
+	<xs:element name="LocalCartesianVelocity" type="LocalCartesianVelocity"/>
+	<xs:complexType name="LocalCartesianVelocity">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the three-dimensional components of velocity, expressed in a Cartesian coordinate system.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Velocity">
+				<xs:sequence>
+					<xs:element name="velx" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the x-component of velocity, expressed in meters per second (m/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="vely" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the y-component of velocity, expressed in meters per second (m/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="velz" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides an estimate of the z-component of velocity, expressed in meters per second (m/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="TrackLineageInformation" type="TrackLineageInformation"/>
+	<xs:complexType name="TrackLineageInformation">
+		<xs:annotation>
+			<xs:documentation>Provides information about the relationship between reported tracks.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="relations" type="LineageRelation" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="CircularArea" type="CircularArea"/>
+	<xs:complexType name="CircularArea">
+		<xs:annotation>
+			<xs:documentation>Provides parameters of a bounded region defined by its center point and radius.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="Area">
+				<xs:sequence>
+					<xs:element name="center" type="Position">
+						<xs:annotation>
+							<xs:documentation>Provides the center point of a defined circular area.  Used in combination with a radius measurement to specify a circular area.  Description:  In the case of TrackProductionArea, the center point should be reported in geodetic coordinates (in the GeodeticPosition class), latitude and longitude only - no report for elevation. In the case of ObjectMask, the center point should be reported in local Cartesian coordinates (in the LocalCartesianPosition class), x and y components only - no report for z-component.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="radius" type="xs:double">
+						<xs:annotation>
+							<xs:documentation>Provides the radius of a defined circular area, expressed in meters (m). Used in combination with a center point to specify a circular area.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="IFFcode" type="IFFcode"/>
+	<xs:complexType name="IFFcode">
+		<xs:annotation>
+			<xs:documentation>Provides Identification Friend or Foe (IFF) mode and value.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="mode" type="IffMode">
+				<xs:annotation>
+					<xs:documentation>Provides the mode of operation for an IFF system.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the code value transmitted by an IFF system.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="TrackPoint" type="TrackPoint"/>
+	<xs:complexType name="TrackPoint">
+		<xs:annotation>
+			<xs:documentation>Provides information about a track point.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackItem">
+				<xs:sequence>
+					<xs:element name="trackPointPosition" type="GeodeticPosition">
+						<xs:annotation>
+							<xs:documentation>Provides the position of an object being tracked.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackPointSpeed" type="xs:int" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the speed of an object being tracked, expressed in meters per second (m/s).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackPointCourse" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the course of an object being tracked, expressed in decimal degrees and measured from true north in a clockwise direction</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackPointType" type="TrackPointType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides information of whether a track point is estimated, or predicted manually or automatically.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackPointSource" type="ModalityType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides information related to the source of the track point data. (i.e. RADAR, MOTION IMAGERY, ESM).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackPointObjectMask" type="Area" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a spatial outline of an object being tracked.   Description: for example, in case of MOTION IMAGERY tracking, a box or polygon surrounding the object may be specified.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="TrackPointDetail" type="TrackPointDetail" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="LocalCoordinateSystem" type="LocalCoordinateSystem"/>
+	<xs:complexType name="LocalCoordinateSystem">
+		<xs:annotation>
+			<xs:documentation>Provides parameters to define a local, Cartesian coordinate system.  Description:  contains information about the origin of the local coordinate system (expressed in Geodetic coordinates) and the orientation of the local system with respect to the Earth Centered Earth Fixed (ECEF) reference frame.  This class is intended to accommodate tracking algorithms that compute in a local coordinate system, (e.g. MOTION IMAGERY tracking in a planar pixel space, radar GMTI tracking in a range-Doppler slant plane or its projected ground plane).</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="origin" type="GeodeticPosition">
+				<xs:annotation>
+					<xs:documentation>Provides the origin of a Local Coordinate System, reported Geodetic Coordinates (lat, long, elevation)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="x-axisRotation" type="xs:double">
+				<xs:annotation>
+					<xs:documentation>Provides the angle of rotation about the x-axis between a local coordinate frame and the ECEF reference frame, expressed in decimal degrees. Values range between 0 and 360 degrees.  The x-axis rotation parameter is always sent with fields y-axis rotation and z-axis rotation and must be the first in the series of three rotations applied to effect the orientation transformation.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="y-axisRotation" type="xs:double">
+				<xs:annotation>
+					<xs:documentation>Provides the angle of rotation about the y-axis between a local coordinate frame and the ECEF reference frame, expressed in decimal degrees.   Values range between 0 and 360 degrees.  The y-axis rotation parameter is always sent with fields x-axis rotation and z-axis rotation and must be the second in the series of three rotations applied to effect the orientation transformation.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="z-axisRotation" type="xs:double">
+				<xs:annotation>
+					<xs:documentation>Provides the angle of rotation about the z-axis between a local coordinate frame and the ECEF reference frame, expressed in decimal degrees.    Values range between 0 and 360 degrees.  The z-axis rotation parameter is always sent with fields x-axis rotation and y-axis rotation and must be the third in the series of three rotations applied to effect the orientation transformation.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="LineageRelation" type="LineageRelation"/>
+	<xs:complexType name="LineageRelation">
+		<xs:annotation>
+			<xs:documentation>Provides lineage information about related tracks.  Description:  Associates related and possibly related tracks to each other. Often there is ambiguity as to whether two tracks are actually the same object. Additionally, multiple objects may converge to appear as a single object or, multiple objects may split from a single track to multiple tracks. The LineageRelation allows all track segments which may be interconnected or related to be identified.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="relatedTrackNumber" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the track number of a separate track that is related to the reported track.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="relatedTrackUUID" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Provides the track UUID of a separate track that is related to the reported track.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="relation" type="LineageRelationType">
+				<xs:annotation>
+					<xs:documentation>Provides the relationship between a separate track and the reported track.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="TrackManagementInformation" type="TrackManagementInformation"/>
+	<xs:complexType name="TrackManagementInformation">
+		<xs:annotation>
+			<xs:documentation>Provides information pertaining to track management functions.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="trackProductionArea" type="Area" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a track production area assigned to a tracker by a track data coordinator.   Description:  see AdatP-33 for TDL track management.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackSource" type="ModalityType">
+						<xs:annotation>
+							<xs:documentation>Provides information about the modality from which a track is computed.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackEnvironment" type="TrackEnvironment" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides information related to the environment in which a track is computed (i.e. land, air, space, etc).  Description:  compatible with Link 16 J3.5C1, environment field</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackQuality" type="xs:int" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides information about the quality of a track.  Description:  allowed values from 0-15 in accordance of Link 16 J3.5, field Track Quality.  xs:element can be used to support distributed track management.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackerID" type="IDdata" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a unique identification for the tracker that produced the reported track.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="trackerType" type="TrackerType" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides information about the type of the tracker that produced the reported track.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="alertIndicator" type="xs:boolean" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a flag to indicate an emergency situation, in accordance with Link 16 Force Tell and Emergency indicator (J3.5).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:simpleType name="TrackEnvironment">
+		<xs:annotation>
+			<xs:documentation>Provides an estimate of the type of environment in which a track is computed.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SURFACE">
+				<xs:annotation>
+					<xs:documentation>Indicates on a water body (ie: water borne vessels)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SUBSURFACE">
+				<xs:annotation>
+					<xs:documentation>Indicates under the surface of a water body.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="LAND">
+				<xs:annotation>
+					<xs:documentation>Indicates on the surface of dry land.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="AIR">
+				<xs:annotation>
+					<xs:documentation>Indicates between sea level and the Karman line, which is the altitude of 100 kilometres (62 mi).</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="SPACE">
+				<xs:annotation>
+					<xs:documentation>Indicates above the Karman line, which is the altitude of 100 kilometres (62 mi).</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="UNKNOWN">
+				<xs:annotation>
+					<xs:documentation>Indicates the environment is not known.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="ESMInformation" type="ESMInformation"/>
+	<xs:complexType name="ESMInformation">
+		<xs:annotation>
+			<xs:documentation>Provides ESM feature related data pertinent to a track</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="agility" type="xs:boolean" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a flag to indicate a signal with frequency agility. In case of an agile signal, the spectral components are transmitted in the "spectrum" attribute</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="spectrum" type="SpectrumComponent" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides spectrum components measured by the ESM receiver.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="staggered" type="xs:boolean" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides a flag to indicate signals with staggered pulse repetition intervals.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="pulseRepetitionFreq" type="Frequency" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the value of pulse repetition frequency.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="modulation" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the type of modulation of the signal.  Examples are "phase modulation" and "frequency modulation."</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="pulseWidth" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the measured pulse width of the signal, expressed in nanoseconds (ns).  Consistent with STANAG 4658.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="power" type="xs:double" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the power of the received signal, expressed in Decibels milliwatts (dBm).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="VideoInformation" type="VideoInformation"/>
+	<xs:complexType name="VideoInformation">
+		<xs:annotation>
+			<xs:documentation>Provides feature data related to tracks produced from MOTION IMAGERY data.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="TrackInformation">
+				<xs:sequence>
+					<xs:element name="band" type="SymbolicSpectralRange" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Provides the electromagnetic band for a given MOTION IMAGERY collection.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="imageReference" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>Provides a URI to a JPEG or PNG image chip of an object being tracked.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="imageChip" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>Provides an embedded JPEG or PNG image chip of an object being tracked.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="TrackPointDetail" type="TrackPointDetail"/>
+	<xs:complexType name="TrackPointDetail">
+		<xs:annotation>
+			<xs:documentation>Provides detailed information related to a track point.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="pointDetailPosition" type="Position">
+				<xs:annotation>
+					<xs:documentation>Provides the position of an object being tracked.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pointDetailVelocity" type="Velocity" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides the velocity of an object being tracked.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pointDetailAcceleration" type="Acceleration" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides the acceleration of an object being tracked.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pointDetailCovarianceMatrix" type="CovarianceMatrix">
+				<xs:annotation>
+					<xs:documentation>Provides the covariance matrix related to the state vector associated with a reported track point.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

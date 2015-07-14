@@ -1,0 +1,8 @@
+*.pyc
+*~
+*#
+.DS_Store
+
+# this next pattern is for vim swap files
+.*.sw*
+.sw*

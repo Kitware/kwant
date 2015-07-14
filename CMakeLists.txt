@@ -51,6 +51,10 @@ find_package( Boost 1.42 REQUIRED COMPONENTS thread filesystem system date_time 
 add_definitions( -DBOOST_ALL_NO_LIB )
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
+add_subdirectory( wrappers )
+include_directories( SYSTEM wrappers )
+include_directories( SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/wrappers )
+
 # we can't build shared libraries on Windows so we leave it off by default;
 # we haven't set up DLL exports or anything like that
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
@@ -64,5 +68,10 @@ include_directories( SYSTEM ${TinyXML_INCLUDE_DIR} )
 find_package(LIBJSON REQUIRED)
 include_directories ( SYSTEM ${LIBJSON_INCLUDE_DIR} )
 
+
 add_subdirectory( vidtk3p )
 add_subdirectory( logger )
+add_subdirectory( utilities )
+add_subdirectory( stanag_4676 )
+
+add_subdirectory( track_oracle )
