@@ -6,11 +6,6 @@ project( kwant )
 set(CMAKE_MODULE_PATH "${kwant_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 include_directories( ${kwant_SOURCE_DIR} )
 
-# vision-tpl can provide many of the external dependencies
-find_package(vision-tpl REQUIRED)
-# if (vision-tpl_FOUND)
-#   include(find_vtpl_package)
-# endif()
 
 find_package(VXL REQUIRED)
 include_directories(SYSTEM ${VXL_VCL_INCLUDE_DIR})
