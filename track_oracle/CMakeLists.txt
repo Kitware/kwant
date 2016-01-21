@@ -131,7 +131,7 @@ set_target_properties( track_oracle_event_adapter
 install( TARGETS track_oracle_event_adapter
   RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
 
-  add_subdirectory( track_4676 )
+#  add_subdirectory( track_4676 )
   add_subdirectory( track_comms_xml )
   add_subdirectory( track_mitre_xml )
   add_subdirectory( track_kwxml )
@@ -163,7 +163,7 @@ target_link_libraries( track_oracle_file_formats
   track_vatic
   track_vpd
   track_e2at_callout
-  track_4676
+  #  track_4676
   track_csv
   track_kwiver
   track_oracle_tokenizers

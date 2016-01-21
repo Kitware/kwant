@@ -67,6 +67,6 @@ include_directories ( SYSTEM ${LIBJSON_INCLUDE_DIR} )
 add_subdirectory( vidtk3p )
 add_subdirectory( logger )
 add_subdirectory( utilities )
-add_subdirectory( stanag_4676 )
+# add_subdirectory( stanag_4676 )
 
 add_subdirectory( track_oracle )
