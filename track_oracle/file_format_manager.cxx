@@ -30,7 +30,7 @@
 #include <track_oracle/track_vpd/file_format_vpd_track.h>
 #include <track_oracle/track_vpd/file_format_vpd_event.h>
 #include <track_oracle/track_e2at_callout/file_format_e2at_callout.h>
-#include <track_oracle/track_4676/file_format_4676.h>
+// #include <track_oracle/track_4676/file_format_4676.h>
 #include <track_oracle/track_csv/file_format_csv.h>
 #include <track_oracle/track_kwiver/file_format_kwiver.h>
 #include <track_oracle/schema_algorithm.h>
@@ -114,7 +114,7 @@ file_format_manager_impl
   formats[ TF_VPD_TRACK ] = new file_format_vpd_track();
   formats[ TF_VPD_EVENT ] = new file_format_vpd_event();
   formats[ TF_E2AT_CALLOUT ] = new file_format_e2at_callout();
-  formats[ TF_4676 ] = new file_format_4676();
+//  formats[ TF_4676 ] = new file_format_4676();
   formats[ TF_CSV ] = new file_format_csv();
   formats[ TF_KWIVER ] = new file_format_kwiver();
 
