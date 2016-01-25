@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2010-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef TRACK_ORACLE_BASE_IMPL_H
 #define TRACK_ORACLE_BASE_IMPL_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <utility>
 #include <map>
@@ -14,10 +17,10 @@
 #include <track_oracle/track_oracle_row_view.h>
 #include <track_oracle/track_oracle_frame_view.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class track_base_impl
+class TRACK_ORACLE_EXPORT track_base_impl
 {
   friend std::ostream& operator<<( std::ostream& os, track_base_impl& track );
 
@@ -65,6 +68,9 @@ public:
   std::map< field_handle_type, schema_position_type > list_schema_elements() const;
 };
 
-} // namespace vidtk
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, track_base_impl& track );
+
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,10 +13,8 @@
 #include <track_oracle/kwiver_io_helpers.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_data_terms_cxx
-VIDTK_LOGGER("data_terms_cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::vector;
 using std::map;
@@ -43,22 +41,20 @@ bool kwiver_csv_read( const vector<string>& headers,
     if (p == header_value_map.end()) return false;
     s += p->second + " ";
   }
-  return vidtk::kwiver_read( s, d );
+  return kwiver::kwant::kwiver_read( s, d );
 }
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-namespace dt
-{
+namespace dt {
 
 #define DEF_DT(NAME) \
   context NAME::c( NAME::get_context_name(), NAME::get_context_description() );
 
-namespace tracking
-{
+namespace tracking {
 
   DEF_DT( external_id );
   DEF_DT( timestamp_usecs );
@@ -259,17 +255,17 @@ ostream& longitude::to_stream( ostream& os, const double& d) const
 // timestamp
 //
 
-ostream& time_stamp::to_stream( ostream& os, const vidtk::timestamp& ts ) const
+ostream& time_stamp::to_stream( ostream& os, const vital::timestamp& ts ) const
 {
   return kwiver_write( os, ts );
 }
 
-bool time_stamp::from_str( const string& s, vidtk::timestamp& ts ) const
+bool time_stamp::from_str( const string& s, vital::timestamp& ts ) const
 {
   return kwiver_read( s, ts );
 }
 
-bool time_stamp::read_xml( const TiXmlElement* e, vidtk::timestamp& ts ) const
+bool time_stamp::read_xml( const TiXmlElement* e, vital::timestamp& ts ) const
 {
   TiXmlHandle h( const_cast<TiXmlElement*>(e) );
   TiXmlElement* frame_e = h.FirstChild( "frame" ).ToElement();
@@ -285,7 +281,7 @@ bool time_stamp::read_xml( const TiXmlElement* e, vidtk::timestamp& ts ) const
   return kwiver_ts_string_read( frame_s, time_s, ts );
 }
 
-void time_stamp::write_xml( ostream& os, const string& indent, const vidtk::timestamp& ts ) const
+void time_stamp::write_xml( ostream& os, const string& indent, const vital::timestamp& ts ) const
 {
   pair< string, string > ts_strings = kwiver_ts_to_strings( ts );
   os << indent << "<" << time_stamp::c.name << ">\n";
@@ -302,19 +298,19 @@ vector<string> time_stamp::csv_headers() const
   return r;
 }
 
-bool time_stamp::from_csv( const map<string, string>& header_value_map, vidtk::timestamp& ts ) const
+bool time_stamp::from_csv( const map<string, string>& header_value_map, vital::timestamp& ts ) const
 {
   map<string, string>::const_iterator ts_f = header_value_map.find( "ts_frame" );
   map<string, string>::const_iterator ts_t = header_value_map.find( "ts_time" );
   bool okay = true;
   if (ts_f == header_value_map.end())
   {
-    LOG_ERROR( "timestamp::csv: no header 'ts_frame'" );
+    LOG_ERROR( main_logger, "timestamp::csv: no header 'ts_frame'" );
     okay = false;
   }
   if (ts_t == header_value_map.end())
   {
-    LOG_ERROR( "timestamp::csv: no header 'ts_time'" );
+    LOG_ERROR( main_logger, "timestamp::csv: no header 'ts_time'" );
     okay = false;
   }
   return
@@ -323,18 +319,16 @@ bool time_stamp::from_csv( const map<string, string>& header_value_map, vidtk::t
     : false;
 }
 
-ostream& time_stamp::to_csv( ostream& os, const vidtk::timestamp& ts ) const
+ostream& time_stamp::to_csv( ostream& os, const vital::timestamp& ts ) const
 {
   pair< string, string > ts_strings = kwiver_ts_to_strings( ts );
   os << ts_strings.first << "," << ts_strings.second;
   return os;
 }
 
+} // ...tracking
 
-} // tracking
-
-namespace events
-{
+namespace events {
 
   DEF_DT( event_id );
   DEF_DT( event_type );
@@ -383,13 +377,13 @@ bool event_type::from_str( const string& s, int& d ) const
       }
       else
       {
-        LOG_WARN( "event_string '" << s << "' has no domain tag" );
+        LOG_WARN( main_logger, "event_string '" << s << "' has no domain tag" );
       }
     }
   }
   catch ( const aries_interface_exception& e )
   {
-    LOG_ERROR( e.what() );
+    LOG_ERROR( main_logger, e.what() );
   }
 
   return okay;
@@ -426,12 +420,12 @@ bool event_type::from_csv( const map<string, string>& header_value_map, int& d )
   bool okay = true;
   if ( e_d == header_value_map.end() )
   {
-    LOG_ERROR( "event_type::from_csv: no header 'event_domiain'" );
+    LOG_ERROR( main_logger, "event_type::from_csv: no header 'event_domiain'" );
     okay = false;
   }
   if ( e_t == header_value_map.end() )
   {
-    LOG_ERROR( "event_type::from_csv: no header 'event_type'" );
+    LOG_ERROR( main_logger, "event_type::from_csv: no header 'event_type'" );
     okay = false;
   }
   return
@@ -462,7 +456,7 @@ bool event_type::read_xml( const TiXmlElement* const_e, int& d ) const
   const char* domain_str = e->Attribute( "domain" );
   if ( ! domain_str )
   {
-    LOG_ERROR( "event_type: missing domain at " << e->Row() );
+    LOG_ERROR( main_logger, "event_type: missing domain at " << e->Row() );
     return false;
   }
   return this->from_str( string(domain_str)+":"+e->GetText(), d );
@@ -506,10 +500,9 @@ bool source_track_ids::from_str( const string& s, vector<unsigned>& d ) const
   return true;
 }
 
-} // events
+} // ...events
 
-namespace virat
-{
+namespace virat {
 
   DEF_DT( descriptor_classifier );
 
@@ -592,18 +585,18 @@ bool descriptor_classifier::read_xml( const TiXmlElement* const_e, vector<double
     size_t activity_idx;
     try
     {
-      activity_idx = vidtk::aries_interface::activity_to_index( probNode->Attribute( "activity" ));
+      activity_idx = kwiver::kwant::aries_interface::activity_to_index( probNode->Attribute( "activity" ));
     }
-    catch (vidtk::aries_interface_exception& /*e*/)
+    catch (kwiver::kwant::aries_interface_exception& /*e*/)
     {
-      LOG_ERROR( "Couldn't recognize " << probNode->Attribute("activity")
+      LOG_ERROR( main_logger, "Couldn't recognize " << probNode->Attribute("activity")
                  << " as a valid activity?");
       return false;
     }
     double prob;
     if (probNode->QueryDoubleAttribute( "value", &prob )  != TIXML_SUCCESS )
     {
-      LOG_ERROR( "Couldn't find a probability at " << probNode->Row() << "?");
+      LOG_ERROR( main_logger, "Couldn't find a probability at " << probNode->Row() << "?");
       prob = 0;
     }
     d[ activity_idx ] = prob;
@@ -612,9 +605,11 @@ bool descriptor_classifier::read_xml( const TiXmlElement* const_e, vector<double
 }
 
 
-} //virat
+} // ...virat
 
 #undef DEF_DT
 
-} // dt
-} // vidtk
+} // ...dt
+
+} // ...kwant
+} // ...kwiver

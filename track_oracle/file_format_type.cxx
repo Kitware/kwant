@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,13 +11,12 @@
 #include <track_oracle/element_store.h>
 #include <track_oracle/file_format_manager.h>
 
-
 using std::map;
 using std::ostream;
 using std::string;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 string
 file_format_type
@@ -89,4 +88,5 @@ element_store< file_format_enum >
     : os;
 }
 
-}
+} // ...kwant
+} // ...kwiver

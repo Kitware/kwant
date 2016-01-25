@@ -12,7 +12,7 @@
 
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/csv_tokenizer.h>
+#include <track_oracle/util/tokenizers.h>
 #include <track_oracle/data_terms/data_terms.h>
 
 #include <logger/logger.h>

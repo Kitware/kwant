@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -37,33 +37,27 @@
 #include <track_oracle/track_field_functor.h>
 #include <track_oracle/data_terms/data_terms.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::pair;
 using std::runtime_error;
 using std::string;
 using std::vector;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_oracle_example_cxx__
-VIDTK_LOGGER("track_oracle_example_cxx");
-
-
 // Each unique instance of a track_field (a track as a whole or a frame
 // of a track) is referenced by its opaque oracle_entry_handle_type.
 
-using vidtk::track_oracle;
-using vidtk::track_field;
-using vidtk::oracle_entry_handle_type;
-using vidtk::track_handle_type;
-using vidtk::track_handle_list_type;
-using vidtk::frame_handle_type;
-using vidtk::track_oracle_frame_view;
-using vidtk::frame_handle_list_type;
-using vidtk::element_descriptor;
-using vidtk::field_handle_type;
+using ::kwiver::kwant::track_oracle;
+using ::kwiver::kwant::track_field;
+using ::kwiver::kwant::oracle_entry_handle_type;
+using ::kwiver::kwant::track_handle_type;
+using ::kwiver::kwant::track_handle_list_type;
+using ::kwiver::kwant::frame_handle_type;
+using ::kwiver::kwant::track_oracle_frame_view;
+using ::kwiver::kwant::frame_handle_list_type;
+using ::kwiver::kwant::element_descriptor;
+using ::kwiver::kwant::field_handle_type;
 
 // Define your track elements as *references* to track_fields.  Associate
 // these references with either the Track or Frame members from the track_base
@@ -71,7 +65,7 @@ using vidtk::field_handle_type;
 // static polymorphism (in particular, to provide the operator() for frame
 // access.)  (Thanks to Amitha for suggesting this!)
 
-struct my_particular_track: public vidtk::track_base< my_particular_track >
+struct my_particular_track: public ::kwiver::kwant::track_base< my_particular_track >
 {
   // track level data
   track_field<double>& score;
@@ -100,7 +94,7 @@ struct my_particular_track: public vidtk::track_base< my_particular_track >
 // data name (e.g. "label"), they both refer to the same data store in
 // the universal "cloud of tracks."
 
-struct a_different_track: public vidtk::track_base< a_different_track >
+struct a_different_track: public ::kwiver::kwant::track_base< a_different_track >
 {
   // this track only uses labels.  Note that the code-level name of
   // the data member is irrelevant...
@@ -116,7 +110,7 @@ struct a_different_track: public vidtk::track_base< a_different_track >
 // track.  Adding a field twice throws an exception when you instantiate
 // the schema.
 
-struct derived_track_throws_exception: public vidtk::track_base< derived_track_throws_exception, my_particular_track >
+struct derived_track_throws_exception: public ::kwiver::kwant::track_base< derived_track_throws_exception, my_particular_track >
 {
   track_field<double>& score;
 
@@ -125,7 +119,7 @@ struct derived_track_throws_exception: public vidtk::track_base< derived_track_t
   {}
 };
 
-struct derived_track: public vidtk::track_base< derived_track, my_particular_track >
+struct derived_track: public ::kwiver::kwant::track_base< derived_track, my_particular_track >
 {
   track_field<double>& foo;
 
@@ -138,16 +132,16 @@ struct derived_track: public vidtk::track_base< derived_track, my_particular_tra
 // This is an example of a functor which duplicates the operation of "lookup"
 //
 
-class lookup_timestamp_functor: public vidtk::track_field_functor<unsigned long long>
+class lookup_timestamp_functor: public ::kwiver::kwant::track_field_functor<unsigned long long>
 {
 private:
   unsigned long long target_timestamp;
 
 public:
   explicit lookup_timestamp_functor( unsigned long long ts )
-  : vidtk::track_field_functor<unsigned long long>(), target_timestamp( ts ) {}
+  : ::kwiver::kwant::track_field_functor<unsigned long long>(), target_timestamp( ts ) {}
 
-  virtual void apply_at_row( const vidtk::oracle_entry_handle_type& row, const unsigned long long& v )
+  virtual void apply_at_row( const ::kwiver::kwant::oracle_entry_handle_type& row, const unsigned long long& v )
   {
     if ( v == this->target_timestamp )
     {
@@ -170,9 +164,9 @@ int main( int argc, char *argv[] )
     // instantiate your track...
     my_particular_track t;
 
-    LOG_INFO( "Output uncreated track_base:");
-    LOG_INFO( t);
-    LOG_INFO( "\ndone");
+    LOG_INFO( main_logger, "Output uncreated track_base:");
+    LOG_INFO( main_logger, t);
+    LOG_INFO( main_logger, "\ndone");
 
     // you now have the definition of your track, but no actual tracks.
     // To create an instance of your track, call create():
@@ -185,9 +179,9 @@ int main( int argc, char *argv[] )
     t.score() = 5.0;
     t.label() = "walking";
 
-    LOG_INFO( "Output after two values set:");
-    LOG_INFO( t);
-    LOG_INFO( "\ndone");
+    LOG_INFO( main_logger, "Output after two values set:");
+    LOG_INFO( main_logger, t);
+    LOG_INFO( main_logger, "\ndone");
 
     // The fields do not exist until you set them.  If you read them before
     // setting them, the default value for that type is returned.  (TBD: define
@@ -205,10 +199,10 @@ int main( int argc, char *argv[] )
     // If all the data types you've used have operator<<() defined,
     // then you get the operator<<() for the track for free.  (If
     // not, then your program won't compile.)
-    LOG_INFO( t << "");
+    LOG_INFO( main_logger, t << "");
 
     // We can get a list of the frames...
-    vidtk::frame_handle_list_type frames = track_oracle::get_frames( track_handle );
+    ::kwiver::kwant::frame_handle_list_type frames = track_oracle::get_frames( track_handle );
     frame_handle_type first_frame = frames[0];
     frame_handle_type last_frame = frames[ frames.size()-1 ];
 
@@ -226,29 +220,29 @@ int main( int argc, char *argv[] )
       frame_handle_type f3 = frames[3];
       if (probe.exists( f3.row ))
       {
-        LOG_INFO( "Frame 3's '" << argv[1] << "' value is " << probe(f3.row) << "");
+        LOG_INFO( main_logger, "Frame 3's '" << argv[1] << "' value is " << probe(f3.row) << "");
       }
       else
       {
-        LOG_INFO( "Frame 3 has no '" << argv[1] << "' field");
+        LOG_INFO( main_logger, "Frame 3 has no '" << argv[1] << "' field");
       }
     }
 
-    LOG_INFO( "After changing first and last timestamps");
-    LOG_INFO( t << "");
+    LOG_INFO( main_logger, "After changing first and last timestamps");
+    LOG_INFO( main_logger, t << "");
 
     // delete some frames
     t.remove_frame( first_frame );
-    LOG_INFO( "After deleting first frame\n" << t << "");
+    LOG_INFO( main_logger, "After deleting first frame\n" << t << "");
     t.remove_frame( last_frame );
-    LOG_INFO( "After deleting last frame\n" << t << "");
+    LOG_INFO( main_logger, "After deleting last frame\n" << t << "");
 
 
     // Now we go out of scope, taking the instance of our
     // track data structure along with it.
   }
 
-  LOG_INFO( "Out of scope");
+  LOG_INFO( main_logger, "Out of scope");
 
   // What happened to our track data?
   //
@@ -260,13 +254,13 @@ int main( int argc, char *argv[] )
   //
 
   {
-    LOG_INFO( "new scope!");
+    LOG_INFO( main_logger, "new scope!");
 
     // We can create a new instance of our track data structure...
     my_particular_track t;
 
     // and it's still there.
-    LOG_INFO( t( track_handle ) << "");
+    LOG_INFO( main_logger, t( track_handle ) << "");
   }
 
 
@@ -276,7 +270,7 @@ int main( int argc, char *argv[] )
   //
   {
     frame_handle_list_type frames = track_oracle::get_frames( track_handle );
-    LOG_INFO( "Generically got " << frames.size() << " frames");
+    LOG_INFO( main_logger, "Generically got " << frames.size() << " frames");
   }
 
   //
@@ -294,22 +288,22 @@ int main( int argc, char *argv[] )
     }
 
     my_particular_track t;
-    LOG_INFO( "Before frame appending: " << t(track_handle) << "");
+    LOG_INFO( main_logger, "Before frame appending: " << t(track_handle) << "");
     t(track_handle).add_frames( track_oracle::get_frames( temp ));
-    LOG_INFO( "After frame appending: " << t(track_handle) << "");
+    LOG_INFO( main_logger, "After frame appending: " << t(track_handle) << "");
   }
 
   // we can examine what fields a track or frame has
   {
     vector< field_handle_type > columns = track_oracle::fields_at_row( 1001 );
-    LOG_INFO( "Row 1001 has " << columns.size() << " fields:");
+    LOG_INFO( main_logger, "Row 1001 has " << columns.size() << " fields:");
     for (size_t i=0; i<columns.size(); ++i)
     {
       element_descriptor e = track_oracle::get_element_descriptor( columns[i] );
-      LOG_INFO( i << ": " << e.name << " ( " << e.description << " ) type "
+      LOG_INFO( main_logger, i << ": " << e.name << " ( " << e.description << " ) type "
                << e.typeid_str << " role: " << element_descriptor::role2str( e.role ) << "");
     }
-    LOG_INFO( "");
+    LOG_INFO( main_logger, "");
   }
 
   // we can do lookups
@@ -318,77 +312,77 @@ int main( int argc, char *argv[] )
     my_particular_track t;
     // this is an example of when it would be nice for track_fields to know if they're associated with Track or Frame
     {
-      LOG_INFO("Lookup #1:");
-      LOG_INFO( "" );
-      frame_handle_type lookup_handle = frame_handle_type( t.timestamp.lookup( 103, vidtk::DOMAIN_ALL ) );
+      LOG_INFO( main_logger, "Lookup main_logger, #1:");
+      LOG_INFO( main_logger, "" );
+      frame_handle_type lookup_handle = frame_handle_type( t.timestamp.lookup( 103, ::kwiver::kwant::DOMAIN_ALL ) );
       if ( lookup_handle.is_valid() )
       {
         track_oracle_frame_view f = t[ lookup_handle ].frame();
-        LOG_INFO( f << "");
+        LOG_INFO( main_logger, f << "");
         // this should no longer compile!  AND IT DOESN'T!
-        //LOG_INFO( "timestamp 103: " << f( lookup_handle ) << "");
-        LOG_INFO( "timestamp 103: " << f[ lookup_handle ] << "");
+        //LOG_INFO( main_logger, "timestamp 103: " << f( lookup_handle ) << "");
+        LOG_INFO( main_logger, "timestamp 103: " << f[ lookup_handle ] << "");
       }
       else
       {
-        LOG_ERROR( "Coudln't find timestamp 103?");
+        LOG_ERROR( main_logger, "Coudln't find timestamp 103?");
       }
     }
 
     // Should be the same as above
     {
-      LOG_INFO("Lookup #2:");
-      LOG_INFO( "" );
+      LOG_INFO( main_logger, "Lookup #2:");
+      LOG_INFO( main_logger, "" );
       lookup_timestamp_functor ltf( 103 );
       pair< oracle_entry_handle_type, unsigned long long > probe = t.timestamp.apply_functor( ltf );
       frame_handle_type lookup_handle( probe.first );
-      LOG_INFO( "Functor lookup: timestamp 103 found? " << lookup_handle.is_valid() );
+      LOG_INFO( main_logger, "Functor lookup: timestamp 103 found? " << lookup_handle.is_valid() );
       if ( lookup_handle.is_valid() )
       {
         track_oracle_frame_view f = t[ lookup_handle ].frame();
-        LOG_INFO( "Timestamp 103: " << f[ frame_handle_type( probe.first ) ] );
+        LOG_INFO( main_logger, "Timestamp 103: " << f[ frame_handle_type( probe.first ) ] );
       }
     }
     {
-      LOG_INFO("Lookup #3:");
-      LOG_INFO( "" );
+      LOG_INFO( main_logger, "Lookup #3:");
+      LOG_INFO( main_logger, "" );
       // If the track_field is associated with the Frame, we can look it up relative
       // to a track
-      LOG_INFO( "Lookup relative to track handle");
+      LOG_INFO( main_logger, "Lookup relative to track handle");
       frame_handle_type lookup_handle = frame_handle_type( t.timestamp.lookup( 103, track_handle ));
       if ( lookup_handle.is_valid() )
       {
         track_oracle_frame_view f = t[ lookup_handle].frame();
-        LOG_INFO( f << "");
-        LOG_INFO( "timestamp 103: " << f[lookup_handle] << "");
+        LOG_INFO( main_logger, f << "");
+        LOG_INFO( main_logger, "timestamp 103: " << f[lookup_handle] << "");
       }
       else
       {
-        LOG_ERROR( "Couldn't find timestamp 103 relative to track handle?");
+        LOG_ERROR( main_logger, "Couldn't find timestamp 103 relative to track handle?");
       }
     }
 
     {
-      LOG_INFO("Lookup #4:");
-      LOG_INFO( "" );
+      LOG_INFO( main_logger, "Lookup #4:");
+      LOG_INFO( main_logger, "" );
       // trying out data terms
-      track_field< vidtk::dt::tracking::timestamp_usecs > frame_term;
-      frame_handle_type lookup( frame_term.lookup( 103, vidtk::DOMAIN_ALL ));
-      LOG_INFO( "Track field lookup on data_term: timestamp 103 found? " << lookup.is_valid() );
+      track_field< ::kwiver::kwant::dt::tracking::timestamp_usecs > frame_term;
+      frame_handle_type lookup( frame_term.lookup( 103, ::kwiver::kwant::DOMAIN_ALL ));
+      LOG_INFO( main_logger, "Track field lookup on data_term: timestamp 103 found? " << lookup.is_valid() );
       track_oracle_frame_view f = t[ lookup ].frame();
-      LOG_INFO( "Timestamp 103: " << f[ lookup ] );
+      LOG_INFO( main_logger, "Timestamp 103: " << f[ lookup ] );
     }
     {
-      LOG_INFO("Lookup #5:");
-      LOG_INFO( "" );
+      LOG_INFO( main_logger, "Lookup #5:");
+      LOG_INFO( main_logger, "" );
       // data term w/ functor
-      track_field< vidtk::dt::tracking::timestamp_usecs > frame_term;
+      track_field< ::kwiver::kwant::dt::tracking::timestamp_usecs > frame_term;
       lookup_timestamp_functor ltf( 103 );
       pair< oracle_entry_handle_type, unsigned long long > probe = frame_term.apply_functor( ltf );
       frame_handle_type lookup_handle( probe.first );
-      LOG_INFO( "Functor lookup on data_term: timestamp 103 found? " << lookup_handle.is_valid() );
+      LOG_INFO( main_logger, "Functor lookup on data_term: timestamp 103 found? " << lookup_handle.is_valid() );
       track_oracle_frame_view f = t[ lookup_handle ].frame();
-      LOG_INFO( "Timestamp 103: " << f[ lookup_handle ] );
+      LOG_INFO( main_logger, "Timestamp 103: " << f[ lookup_handle ] );
 
     }
   }
@@ -406,7 +400,7 @@ int main( int argc, char *argv[] )
     // STRUCTURE!  This is because tracks exist only as groupings of track
     // fields.  The data exists regardless of the particular grouping.
 
-    LOG_INFO( "A different track structure sees:\n" << t2( track_handle ) << "");
+    LOG_INFO( main_logger, "A different track structure sees:\n" << t2( track_handle ) << "");
 
     // note that t2 also has five frames, but since they have no fields
     // associated with them, they're empty from perspective of the t2 definition.
@@ -420,7 +414,7 @@ int main( int argc, char *argv[] )
   }
   {
     my_particular_track t;
-    LOG_INFO( "After track removal: " << t( track_handle ) << "");
+    LOG_INFO( main_logger, "After track removal: " << t( track_handle ) << "");
   }
 
   //
@@ -428,14 +422,14 @@ int main( int argc, char *argv[] )
   // check.  This is now caught when track_field is initialized,
   // rather than when it's used.
 
-  LOG_INFO( "About to define a track field which re-types 'label'...");
+  LOG_INFO( main_logger, "About to define a track field which re-types 'label'...");
   try
   {
     track_field<int> conflict( "label" );
   }
   catch (runtime_error& e)
   {
-    LOG_INFO( e.what() << "");
+    LOG_INFO( main_logger, e.what() << "");
   }
 
   //
@@ -467,19 +461,19 @@ int main( int argc, char *argv[] )
 
     adt_tracks.push_back( adt_handle );
     vector< element_descriptor > missing_fields =
-      vidtk::schema_algorithm::name_missing_fields( mpt, adt_tracks );
-    LOG_INFO( "a_different_track schema is missing " << missing_fields.size()
+      ::kwiver::kwant::schema_algorithm::name_missing_fields( mpt, adt_tracks );
+    LOG_INFO( main_logger, "a_different_track schema is missing " << missing_fields.size()
               << " fields vs. my_particular_track:" );
     for (size_t i=0; i<missing_fields.size(); ++i)
     {
-      LOG_INFO( i << ": '" << missing_fields[i].name << "'" );
+      LOG_INFO( main_logger, i << ": '" << missing_fields[i].name << "'" );
     }
   }
 
   {
     // demonstrating inherited schemata
 
-    LOG_INFO( "About to create an instance of a schema with a duplicated field; should throw..." );
+    LOG_INFO( main_logger, "About to create an instance of a schema with a duplicated field; should throw..." );
     // this should throw, because "score" is duplicated
     try
     {
@@ -487,7 +481,7 @@ int main( int argc, char *argv[] )
     }
     catch (runtime_error& e)
     {
-      LOG_INFO( e.what() );
+      LOG_INFO( main_logger, e.what() );
     }
 
     my_particular_track mpt;
@@ -497,10 +491,10 @@ int main( int argc, char *argv[] )
     dt( dth ).score() = 5.0;
     dt( dth ).foo() = 10.0;
 
-    LOG_INFO( "Schema view at base class:\n" << mpt( dth ) );
-    LOG_INFO( "Schema view at derived class:\n" << dt( dth ) );
+    LOG_INFO( main_logger, "Schema view at base class:\n" << mpt( dth ) );
+    LOG_INFO( main_logger, "Schema view at derived class:\n" << dt( dth ) );
 
   }
 
-  LOG_INFO( "All done" );
+  LOG_INFO( main_logger, "All done" );
 }

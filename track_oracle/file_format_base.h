@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -40,6 +40,8 @@
 /// classes.  Hah!  I like it.
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_format_base_export.h>
 
 #include <string>
 #include <vector>
@@ -49,8 +51,8 @@
 #include <track_oracle/file_format_type.h>
 #include <track_oracle/track_base_impl.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 class track_base_impl;
 
@@ -64,7 +66,7 @@ enum file_format_operation
   FF_WRITE          = 0x30,
 };
 
-struct file_format_reader_opts_base
+struct TRACK_ORACLE_FORMAT_BASE_EXPORT file_format_reader_opts_base
 {
   // empty base class for format-specific reader options
   virtual file_format_reader_opts_base& reset() { return *this; } // restore options to a known state
@@ -76,7 +78,7 @@ struct file_format_reader_opts_base
   virtual ~file_format_reader_opts_base() {}
 };
 
-class file_format_base
+class TRACK_ORACLE_FORMAT_BASE_EXPORT file_format_base
 {
 public:
   file_format_base( file_format_enum format_type, const std::string& description );
@@ -156,6 +158,7 @@ protected:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

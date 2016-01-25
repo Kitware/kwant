@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,14 +7,17 @@
 #ifndef INCL_TRACK_BASE_H
 #define INCL_TRACK_BASE_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <track_oracle/track_base_impl.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template <typename client_derived_from_track_base_type,
           typename track_base_type = track_base_impl >
-class track_base: public track_base_type
+class TRACK_ORACLE_EXPORT track_base: public track_base_type
 {
 public:
 
@@ -33,6 +36,7 @@ public:
 
 };
 
-} // namespace vidtk
+} // ...kwiver
+} // ...kwant
 
 #endif

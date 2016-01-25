@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -10,15 +10,12 @@
 #include <track_oracle/element_descriptor.h>
 #include <track_oracle/track_base_impl.h>
 
-
 using std::map;
 using std::vector;
 
-namespace vidtk
-{
-
-namespace schema_algorithm
-{
+namespace kwiver {
+namespace kwant {
+namespace schema_algorithm {
 
 vector< element_descriptor >
 name_missing_fields( const track_base_impl& required_fields,
@@ -68,6 +65,6 @@ schema_compare( const track_base_impl& ref,
 }
 
 
-} // schema_algorithm
-
-} // vidtk
+} // ...schema_algorithm
+} // ...kwant
+} // ...kwiver

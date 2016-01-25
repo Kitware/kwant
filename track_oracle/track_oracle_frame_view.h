@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_TRACK_ORACLE_FRAME_VIEW_H
 #define INCL_TRACK_ORACLE_FRAME_VIEW_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <track_oracle/track_oracle.h>
 #include <track_oracle/track_oracle_row_view.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class track_oracle_frame_view: public track_oracle_row_view
+class TRACK_ORACLE_EXPORT track_oracle_frame_view: public track_oracle_row_view
 {
   friend class track_base_impl;
 
@@ -31,6 +34,7 @@ public:
 
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

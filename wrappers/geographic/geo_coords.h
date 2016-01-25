@@ -1,23 +1,24 @@
 /*ckwg +5
- * Copyright 2010-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
-#ifndef VIDTK_GEOGRAPHIC_GEO_COORDS_H_
-#define VIDTK_GEOGRAPHIC_GEO_COORDS_H_
+#ifndef KWIVER_GEOGRAPHIC_GEO_COORDS_H_
+#define KWIVER_GEOGRAPHIC_GEO_COORDS_H_
 
 /*
  * \file geo_coords.h
  * \brief This a a wrapper around the Geographic_lib::Geo_coords class.
  */
 
+#include <vital/vital_config.h>
+#include <wrappers/geographic/kwiver_geographic_export.h>
+
 #include <string>
 
-namespace vidtk
-{
-namespace geographic
-{
+namespace kwiver {
+namespace geographic {
 
 // Sentinal value for lat / lon
 static const double INVALID_LAT_LON = 444;
@@ -53,7 +54,7 @@ struct geo_coords_impl;
    * of the formats, decimal degrees, degrees minutes seconds, MGRS, UTM/UPS.
    **********************************************************************/
 
-class geo_coords
+class KWIVER_GEOGRAPHIC_EXPORT geo_coords
 {
 public:
 
@@ -339,7 +340,7 @@ private:
 };
 
 }  // End geographic namespace
-}  // End vidtk namespace
+}  // End kwiver namespace
 
 #endif
 

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,14 +12,17 @@
 /// But the code paths are the same.
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct single_event_label_type
+struct TRACK_ORACLE_EXPORT single_event_label_type
 {
   std::string activity_name;
   double spatial_overlap;
@@ -38,7 +41,7 @@ struct single_event_label_type
   }
 };
 
-struct descriptor_event_label_type
+struct TRACK_ORACLE_EXPORT descriptor_event_label_type
 {
   std::string domain;
   std::vector< single_event_label_type > labels;
@@ -63,10 +66,10 @@ struct descriptor_event_label_type
   }
 };
 
-std::ostream& operator<<( std::ostream& os, const descriptor_event_label_type& d );
-std::istream& operator>>( std::istream& is, descriptor_event_label_type& d );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_event_label_type& d );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_event_label_type& d );
 
-} // vidtk
-
+} // ...kwant
+} // ...kwiver
 
 #endif

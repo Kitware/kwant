@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2011-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,11 +7,16 @@
 #ifndef INCL_DESCRIPTOR_CUTIC_H
 #define INCL_DESCRIPTOR_CUTIC_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <vector>
 #include <iostream>
 
+namespace kwiver {
+namespace kwant {
 
-typedef struct descriptor_cutic_type
+struct TRACK_ORACLE_EXPORT descriptor_cutic_type
 {
   //object level classifiers..
   //      (size=number of active models)
@@ -37,9 +42,12 @@ typedef struct descriptor_cutic_type
       (this->desc_raw == a.desc_raw);
   }
 
-} descriptor_cutic_type;
+};
 
-std::ostream& operator<<( std::ostream& os, const descriptor_cutic_type& );
-std::istream& operator>>( std::istream& is, descriptor_cutic_type& );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_cutic_type& );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_cutic_type& );
+
+} // ...kwant
+} // ...kwiver
 
 #endif /* INCL_DESCRIPTOR_CUTIC_H */

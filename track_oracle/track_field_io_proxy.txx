@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -8,8 +8,8 @@
 
 using std::ostream;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template< typename T >
 ostream& operator<<( ostream& os, const track_field_io_proxy<T>& iop )
@@ -17,5 +17,5 @@ ostream& operator<<( ostream& os, const track_field_io_proxy<T>& iop )
   return iop.io_ptr->to_stream( os, iop.val );
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -10,19 +10,16 @@
 #include <vul/vul_reg_exp.h>
 #include <vul/vul_string.h>
 
-#include <logger/logger.h>
-
 #include <track_oracle/schema_algorithm.h>
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::istream;
 using std::map;
 using std::ostream;
 using std::string;
 using std::vector;
-
-
-VIDTK_LOGGER( "file_format_base" );
 
 namespace // anon
 {
@@ -77,8 +74,8 @@ glob_to_regexp( const string& glob )
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 file_format_base
 ::file_format_base( file_format_enum fmt,
@@ -158,7 +155,7 @@ file_format_base
         track_handle_list_type& ) const
 {
   // by default, not implemented
-  LOG_ERROR( "Stream reading not supported for " << file_format_type::to_string( this->type ) << " tracks" );
+  LOG_ERROR( main_logger, "Stream reading not supported for " << file_format_type::to_string( this->type ) << " tracks" );
   return false;
 }
 
@@ -168,7 +165,7 @@ file_format_base
          const track_handle_list_type& ) const
 {
   // by default, not implemented
-  LOG_ERROR( "File writing not supported for " << file_format_type::to_string( this->type ) << " tracks" );
+  LOG_ERROR( main_logger, "File writing not supported for " << file_format_type::to_string( this->type ) << " tracks" );
   return false;
 }
 
@@ -178,7 +175,7 @@ file_format_base
          const track_handle_list_type& ) const
 {
   // by default, not implemented
-  LOG_ERROR( "Stream writing not supported for " << file_format_type::to_string( this->type ) << " tracks" );
+  LOG_ERROR( main_logger, "Stream writing not supported for " << file_format_type::to_string( this->type ) << " tracks" );
   return false;
 }
 
@@ -206,5 +203,5 @@ file_format_base
   return true;
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

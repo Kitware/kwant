@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -16,16 +16,18 @@
 /// (3) Provides the XML output prototype
 /// (4) Provides the kwiver i/o interface
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <track_oracle/track_oracle_api_types.h>
 #include <track_oracle/element_descriptor.h>
 
 class  TiXmlElement;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class element_store_base
+class TRACK_ORACLE_EXPORT element_store_base
 {
 public:
 
@@ -54,7 +56,7 @@ private:
   element_descriptor d;
 };
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

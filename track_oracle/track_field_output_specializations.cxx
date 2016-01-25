@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,7 +12,6 @@
 #include <vector>
 #include <sstream>
 
-
 using std::ostream;
 using std::pair;
 using std::runtime_error;
@@ -20,9 +19,8 @@ using std::set;
 using std::string;
 using std::vector;
 
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 // specialization for e.g. frame lists
 template< >
@@ -326,4 +324,6 @@ ostream& operator<<( ostream& os,
   return os;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+

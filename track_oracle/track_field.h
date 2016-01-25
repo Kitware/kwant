@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_FIELD_H
 #define INCL_TRACK_FIELD_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <string>
 #include <utility>
@@ -21,17 +24,17 @@
 // in the backend.
 
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 class track_field_host;
 template< typename T > class track_field_functor;
 
 template<typename T> class track_field;
-template<typename T> std::ostream& operator<<( std::ostream& os, const track_field<T>& f);
+template<typename T> std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const track_field<T>& f);
 
 template< typename T >
-class track_field: public track_field_base
+class TRACK_ORACLE_EXPORT track_field: public track_field_base
 {
   friend std::ostream& operator<< <> ( std::ostream& os, const track_field<T>& f );
 
@@ -74,6 +77,8 @@ public:
   bool exists( const oracle_entry_handle_type& row_handle ) const;
   virtual bool exists( void ) const;
 
+  virtual std::ostream& print( std::ostream& os );
+
   std::pair< bool, Type > get( oracle_entry_handle_type row_handle ) const;
 
   virtual track_field<T>* clone() const;
@@ -92,6 +97,7 @@ private:
 
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

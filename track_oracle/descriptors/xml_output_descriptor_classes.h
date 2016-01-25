@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -20,8 +20,8 @@
 #include <track_oracle/descriptors/descriptor_raw_1d_type.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template<> inline std::ostream& element_store< std::vector< double > >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const
 {
@@ -89,6 +89,7 @@ template<> inline std::ostream& element_store< descriptor_event_label_type >::em
   return os;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

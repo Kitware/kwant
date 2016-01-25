@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,6 +11,9 @@
 /// the type-aware storage for the element.
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <map>
 
 #include <track_oracle/track_oracle_api_types.h>
@@ -20,11 +23,11 @@
 
 class TiXmlElement;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template< typename T >
-class element_store: public element_store_base
+class TRACK_ORACLE_EXPORT element_store: public element_store_base
 {
 public:
   explicit element_store( const element_descriptor& e );
@@ -61,7 +64,7 @@ private:
   std::ostream& emit_as_XML_typed( std::ostream& os, const oracle_entry_handle_type& h ) const;
 };
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

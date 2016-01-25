@@ -1,13 +1,13 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #include "element_store_base.h"
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 const element_descriptor&
 element_store_base
@@ -22,4 +22,5 @@ element_store_base
 {}
 
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -1,21 +1,24 @@
 /*ckwg +5
- * Copyright 2010 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
-#ifndef INCL_TRACK_FIELD_HOST_H_
-#define INCL_TRACK_FIELD_HOST_H_
+#ifndef INCL_TRACK_FIELD_HOST_H
+#define INCL_TRACK_FIELD_HOST_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <track_oracle/track_oracle.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 // this class exists ONLY to supply a common row
 // across a row view when a track_field calls its op().
 
-class track_field_host
+class TRACK_ORACLE_EXPORT track_field_host
 {
 private:
   mutable oracle_entry_handle_type cursor;
@@ -31,6 +34,7 @@ public:
 
 };
 
-}; // namespace
+} // ...kwant
+} // ...kwiver
 
 #endif

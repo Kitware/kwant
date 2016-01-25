@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2011-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -26,18 +26,22 @@
 
  */
 
+#include <vital/vital_config.h>
+#include <track_oracle/aries_interface/scoring_aries_interface_export.h>
+
 #include <string>
 #include <map>
 #include <exception>
 
 #include <event_detectors/event_types.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 struct aries_interface_impl;
 
-class aries_interface_exception: public std::exception
+class SCORING_ARIES_INTERFACE_EXPORT
+aries_interface_exception: public std::exception
 {
   std::string msg;
 public:
@@ -47,7 +51,8 @@ public:
   virtual const char* what() const throw();
 };
 
-class aries_interface
+class SCORING_ARIES_INTERFACE_EXPORT
+aries_interface
 {
 public:
 
@@ -64,7 +69,7 @@ public:
 
   // kwe index to VIRAT strings; empty if no match
 
-  static std::string kwe_index_to_activity( event_types::enum_types kwe_index );
+  static std::string kwe_index_to_activity( vidtk::event_types::enum_types kwe_index );
 
   // vpd index to VIRAT strings; empty if no match
 
@@ -92,6 +97,7 @@ private:
   static aries_interface_impl* p;
 };
 
-} // vidtk
+} //...kwant
+} //...kwiver
 
 #endif

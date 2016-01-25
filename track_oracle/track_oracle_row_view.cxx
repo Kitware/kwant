@@ -1,26 +1,20 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #include "track_oracle_row_view.h"
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::cerr;
 using std::ostream;
 using std::vector;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_oracle_row_view_cxx__
-VIDTK_LOGGER("track_oracle_row_view_cxx");
-
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 track_oracle_row_view
 ::track_oracle_row_view()
@@ -117,10 +111,10 @@ track_oracle_row_view
   {
     if ( ! this->field_list[i]->exists() )
     {
-      LOG_INFO( "Row " << this->get_cursor() << " is missing ");
+      LOG_INFO( main_logger, "Row " << this->get_cursor() << " is missing ");
       this->field_list[i]->print( cerr);
-      LOG_INFO( "\ncomplete dump:");
-      LOG_INFO( *this << "");
+      LOG_INFO( main_logger, "\ncomplete dump:");
+      LOG_INFO( main_logger, *this << "");
       return false;
     }
   }
@@ -221,4 +215,5 @@ track_oracle_row_view
   return 0;
 }
 
-} // namespace
+} // ...kwant
+} // ...kwiver

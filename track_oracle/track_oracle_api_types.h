@@ -11,12 +11,15 @@
 /// basic types used by the track oracle API
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <iostream>
 #include <vector>
 #include <map>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 //
 // conceptually, track oracle presents all the data as a large sparse
@@ -48,31 +51,31 @@ const field_handle_type INVALID_FIELD_HANDLE = static_cast<field_handle_type>( -
 // tracks; there probably should be a POD / non-track type.
 //
 
-struct track_handle_type
+struct TRACK_ORACLE_EXPORT track_handle_type
 {
   oracle_entry_handle_type row;
   track_handle_type(): row( INVALID_ROW_HANDLE ) {}
   bool is_valid() const {return this->row != INVALID_ROW_HANDLE;}
   explicit track_handle_type( oracle_entry_handle_type r ): row(r) {}
 };
-bool operator==( const track_handle_type& lhs, const track_handle_type& rhs );
-bool operator!=( const track_handle_type& lhs, const track_handle_type& rhs );
-bool operator<( const  track_handle_type& lhs, const track_handle_type& rhs );
-std::ostream& operator<<( std::ostream& os, const track_handle_type& t );
-std::istream& operator>>( std::istream& os, track_handle_type& t );
+bool TRACK_ORACLE_EXPORT operator==( const track_handle_type& lhs, const track_handle_type& rhs );
+bool TRACK_ORACLE_EXPORT operator!=( const track_handle_type& lhs, const track_handle_type& rhs );
+bool TRACK_ORACLE_EXPORT operator<( const track_handle_type& lhs, const track_handle_type& rhs );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const track_handle_type& t );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& os, track_handle_type& t );
 
-struct frame_handle_type
+struct TRACK_ORACLE_EXPORT frame_handle_type
 {
   oracle_entry_handle_type row;
   frame_handle_type(): row( INVALID_ROW_HANDLE ) {}
   bool is_valid() const {return this->row != INVALID_ROW_HANDLE;}
   explicit frame_handle_type( oracle_entry_handle_type r): row(r) {}
 };
-bool operator==( const frame_handle_type& lhs, const frame_handle_type& rhs );
-bool operator!=( const frame_handle_type& lhs, const frame_handle_type& rhs );
-bool operator<( const  frame_handle_type& lhs, const frame_handle_type& rhs );
-std::ostream& operator<<( std::ostream& os, const frame_handle_type& f );
-std::istream& operator>>( std::istream& os, frame_handle_type& f );
+bool TRACK_ORACLE_EXPORT operator==( const frame_handle_type& lhs, const frame_handle_type& rhs );
+bool TRACK_ORACLE_EXPORT operator!=( const frame_handle_type& lhs, const frame_handle_type& rhs );
+bool TRACK_ORACLE_EXPORT operator<( const  frame_handle_type& lhs, const frame_handle_type& rhs );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const frame_handle_type& f );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& os, frame_handle_type& f );
 
 // lists of handles
 
@@ -114,6 +117,7 @@ typedef std::vector< size_t > csv_header_index_type;
 typedef std::map< field_handle_type, csv_header_index_type > csv_handler_map_type;
 typedef std::map< field_handle_type, csv_header_index_type >::const_iterator csv_handler_map_cit;
 
-}
+} // ...kwant
+} // ...kwiver
 
 #endif

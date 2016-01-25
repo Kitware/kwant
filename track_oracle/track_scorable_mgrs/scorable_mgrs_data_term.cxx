@@ -12,10 +12,9 @@
 
 #include <tinyxml.h>
 
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_scorable_mgrs_data_term_cxx
-VIDTK_LOGGER("scorable_mgrs_data_term_cxx");
+#include <vital/logger/logger.h>
+
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::ostream;
 using std::string;
@@ -25,28 +24,28 @@ using std::ostringstream;
 using std::istringstream;
 using std::stringstream;
 
-namespace vidtk
-{
-namespace dt
-{
-namespace tracking
-{
+using kwiver::kwant::scorable_mgrs;
+
+namespace kwiver {
+namespace kwant {
+namespace dt {
+namespace tracking {
 
 context mgrs_pos::c( mgrs_pos::get_context_name(), mgrs_pos::get_context_description() );
 
-ostream& mgrs_pos::to_stream( ostream& os, const vidtk::scorable_mgrs& m ) const
+ostream& mgrs_pos::to_stream( ostream& os, const scorable_mgrs& m ) const
 {
   os << m;
   return os;
 }
 
-bool mgrs_pos::from_str( const string& s, vidtk::scorable_mgrs& m ) const
+bool mgrs_pos::from_str( const string& s, scorable_mgrs& m ) const
 {
   istringstream iss( s );
   return static_cast<bool>( iss >> m );
 }
 
-void mgrs_pos::write_xml( ostream& os, const string& indent, const vidtk::scorable_mgrs& m ) const
+void mgrs_pos::write_xml( ostream& os, const string& indent, const scorable_mgrs& m ) const
 {
   os << indent << "<" << mgrs_pos::c.name << ">\n";
   if ( ! m.valid )
@@ -72,7 +71,7 @@ void mgrs_pos::write_xml( ostream& os, const string& indent, const vidtk::scorab
   os << indent << "</" << mgrs_pos::c.name << ">\n";
 }
 
-bool mgrs_pos::read_xml( const TiXmlElement* const_e, vidtk::scorable_mgrs& m ) const
+bool mgrs_pos::read_xml( const TiXmlElement* const_e, scorable_mgrs& m ) const
 {
   TiXmlElement* e = const_cast< TiXmlElement* >( const_e );
   m.valid = false;
@@ -90,7 +89,7 @@ bool mgrs_pos::read_xml( const TiXmlElement* const_e, vidtk::scorable_mgrs& m ) 
     const char* index_str = zone->Attribute( "index" );
     if ( ! ( northing_e && easting_e && index_str ))
     {
-      LOG_ERROR( "MGRS: zone missing index, zone, northing and/or easting at " << zone->Row() );
+      LOG_ERROR( main_logger, "MGRS: zone missing index, zone, northing and/or easting at " << zone->Row() );
       return false;
     }
     istringstream iss( string(index_str) + " " + zone_e->GetText()+ " " + northing_e->GetText() + " " + easting_e->GetText() );
@@ -98,12 +97,12 @@ bool mgrs_pos::read_xml( const TiXmlElement* const_e, vidtk::scorable_mgrs& m ) 
     double northing_val, easting_val;
     if ( ! ( iss >> index >> zone_val >> northing_val >> easting_val ))
     {
-      LOG_ERROR( "MGRS: couldn't parse zone / northing / easting from zone at " << zone->Row() );
+      LOG_ERROR( main_logger, "MGRS: couldn't parse zone / northing / easting from zone at " << zone->Row() );
       return false;
     }
     if ( ! ( (scorable_mgrs::ZONE_BEGIN <= index) && (index < scorable_mgrs::N_ZONES)))
     {
-      LOG_ERROR( "MGRS: Bad zone index " << index << " at " << zone->Row() );
+      LOG_ERROR( main_logger, "MGRS: Bad zone index " << index << " at " << zone->Row() );
       return false;
     }
 
@@ -135,7 +134,7 @@ vector<string> mgrs_pos::csv_headers() const
   return r;
 }
 
-bool mgrs_pos::from_csv( const map<string, string>& header_value_map, vidtk::scorable_mgrs& m ) const
+bool mgrs_pos::from_csv( const map<string, string>& header_value_map, scorable_mgrs& m ) const
 {
   m.valid = false;
   for (int index = scorable_mgrs::ZONE_BEGIN; index < scorable_mgrs::N_ZONES; ++index)
@@ -157,7 +156,7 @@ bool mgrs_pos::from_csv( const map<string, string>& header_value_map, vidtk::sco
     p = header_value_map.find( prefix+"_zone" );
     if ( p == header_value_map.end() )
     {
-      LOG_ERROR( "MGRS CSV: Zone index " << index << " marked valid but missing zone?" );
+      LOG_ERROR( main_logger, "MGRS CSV: Zone index " << index << " marked valid but missing zone?" );
       return false;
     }
     ss << p->second << " ";
@@ -165,7 +164,7 @@ bool mgrs_pos::from_csv( const map<string, string>& header_value_map, vidtk::sco
     p = header_value_map.find( prefix+"_northing" );
     if ( p == header_value_map.end() )
     {
-      LOG_ERROR( "MGRS CSV: Zone " << index << " marked valid but missing northing?" );
+      LOG_ERROR( main_logger, "MGRS CSV: Zone " << index << " marked valid but missing northing?" );
       return false;
     }
     ss << p->second << " ";
@@ -173,14 +172,14 @@ bool mgrs_pos::from_csv( const map<string, string>& header_value_map, vidtk::sco
     p = header_value_map.find( prefix+"_easting" );
     if ( p == header_value_map.end() )
     {
-      LOG_ERROR( "MGRS CSV: Zone " << index << " marked valid but missing easting?" );
+      LOG_ERROR( main_logger, "MGRS CSV: Zone " << index << " marked valid but missing easting?" );
       return false;
     }
     ss << p->second;
 
     if ( ! ( ss >> m.zone[ index ] >>  m.northing[ index ] >> m.easting[ index ] ))
     {
-      LOG_ERROR( "MGRS CSV: Zone " << index << " couldn't parse northing / easting" );
+      LOG_ERROR( main_logger, "MGRS CSV: Zone " << index << " couldn't parse northing / easting" );
       return false;
     }
 
@@ -190,7 +189,7 @@ bool mgrs_pos::from_csv( const map<string, string>& header_value_map, vidtk::sco
   return true;
 }
 
-ostream& mgrs_pos::to_csv( ostream& os, const vidtk::scorable_mgrs& m ) const
+ostream& mgrs_pos::to_csv( ostream& os, const scorable_mgrs& m ) const
 {
   for (int zone = scorable_mgrs::ZONE_BEGIN; zone < scorable_mgrs::N_ZONES; ++zone)
   {
@@ -214,5 +213,5 @@ ostream& mgrs_pos::to_csv( ostream& os, const vidtk::scorable_mgrs& m ) const
 
 } // ..tracking
 } // ..dt
-
-} // ..vidtk
+} // ..kwant
+} // ..kwiver

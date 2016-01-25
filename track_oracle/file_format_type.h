@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_FILE_FORMAT_TYPE_H
 #define INCL_FILE_FORMAT_TYPE_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_format_base_export.h>
 
 #include <string>
 
@@ -32,8 +35,8 @@
 /// convenient linkage.)
 ///
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 enum file_format_enum
 {
@@ -55,12 +58,13 @@ enum file_format_enum
   TF_INVALID_TYPE   // must always be last entry
 };
 
-struct file_format_type
+struct TRACK_ORACLE_FORMAT_BASE_EXPORT file_format_type
 {
   static std::string to_string( file_format_enum f );
   static file_format_enum from_string( const std::string& s );
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,15 +13,14 @@
 
 #include <set>
 #include <track_oracle/element_store.h>
-#include <track_oracle/file_format_schema.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs.h>
 #include <vgl/vgl_box_2d.h>
-#include <utilities/timestamp.h>
+#include <vital/types/timestamp.h>
 #include <utilities/uuid_able.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template<> inline
 std::ostream&
@@ -88,8 +87,9 @@ element_store< unsigned >
     }
     else if (ed.name == "track_source_file_id" )
     {
-      os << "<!-- original source file: " << file_format_schema_type::source_id_to_filename( p->second )
-         << " -->\n";
+      // would be nice to emit the name, but should wait until we
+      // reorganize the code to make the access to file_format_schema cleaner
+      os << "<!-- original source file ID: " << p->second << " -->\n";
       emitted = true;
     }
     else if (ed.name == "event_type" )
@@ -266,9 +266,9 @@ element_store< int >
 
  template<> inline std::ostream& element_store< std::set< std::string > >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
 
- template<> inline std::ostream& element_store< timestamp >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
+ template<> inline std::ostream& element_store< vital::timestamp >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
 
- template<> inline std::ostream& element_store< std::vector< timestamp > >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
+ template<> inline std::ostream& element_store< std::vector< vital::timestamp > >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
 
  template<> inline std::ostream& element_store< uuid_t >::emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->default_xml_output( os, h ); }
 
@@ -276,7 +276,8 @@ element_store< int >
 
  template<> inline std::ostream& element_store< scorable_mgrs >::emit_as_XML_typed( std::ostream& os, const oracle_entry_handle_type& h) const { return this->default_xml_output( os, h ); }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 
 #endif

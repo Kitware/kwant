@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -14,8 +14,8 @@
 
 #include <track_oracle/track_field_functor.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::make_pair;
 using std::map;
@@ -24,14 +24,8 @@ using std::pair;
 using std::runtime_error;
 using std::string;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_oracle_impl_txx__
-VIDTK_LOGGER("track_oracle_impl_txx");
-
-namespace vidtk
-{
-
+namespace kwiver {
+namespace kwant {
 
 //
 // value is true if the template parameter  can be initialized
@@ -125,7 +119,7 @@ track_oracle_impl
     string my_typeid_str = typeid( static_cast<T*>(0) ).name();
     oss << "Table lookup type mismatch: field " << field << " is '" << d.name << "' type "
         << d.typeid_str << " but requested as a " << my_typeid_str << "\n";
-    LOG_ERROR( "About to throw exception '" << oss.str() << "'" );
+    LOG_ERROR( main_logger, "About to throw exception '" << oss.str() << "'" );
     throw runtime_error( oss.str() );
   }
   pair< map< oracle_entry_handle_type, T>*, T> ret( &es_ptr->storage, es_ptr->get_default_value() );
@@ -240,4 +234,5 @@ track_oracle_impl
   }
 }
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

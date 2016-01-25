@@ -20,14 +20,8 @@
 using std::pair;
 using std::string;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_scorable_mgrs_cxx__
-VIDTK_LOGGER("track_scorable_mgrs_cxx");
-
-namespace vidtk
-{
-
+namespace kwiver {
+namespace kwant {
 
 //
 // Attempt to set the scorable_mgrs fields for the frames
@@ -103,6 +97,5 @@ track_scorable_mgrs_type
   return okay;
 }
 
-
-
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

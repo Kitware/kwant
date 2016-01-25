@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -69,6 +69,9 @@
 ///
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <vector>
 #include <string>
 #include <map>
@@ -76,8 +79,8 @@
 #include <track_oracle/file_format_type.h>
 #include <track_oracle/track_base_impl.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 struct file_format_manager_impl;
 struct file_format_reader_opts_base;
@@ -88,7 +91,7 @@ struct element_descriptor;
 typedef std::map< file_format_enum, file_format_base* > format_map_type;
 typedef std::map< file_format_enum, file_format_base* >::const_iterator format_map_cit;
 
-class file_format_manager
+class TRACK_ORACLE_EXPORT file_format_manager
 {
 public:
 
@@ -156,6 +159,7 @@ private:
   static file_format_manager_impl* impl;
 };
 
+} // ...kwant
+} // ...kwiver
 
-}
 #endif

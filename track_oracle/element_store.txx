@@ -1,29 +1,24 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #include "element_store.h"
 
-
 #include <tinyxml.h>
 
-#include <logger/logger.h>
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_element_store_cxx__
-VIDTK_LOGGER( "element_store_txx" );
+#include <vital/logger/logger.h>
 
 #include <track_oracle/xml_output_common_classes.h>
 #include <track_oracle/descriptors/xml_output_descriptor_classes.h>
 
+static kwiver::vital::logger_handle_t local_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::vector;
 
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template< typename T >
 element_store<T>
@@ -96,12 +91,12 @@ element_store<T>
 {
   if ( src == INVALID_ROW_HANDLE )
   {
-    LOG_ERROR( "copy_value for " << this->get_descriptor().name << ": uninitialized source" );
+    LOG_ERROR( local_logger, "copy_value for " << this->get_descriptor().name << ": uninitialized source" );
     return false;
   }
   if ( dst == INVALID_ROW_HANDLE )
   {
-    LOG_ERROR( "copy_value for " << this->get_descriptor().name << ": uninitialized destination" );
+    LOG_ERROR( local_logger, "copy_value for " << this->get_descriptor().name << ": uninitialized destination" );
     return false;
   }
 
@@ -214,7 +209,7 @@ element_store<T>
   T val;
   if ( ! this->io_base_ptr->read_xml( e, val ))
   {
-    LOG_ERROR( "Couldn't parse instance of " << this->get_descriptor().name << " at row " << e->Row() );
+    LOG_ERROR( local_logger, "Couldn't parse instance of " << this->get_descriptor().name << " at row " << e->Row() );
     return false;
   }
   this->storage[ h ] = val;
@@ -229,7 +224,7 @@ element_store<T>
   T val;
   if ( ! this->io_base_ptr->from_csv( header_value_map, val ))
   {
-    LOG_ERROR( "Couldn't parse instance of " << this->get_descriptor().name << " from CSV" );
+    LOG_ERROR( local_logger, "Couldn't parse instance of " << this->get_descriptor().name << " from CSV" );
     return false;
   }
   this->storage[ h ] = val;
@@ -278,4 +273,5 @@ element_store<T>
 // implementation of complex classes such as CUTIC_descriptor.
 //
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

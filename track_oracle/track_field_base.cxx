@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,10 +7,8 @@
 #include "track_field_base.h"
 #include <stdexcept>
 
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_field_base_cxx__
-VIDTK_LOGGER("track_field_base_cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 #include <track_oracle/element_descriptor.h>
 
@@ -19,8 +17,8 @@ using std::ostream;
 using std::runtime_error;
 using std::string;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 track_field_base
 ::track_field_base( const string& n )
@@ -58,7 +56,7 @@ ostream&
 track_field_base
 ::print( ostream& os )
 {
-  os << "print called on asbtract field base...";
+  os << "print called on abstract field base...";
   return os;
 }
 
@@ -71,7 +69,7 @@ bool
 track_field_base
 ::exists() const
 {
-  LOG_ERROR( "exists() called on abstract field base?");
+  LOG_ERROR( main_logger, "exists() called on abstract field base?");
   return false;
 }
 
@@ -89,4 +87,5 @@ track_field_base
   this->host = h;
 }
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

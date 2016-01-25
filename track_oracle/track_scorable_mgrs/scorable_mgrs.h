@@ -18,14 +18,17 @@
 ///
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_scorable_mgrs/scorable_mgrs_export.h>
+
 #include <iostream>
 #include <vector>
 #include <geographic/geo_coords.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct scorable_mgrs
+struct SCORABLE_MGRS_EXPORT scorable_mgrs
 {
   bool valid;
 
@@ -41,7 +44,7 @@ struct scorable_mgrs
   scorable_mgrs():
     valid(false)
   {}
-  explicit scorable_mgrs( const geographic::geo_coords& g );
+  explicit scorable_mgrs( const ::kwiver::geographic::geo_coords& g );
 
   bool operator==( const scorable_mgrs& other ) const;
 
@@ -71,9 +74,10 @@ struct scorable_mgrs
 
 };
 
-std::ostream& operator<<( std::ostream& os, const scorable_mgrs& m );
-std::istream& operator>>( std::istream& os, scorable_mgrs& m );
+std::ostream& SCORABLE_MGRS_EXPORT operator<<( std::ostream& os, const scorable_mgrs& m );
+std::istream& SCORABLE_MGRS_EXPORT operator>>( std::istream& os, scorable_mgrs& m );
 
-} // ...vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

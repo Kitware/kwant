@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -18,8 +18,8 @@
 
 #include <utilities/uuid_able.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::find;
 using std::make_pair;
@@ -34,13 +34,7 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_oracle_impl_cxx__
-VIDTK_LOGGER("track_oracle_impl_cxx");
-
-vidtk::track_oracle_impl* vidtk::track_oracle::impl = 0;
-
+::kwiver::kwant::track_oracle_impl* ::kwiver::kwant::track_oracle::impl = 0;
 
 namespace // anon
 {
@@ -56,23 +50,23 @@ private:
 
 public:
   string current_name, v1_name;
-  vidtk::field_handle_type fh;
+  kwiver::kwant::field_handle_type fh;
   bool is_track_header; // true == track header, false == frame header
   bool emit_default;
   csv_v1_mapping_type( const string& c, const string& v, bool th, bool ed)
-    : valid(true),current_name(c), v1_name(v), fh(vidtk::INVALID_FIELD_HANDLE), is_track_header(th), emit_default(ed)
+    : valid(true),current_name(c), v1_name(v), fh(kwiver::kwant::INVALID_FIELD_HANDLE), is_track_header(th), emit_default(ed)
   {}
   csv_v1_mapping_type()
     : valid(false)
   {}
   bool is_valid() const
   {
-    return (this->valid && (this->fh != vidtk::INVALID_FIELD_HANDLE));
+    return (this->valid && (this->fh != kwiver::kwant::INVALID_FIELD_HANDLE));
   }
-  static map<vidtk::field_handle_type, vector<string> > remap_from_existing_headers(
+  static map<kwiver::kwant::field_handle_type, vector<string> > remap_from_existing_headers(
     vector< csv_v1_mapping_type >& v1_types,
     bool is_track_header,
-    const map< vidtk::field_handle_type, vidtk::element_store_base*>& element_pool) ;
+    const map< kwiver::kwant::field_handle_type, kwiver::kwant::element_store_base*>& element_pool) ;
 
 };
 
@@ -88,14 +82,14 @@ public:
 //
 
 
-map<vidtk::field_handle_type, vector<string> >
+map<kwiver::kwant::field_handle_type, vector<string> >
 csv_v1_mapping_type
 ::remap_from_existing_headers(
     vector< csv_v1_mapping_type >& v1_types,
     bool /*are_track_headers*/,
-    const map<vidtk::field_handle_type, vidtk::element_store_base*>& element_pool )
+    const map<kwiver::kwant::field_handle_type, kwiver::kwant::element_store_base*>& element_pool )
 {
-  map< vidtk::field_handle_type, vector<string> > v1_headers;
+  map< kwiver::kwant::field_handle_type, vector<string> > v1_headers;
 
   for (size_t i=0; i<v1_types.size(); ++i)
   {
@@ -104,9 +98,9 @@ csv_v1_mapping_type
     //
     // Plow through the element pool, looking for v1_col.current_name in the csv_headers
     //
-    vidtk::field_handle_type found_fh = vidtk::INVALID_FIELD_HANDLE;
-    for (map<vidtk::field_handle_type, vidtk::element_store_base*>::const_iterator p = element_pool.begin();
-         (p != element_pool.end()) && (found_fh == vidtk::INVALID_FIELD_HANDLE);
+    kwiver::kwant::field_handle_type found_fh = kwiver::kwant::INVALID_FIELD_HANDLE;
+    for (map<kwiver::kwant::field_handle_type, kwiver::kwant::element_store_base*>::const_iterator p = element_pool.begin();
+         (p != element_pool.end()) && (found_fh == kwiver::kwant::INVALID_FIELD_HANDLE);
          ++p)
     {
       const vector<string>& headers = p->second->csv_headers();
@@ -115,18 +109,17 @@ csv_v1_mapping_type
         found_fh = p->first;
       }
     }
-    if ( found_fh == vidtk::INVALID_FIELD_HANDLE ) throw runtime_error( "v1-mapping couldn't find '"+v1_col.current_name+"'" );
+    if ( found_fh == kwiver::kwant::INVALID_FIELD_HANDLE ) throw runtime_error( "v1-mapping couldn't find '"+v1_col.current_name+"'" );
     v1_col.fh = found_fh;
     v1_headers[ found_fh ].push_back( v1_col.v1_name );
   }
   return v1_headers;
 }
 
-
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 track_oracle_impl
 ::track_oracle_impl()
@@ -373,7 +366,7 @@ track_oracle_impl
   map< domain_handle_type, handle_list_type >::iterator probe = this->domain_pool.find( domain );
   if (probe == this->domain_pool.end())
   {
-    LOG_ERROR( "release_domain called on un-allocated domain " << domain );
+    LOG_ERROR( main_logger, "release_domain called on un-allocated domain " << domain );
     return false;
   }
 
@@ -619,14 +612,14 @@ xml_output_helper
   {
     ostringstream id_str;
     if ( external_id_pair.first ) id_str << external_id_pair.second; else id_str << "(no-external-id-set)";
-    LOG_ERROR( "Track ID " << id_str.str() << " has " << frames.size() << " frames but no frame numbers; skipping..." );
+    LOG_ERROR( main_logger, "Track ID " << id_str.str() << " has " << frames.size() << " frames but no frame numbers; skipping..." );
     return false;
   }
   if ( no_fn_count > 0 )
   {
     ostringstream id_str;
     if ( external_id_pair.first ) id_str << external_id_pair.second; else id_str << "(no-external-id-set)";
-    LOG_WARN( "Track ID " << id_str.str() << " has " << no_fn_count << " of " << frames.size()
+    LOG_WARN( main_logger, "Track ID " << id_str.str() << " has " << no_fn_count << " of " << frames.size()
               << " frames without frame numbers; these are skipped" );
   }
   return true;
@@ -680,7 +673,7 @@ track_oracle_impl
       ostringstream oss;
       oss << "XML: wrote " << i << " of " << tracks.size() << " tracks ("
           << vul_sprintf( "%02.2f%%", 100.0*i/tracks.size() ) << ")";
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
     const track_handle_type t = tracks[i];
@@ -768,12 +761,12 @@ track_oracle_impl
 {
   if ( src == INVALID_ROW_HANDLE )
   {
-    LOG_ERROR( "clone_nonsystem_fields: uninitialized source" );
+    LOG_ERROR( main_logger, "clone_nonsystem_fields: uninitialized source" );
     return false;
   }
   if ( dst == INVALID_ROW_HANDLE )
   {
-    LOG_ERROR( "clone_nonsystem_fields: uninitialized destination" );
+    LOG_ERROR( main_logger, "clone_nonsystem_fields: uninitialized destination" );
     return false;
   }
 
@@ -964,7 +957,7 @@ track_oracle_impl
     {
       ostringstream oss;
       oss << "CSV: Scanned " << i << " of " << tracks.size();
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
     this->get_csv_columns( tracks[i].row, track_headers );
@@ -1073,7 +1066,7 @@ track_oracle_impl
       csv_v1_mapping_type& this_col = v1_order[i];
       if ( ! this_col.is_valid() )
       {
-        LOG_WARN( "CSV version 1: Column '" << this_col.v1_name << "' invalid; will not be emitted" );
+        LOG_WARN( main_logger, "CSV version 1: Column '" << this_col.v1_name << "' invalid; will not be emitted" );
         continue;
       }
 
@@ -1126,7 +1119,7 @@ track_oracle_impl
     }
   }
 
-  LOG_DEBUG( "Writing " << track_headers.size() << " track headers, "
+  LOG_DEBUG( main_logger, "Writing " << track_headers.size() << " track headers, "
              << frame_headers.size() << " frame headers; output order length "
              << output_order.size() );
 
@@ -1155,7 +1148,7 @@ track_oracle_impl
     {
       ostringstream oss;
       oss << "CSV: Wrote " << i << " of " << tracks.size();
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
     this->emit_pool_as_csv( os, output_order, tracks[i].row, i, /* is_track = */ true, csv_v1_semantics );
@@ -1203,7 +1196,7 @@ track_oracle_impl
 
 
     vector< string > element_headers = i->second->csv_headers();
-    if ( local_debug ) LOG_DEBUG("gchm: " << local_debug_name << " has " << element_headers.size() << " headers");
+    if ( local_debug ) LOG_DEBUG(main_logger, "gchm: " << local_debug_name << " has " << element_headers.size() << " headers");
     csv_header_index_type header_indices;
 
     for (size_t j=0; j<element_headers.size(); ++j)
@@ -1211,7 +1204,7 @@ track_oracle_impl
       const string& this_header = element_headers[j];
       // does the caller's header map contain this element header?
       vector< string >::const_iterator p = find( headers.begin(), headers.end(), this_header );
-      if ( local_debug ) LOG_DEBUG("gchm: " << local_debug_name << " ('" << this_header << "') in caller's header? " << (p != headers.end() ));
+      if ( local_debug ) LOG_DEBUG( main_logger, "gchm: " << local_debug_name << " ('" << this_header << "') in caller's header? " << (p != headers.end() ));
 
       // no: continue.
       if ( p == headers.end() ) continue;
@@ -1233,7 +1226,7 @@ track_oracle_impl
       header_map[ this_header ] = i->first;
       ++header_claimed_map[ this_header_index ];
 
-      if (local_debug) LOG_DEBUG("gchm: " << local_debug_name << " is at header index " << this_header_index << " and has handle " << i->first );
+      if (local_debug) LOG_DEBUG( main_logger, "gchm: " << local_debug_name << " is at header index " << this_header_index << " and has handle " << i->first );
 
     } // ... for all headers used by this element
 
@@ -1251,25 +1244,25 @@ track_oracle_impl
 
     if ( element_headers.size() != header_indices.size() )
     {
-      LOG_ERROR( "CSV header: " << this_ed.name << " requires " << element_headers.size() <<
+      LOG_ERROR( main_logger, "CSV header: " << this_ed.name << " requires " << element_headers.size() <<
                  " headers but only "<< header_indices.size() << " supplied" );
       {
         ostringstream oss;
         for (size_t j=0; j<element_headers.size(); ++j) oss << element_headers[j] << " ";
-        LOG_ERROR( "CSV header: requires headers '" << oss.str() << "'" );
+        LOG_ERROR( main_logger, "CSV header: requires headers '" << oss.str() << "'" );
       }
       {
         ostringstream oss;
         for (size_t j=0; j<header_indices.size(); ++j) oss << headers[ header_indices[j] ] << " ";
-        LOG_ERROR( "CSV header: supplied headers '" << oss.str() << "'" );
+        LOG_ERROR( main_logger, "CSV header: supplied headers '" << oss.str() << "'" );
       }
-      LOG_ERROR( "Ignoring supplied headers" );
+      LOG_ERROR( main_logger, "Ignoring supplied headers" );
     }
     else
     {
       // all is well!  Associate header_indices with the field handle.
       m[ i->first ] = header_indices;
-      if (local_debug) LOG_DEBUG("gchm: " << local_debug_name << " mapping " << i->first << " to " << header_indices.size() << " headers" );
+      if (local_debug) LOG_DEBUG( main_logger, "gchm: " << local_debug_name << " mapping " << i->first << " to " << header_indices.size() << " headers" );
     }
 
   } // ...for all possible fields
@@ -1302,6 +1295,5 @@ track_oracle_impl
 
 }
 
-
-} // namespace vidtk
-
+} // ...kwant
+} // ...kwiver

@@ -26,7 +26,7 @@
 #include <track_oracle/file_format_schema.h>
 #include <track_oracle/file_format_manager.h>
 #include <track_oracle/file_format_base.h>
-#include <track_oracle/csv_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
 #include <track_oracle/data_terms/data_terms.h>
 
 #include <track_oracle/state_flags.h>

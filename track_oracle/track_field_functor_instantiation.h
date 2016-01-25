@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -8,7 +8,7 @@
 #define TRACK_FIELD_FUNCTOR_INSTANCES_H
 
 #define TRACK_FIELD_FUNCTOR_INSTANCES(T) \
-  template class vidtk::track_field_functor<T>;
+  template class ::kwiver::kwant::track_field_functor<T>;
 
 
 #endif

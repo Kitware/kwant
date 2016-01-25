@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,6 +11,10 @@
 
 #include <track_oracle/kwiver_io_helpers.h>
 #include <track_oracle/kwiver_io_base_data_io.h>
+
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t kib_logger( kwiver::vital::get_logger( __FILE__ ) );
+
 
 using std::istream;
 using std::vector;
@@ -68,7 +72,7 @@ struct input_handler<false, T >
 
     string tmp( "failed-to-read" );
     is >> tmp;
-    LOG_DEBUG( "kwiver_io_base input handler called for unimplemented type; string-read returned '" << tmp << "'" );
+    LOG_DEBUG( kib_logger, "kwiver_io_base input handler called for unimplemented type; string-read returned '" << tmp << "'" );
     return false;
   }
 };
@@ -83,7 +87,7 @@ class class_has_kwiver_write
 {
   static ostream& os;
 public:
-  static const bool value = (sizeof( vidtk::kwiver_write( os, T())) != sizeof(char));
+  static const bool value = (sizeof( ::kwiver::kwant::kwiver_write( os, T())) != sizeof(char));
 };
 
 template< bool T_has_kwiver_write, typename T>
@@ -91,7 +95,7 @@ struct output_handler
 {
   static ostream& write( ostream& os, const T& val )
   {
-    return vidtk::kwiver_write( os, val );
+    return ::kwiver::kwant::kwiver_write( os, val );
   }
 };
 
@@ -118,10 +122,10 @@ struct output_handler< false, vector<T> >
   }
 };
 
-} // anon
+} // ...anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 //
 // generic vector read/write
@@ -220,4 +224,6 @@ kwiver_io_base<DATA_TERM_T>
   return this->to_stream( os, val );
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+

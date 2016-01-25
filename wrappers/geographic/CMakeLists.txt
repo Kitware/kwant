@@ -1,13 +1,32 @@
-find_package(GeographicLib REQUIRED)
-include_directories(SYSTEM ${GeographicLib_INCLUDE_DIR})
+set( kwiver_geographic_public_headers
+  geo_coords.h
+)
 
-add_library( vidtk_geographic
-  geo_coords.h  geo_coords.cxx
+set( kwiver_geographic_sources
+  geo_coords.cxx
 )
-target_link_libraries(vidtk_geographic ${GeographicLib_LIBRARY})
-install(TARGETS vidtk_geographic
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+
+kwiver_install_headers(
+  ${kwiver_geographic_public_headers}
+  SUBDIR kwant/geographic
 )
-install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include
-  FILES_MATCHING PATTERN "*.h"
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/kwiver_geographic_export.h
+  SUBDIR kwant/geographic
+  NOPATH
 )
+
+kwiver_add_library(
+  kwiver_geographic
+  ${kwiver_geographic_public_headers}
+  ${kwiver_geographic_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/kwiver_geographic_export.h
+)
+
+target_link_libraries( kwiver_geographic
+  PRIVATE              ${GeographicLib_LIBRARY}
+)
+
+
+add_subdirectory(tests)

@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_FIELD_BASE_H
 #define INCL_TRACK_FIELD_BASE_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <track_oracle/track_oracle.h>
 #include <track_oracle/track_field_host.h>
@@ -18,13 +21,13 @@
 // Note that all actual data access is delegated to derived classes,
 // which will have the type available so as to typecast the results.
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 class track_field_host;
 struct element_descriptor;
 
-class track_field_base
+class TRACK_ORACLE_EXPORT track_field_base
 {
   friend class track_oracle_row_view;
 protected:
@@ -47,6 +50,7 @@ public:
   void set_host( track_field_host* h );
 };
 
-}; // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -9,8 +9,9 @@
 
 using std::string;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
+
 
 string
 element_descriptor
@@ -36,4 +37,5 @@ element_descriptor
   else return INVALID;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

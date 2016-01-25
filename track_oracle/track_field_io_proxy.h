@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_FIELD_IO_PROXY_H
 #define INCL_TRACK_FIELD_IO_PROXY_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 ///
 /// This is a trampoline class to facilitate I/O from
@@ -21,11 +24,11 @@
 #include <iostream>
 #include <track_oracle/kwiver_io_base.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template <typename T>
-class track_field_io_proxy
+class TRACK_ORACLE_EXPORT track_field_io_proxy
 {
   template <typename Tio > friend std::ostream& operator<<( std::ostream& os, const track_field_io_proxy<Tio>& iop );
 public:
@@ -38,7 +41,7 @@ private:
   T val;
 };
 
-
-} // vidtk
+} // ...kwiver
+} // ...kwant
 
 #endif

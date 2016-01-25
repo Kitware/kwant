@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <cmath>
 
-#include <logger/logger.h>
+#include <vital/logger/logger.h>
 
 
 using std::istream;
@@ -25,11 +25,9 @@ using std::string;
 using std::vector;
 using std::ios;
 
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_scorable_mgrs_cxx__
-VIDTK_LOGGER("scorable_mgrs_cxx");
-double vidtk::scorable_mgrs::INF_DISTANCE = numeric_limits<double>::max();
+double kwiver::kwant::scorable_mgrs::INF_DISTANCE = numeric_limits<double>::max();
 
 namespace // anon
 {
@@ -41,11 +39,13 @@ istream& set_bad( istream& is )
 
 } // anon
 
-namespace vidtk
+namespace kwiver
+{
+namespace kwant
 {
 
 scorable_mgrs
-::scorable_mgrs( const geographic::geo_coords& g )
+::scorable_mgrs( const ::kwiver::geographic::geo_coords& g )
 {
   size_t z = DEFAULT_ZONE;
   this->zone[ z ] = g.zone();
@@ -221,7 +221,7 @@ scorable_mgrs
     this->easting[ z ] = 0.0;
     break;
   default:
-    LOG_ERROR( "Mark zone invalid on bad zone " << z );
+    LOG_ERROR( main_logger, "Mark zone invalid on bad zone " << z );
     return;
   }
 
@@ -242,4 +242,5 @@ scorable_mgrs
   return N_ZONES;
 }
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,10 +7,8 @@
 
 #include "kwiver_io_helpers.h"
 
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_kwiver_io_helpers_cxx
-VIDTK_LOGGER("kwiver_io_helpers.cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::ostream;
 using std::streamsize;
@@ -20,8 +18,8 @@ using std::ostringstream;
 using std::vector;
 using std::pair;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 ostream& kwiver_write_highprecision( ostream& os, double d, streamsize new_prec )
 {
@@ -41,7 +39,7 @@ bool kwiver_read( const string& s, vgl_point_2d<double>& d )
   istringstream iss( s );
   if ( ! (iss >> x >> y ))
   {
-    LOG_ERROR( "Couldn't parse vgl_point_2d<double> from '" << s << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse vgl_point_2d<double> from '" << s << "'" );
     return false;
   }
   d.x() = x;
@@ -74,7 +72,7 @@ bool kwiver_read( const string& s, vgl_box_2d<double>& d )
   istringstream iss( s );
   if ( ! ( iss >> min_x >> min_y >> max_x >> max_y ))
   {
-    LOG_ERROR( "Couldn't parse vgl_box_2d<double> from '" << s << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse vgl_box_2d<double> from '" << s << "'" );
     return false;
   }
   d.set_min_x( min_x );
@@ -110,7 +108,7 @@ bool kwiver_read( const string& s, vgl_point_3d<double>& d )
   istringstream iss( s );
   if ( ! (iss >> x >> y >> z))
   {
-    LOG_ERROR( "Couldn't parse vgl_point_3d<double> from '" << s << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse vgl_point_3d<double> from '" << s << "'" );
     return false;
   }
   d.x() = x;
@@ -135,23 +133,23 @@ vector<string> kwiver_point_3d_headers( const string& n )
 }
 
 //
-// vidtk::timestamp
+// vital::timestamp
 //
 
 pair<string, string >
-kwiver_ts_to_strings( const timestamp& ts )
+kwiver_ts_to_strings( const vital::timestamp& ts )
 {
   string f_str( "none" ), t_str( "none" );
-  if (ts.has_frame_number())
+  if (ts.has_valid_frame())
   {
     ostringstream oss;
-    oss << ts.frame_number();
+    oss << ts.get_frame();
     f_str = oss.str();
   }
-  if (ts.has_time())
+  if (ts.has_valid_time())
   {
     ostringstream oss;
-    kwiver_write_highprecision( oss, ts.time() );
+    kwiver_write_highprecision( oss, ts.get_time_seconds() );
     t_str = oss.str();
   }
   return make_pair( f_str, t_str );
@@ -161,7 +159,7 @@ kwiver_ts_to_strings( const timestamp& ts )
 bool
 kwiver_ts_string_read( const string& frame_str,
                        const string& time_str,
-                       timestamp& t )
+                       vital::timestamp& t )
 {
   unsigned fn( static_cast<unsigned int>( -1 ));
   if ( frame_str == "none" )
@@ -173,11 +171,11 @@ kwiver_ts_string_read( const string& frame_str,
     istringstream iss( frame_str );
     if ( ! ( iss >> fn ))
     {
-      LOG_ERROR( "Timestamp: couldn't parse '" << frame_str << "' as a frame number; setting invalid" );
+      LOG_ERROR( main_logger, "Timestamp: couldn't parse '" << frame_str << "' as a frame number; setting invalid" );
       return false;
     }
   }
-  t.set_frame_number( fn );
+  t.set_frame( fn );
 
   double ts( -1e300 );
   if ( time_str == "none" )
@@ -189,32 +187,32 @@ kwiver_ts_string_read( const string& frame_str,
     istringstream iss( time_str );
     if ( ! ( iss >> ts ))
     {
-      LOG_ERROR( "Timestamp::from_stream: couldn't parse '" << time_str << "' as a time; setting invalid" );
+      LOG_ERROR( main_logger, "Timestamp::from_stream: couldn't parse '" << time_str << "' as a time; setting invalid" );
       return false;
     }
   }
-  t.set_time( ts );
+  t.set_time_usec( static_cast< vital::timestamp::time_t >( ts * 1.0e6) );
   return true;
 }
 
-bool kwiver_read( const string& s, timestamp& ts)
+bool kwiver_read( const string& s, vital::timestamp& ts)
 {
   size_t c = s.find(':');
   if ( c == string::npos )
   {
-    LOG_ERROR( "Improperly formatted timestamp string '" << s << "'" );
+    LOG_ERROR( main_logger, "Improperly formatted timestamp string '" << s << "'" );
     return false;
   }
 
   return kwiver_ts_string_read( s.substr( 0, c-1 ), s.substr( c ), ts );
 }
 
-ostream& kwiver_write( ostream& os, const timestamp& ts )
+ostream& kwiver_write( ostream& os, const vital::timestamp& ts )
 {
   pair< string, string > ts_strings = kwiver_ts_to_strings( ts );
   os << ts_strings.first << ":" << ts_strings.second;
   return os;
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

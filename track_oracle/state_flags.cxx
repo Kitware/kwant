@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -9,18 +9,15 @@
 #include <string>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <tinyxml.h>
 
 #include <track_oracle/track_oracle.h>
 #include <track_oracle/element_descriptor.h>
-#include <track_oracle/split.h>
 
-
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_state_flags_cxx__
-VIDTK_LOGGER("state_flags_cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::map;
 using std::string;
@@ -31,8 +28,8 @@ using std::runtime_error;
 using std::ostream;
 using std::istream;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 struct state_flags_backend
 {
@@ -151,7 +148,7 @@ state_flags_backend
     map< size_t, string_index_map_t>::const_iterator s = this->status_maps.find( component_index );
     if (s == this->status_maps.end())
     {
-      LOG_ERROR( "Trace-flags for " << component->second << " has no status map at index "
+      LOG_ERROR( main_logger, "Trace-flags for " << component->second << " has no status map at index "
                  << component_index );
       return ret;
     }
@@ -167,7 +164,7 @@ state_flags_backend
     }
     if (probe == s_map.end())
     {
-      LOG_ERROR( "Trace-flags for " << component->second << " has no status string for index "
+      LOG_ERROR( main_logger, "Trace-flags for " << component->second << " has no status string for index "
                  << status_index );
       return ret;
     }
@@ -260,11 +257,13 @@ istream& operator>>( istream& is, state_flag_type& t )
   string text;
   if ( is >> text )
   {
-    static int const split_flags = SPLIT_SKIP_EMPTY | SPLIT_TRIM_WHITESPACE;
-    const vector<string>& tokens = split(text, ",|+", split_flags);
+    vector<string> tokens;
+    boost::split( tokens, text, boost::is_any_of( ",|+" ));
     for (size_t i=0; i<tokens.size(); ++i)
     {
-      const string& token = tokens[i];
+      string& token = tokens[i];
+      boost::trim(token);
+      if (token.empty()) continue;
       size_t c = token.find( ':' );
       if ( c == string::npos )
       {
@@ -283,4 +282,5 @@ istream& operator>>( istream& is, state_flag_type& t )
 dt::context dt::utility::state_flags::c( dt::utility::state_flags::get_context_name(),
                                          dt::utility::state_flags::get_context_description() );
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

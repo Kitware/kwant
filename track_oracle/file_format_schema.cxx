@@ -1,20 +1,19 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #include "file_format_schema.h"
 
-
 using std::map;
 using std::string;
 
-const unsigned vidtk::file_format_schema_type::SOURCE_FILE_NOT_FOUND = 0;
-vidtk::file_format_schema_impl* vidtk::file_format_schema_type::impl = 0;
+const unsigned kwiver::kwant::file_format_schema_type::SOURCE_FILE_NOT_FOUND = 0;
+kwiver::kwant::file_format_schema_impl* kwiver::kwant::file_format_schema_type::impl = 0;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 typedef map< string, unsigned > src_fn_to_id_map_type;
 typedef map< string, unsigned >::const_iterator src_fn_to_id_map_cit;
@@ -94,4 +93,5 @@ file_format_schema_type
   }
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

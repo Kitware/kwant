@@ -1,118 +1,163 @@
 add_subdirectory( aries_interface )
+add_subdirectory( utils )
 
-add_library( track_oracle
-             track_oracle_api_types.h   track_oracle_api_types.cxx
+##
+## Core track_oracle
+##
 
-             element_descriptor.h   element_descriptor.cxx
-             element_store_base.h   element_store_base.cxx
-
-             element_store.h     element_store.txx      element_store_instantiation.h
-
-             track_oracle_impl.h track_oracle_impl.cxx  track_oracle_impl.txx
-
-             track_oracle.h     track_oracle.cxx        track_oracle.txx  track_oracle_instantiation.h
-
-             track_field_functor.h   track_oracle_instantiation.h
-
-             track_field_functor_library.h
-             track_field_host.h track_field_host.cxx
-             track_field_base.h track_field_base.cxx
-             track_field.h                              track_field.txx    track_field_instantiation.h
-             track_field_io_proxy.h                     track_field_io_proxy.txx
-
-             track_field_output_specializations.h       track_field_output_specializations.cxx
-             track_oracle_row_view.h  track_oracle_row_view.cxx        track_oracle_row_view.txx  track_oracle_row_view_instantiation.h
-
-             track_oracle_frame_view.h track_oracle_frame_view.cxx
-
-             track_base_impl.h  track_base_impl.cxx
-
-             track_base.h
-
-             xml_output_common_classes.h
-
-             kwiver_io_base.h
-             kwiver_io_base_data_io.h  kwiver_io_base_data_io.cxx
-             kwiver_io_helpers.h       kwiver_io_helpers.cxx
-
-             schema_algorithm.h    schema_algorithm.cxx
-
-             file_format_type.h    file_format_type.cxx
-             file_format_schema.h  file_format_schema.cxx
-             file_format_base.h file_format_base.cxx
-
-             state_flags.h               state_flags.cxx
-
-             descriptors/descriptor_metadata_type.h  descriptors/descriptor_metadata_type.cxx
-             descriptors/descriptor_motion_type.h descriptors/descriptor_motion_type.cxx
-             descriptors/descriptor_cutic_type.h descriptors/descriptor_cutic_type.cxx
-             descriptors/descriptor_overlap_type.h descriptors/descriptor_overlap_type.cxx
-             descriptors/descriptor_event_label_type.h descriptors/descriptor_event_label_type.cxx
-             descriptors/descriptor_raw_1d_type.h descriptors/descriptor_raw_1d_type.cxx
-             descriptors/xml_output_descriptor_classes.h
-
-             templates/track_oracle_instances_old_style.cxx
+set( track_oracle_public_headers
+  track_oracle_api_types.h
+  element_store.h
+  element_store_instantiation.h
+  element_store_base.h
+  kwiver_io_base.h
+  kwiver_io_base_instantiation.h
+  kwiver_io_base_data_io.h
+  kwiver_io_helpers.h
+  xml_output_common_classes.h
+  descriptors/xml_output_descriptor_classes.h
+  descriptors/descriptor_metadata_type.h
+  descriptors/descriptor_motion_type.h
+  descriptors/descriptor_cutic_type.h
+  descriptors/descriptor_overlap_type.h
+  descriptors/descriptor_event_label_type.h
+  descriptors/descriptor_raw_1d_type.h
+  element_descriptor.h
+  track_base.h
+  track_oracle.h
+  track_oracle_instantiation.h
+  track_oracle_row_view.h
+  track_oracle_row_view_instantiation.h
+  track_oracle_frame_view.h
+  track_field_host.h
+  track_field_base.h
+  track_field.h
+  track_field_instantiation.h
+  track_field_functor.h
+  track_field_functor_library.h
+  track_field_functor_instantiation.h
+  track_field_io_proxy.h
+  track_field_output_specializations.h
+  schema_algorithm.h
+  state_flags.h
 )
-set_target_properties( track_oracle PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+
+set( track_oracle_private_headers
+  track_base_impl.h
+  track_oracle_impl.h
 )
+
+set( track_oracle_sources
+  track_oracle_api_types.cxx
+  element_store.txx
+  element_store_base.cxx
+  kwiver_io_base.txx
+  kwiver_io_base_data_io.cxx
+  kwiver_io_helpers.cxx
+  descriptors/descriptor_metadata_type.cxx
+  descriptors/descriptor_motion_type.cxx
+  descriptors/descriptor_cutic_type.cxx
+  descriptors/descriptor_overlap_type.cxx
+  descriptors/descriptor_event_label_type.cxx
+  descriptors/descriptor_raw_1d_type.cxx
+  element_descriptor.cxx
+  track_base_impl.cxx
+  track_oracle.cxx
+  track_oracle.txx
+  track_oracle_row_view.cxx
+  track_oracle_row_view.txx
+  track_oracle_frame_view.cxx
+  track_field_host.cxx
+  track_field_base.cxx
+  track_field.txx
+  track_oracle_impl.cxx
+  track_oracle_impl.txx
+  track_field_io_proxy.txx
+  track_field_output_specializations.cxx
+  schema_algorithm.cxx
+  state_flags.cxx
+  templates/track_oracle_instances_old_style.cxx
+)
+
+kwiver_install_headers(
+  ${track_oracle_public_headers}
+  SUBDIR       kwant/track_oracle
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_export.h
+  SUBDIR       kwant/track_oracle
+  NOPATH
+)
+
+kwiver_add_library( track_oracle
+  ${track_oracle_public_headers}
+  ${track_oracle_private_headers}
+  ${track_oracle_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_export.h
+)
+
 
 target_link_libraries( track_oracle
-  PUBLIC scoring_aries_interface vidtk_utilities_no_process vnl vgl ${Boost_THREAD_LIBRARY}
-  PRIVATE vidtk_logger scorable_mgrs track_oracle_tokenizers vul ${TinyXML_LIBRARY}
-  )
-install( TARGETS track_oracle
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
-)
-install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include
-  FILES_MATCHING PATTERN "*.h"
-)
-
-add_library( track_oracle_tokenizers
-             csv_tokenizer.h csv_tokenizer.cxx
-             split.h         split.cxx
-             xml_tokenizer.h xml_tokenizer.cxx
+  PUBLIC               scoring_aries_interface
+                       vidtk_utilities_no_process
+                       vnl
+                       vgl
+                       ${Boost_THREAD_LIBRARY}
+  PRIVATE              vital_logger
+                       vital
+                       scorable_mgrs
+                       track_oracle_tokenizers
+                       vul
+                       ${TinyXML_LIBRARY}
 )
 
-target_link_libraries( track_oracle_tokenizers PRIVATE vidtk_logger )
+##
+## format base
+##
 
-set_target_properties( track_oracle_tokenizers PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_oracle_format_base_public_headers
+  file_format_base.h
+  file_format_type.h
+  file_format_schema.h
 )
 
-install( TARGETS track_oracle_tokenizers
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+set( track_oracle_format_base_sources
+  file_format_base.cxx
+  file_format_type.cxx
+  file_format_schema.cxx
+  templates/file_format_base_instances.cxx
 )
 
-add_library( logging_map
-             logging_map.h  logging_map.cxx
-             )
-target_link_libraries( logging_map PUBLIC vidtk_logger )
-set_target_properties( logging_map PROPERTIES VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION} )
-install( TARGETS logging_map RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
-
-
-add_library( track_oracle_format_base
-             file_format_type.h    file_format_type.cxx
-             file_format_base.h    file_format_base.cxx
+kwiver_install_headers(
+  ${track_oracle_format_base_public_headers}
+  SUBDIR      kwant/track_oracle
 )
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_format_base_export.h
+  SUBDIR      kwant/track_oracle
+  NOPATH
+)
+
+kwiver_add_library( track_oracle_format_base
+  ${track_oracle_format_base_public_headers}
+  ${track_oracle_format_base_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_format_base_export.h
+)
+
 target_link_libraries( track_oracle_format_base
-  PUBLIC track_oracle vul
-  PRIVATE vidtk_logger
-  )
-set_target_properties( track_oracle_format_base PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
-)
-install( TARGETS track_oracle_format_base
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION
-             lib
+  PUBLIC              track_oracle
+                      vul
+  PRIVATE             vital_logger
+                      ${TinyXML_LIBRARY}
 )
 
 add_subdirectory( example )
 
 add_subdirectory( track_kw18 )
 
-if (VIDTK_ENABLE_SHAPELIB)
+if (KWANT_ENABLE_SHAPELIB)
     add_subdirectory( track_apix )
     set(TRACK_ORACLE_APIX_LIBRARY track_apix)
 endif()
@@ -125,7 +170,7 @@ add_library( track_oracle_event_adapter
   event_adapter.h  event_adapter.cxx )
 target_link_libraries( track_oracle_event_adapter
   PUBLIC logging_map data_terms
-  PRIVATE track_oracle scoring_aries_interface vidtk_logger vul )
+  PRIVATE track_oracle scoring_aries_interface vital_logger vul )
 set_target_properties( track_oracle_event_adapter
   PROPERTIES VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION} )
 install( TARGETS track_oracle_event_adapter

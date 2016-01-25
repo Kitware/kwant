@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -34,6 +34,9 @@
 ///
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -43,11 +46,11 @@
 
 class TiXmlElement;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template< typename T >
-class kwiver_io_base
+class TRACK_ORACLE_EXPORT kwiver_io_base
 {
 public:
   typedef typename data_term_traits< is_data_term< T >::value, T >::Type Type;
@@ -72,7 +75,7 @@ protected:
 
 };
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

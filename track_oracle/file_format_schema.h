@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_FILE_FORMAT_SCHEMA_H
 #define INCL_FILE_FORMAT_SCHEMA_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_format_base_export.h>
 
 
 #include <vector>
@@ -14,12 +17,13 @@
 #include <track_oracle/file_format_type.h>
 #include <track_oracle/track_base.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 struct file_format_schema_impl;
 
-class file_format_schema_type: public track_base< file_format_schema_type >
+class TRACK_ORACLE_FORMAT_BASE_EXPORT
+file_format_schema_type: public track_base< file_format_schema_type >
 {
 public:
   // Use this schema to determine the file and format
@@ -52,6 +56,7 @@ private:
 
 };
 
+} // ...kwant
+} // ...kwiver
 
-}
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2011-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,21 +7,18 @@
 #include "aries_interface.h"
 #include <iostream>
 
-#include <logger/logger.h>
+#include <vital/logger/logger.h>
 
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::map;
 using std::ostringstream;
 using std::string;
 
+using vidtk::event_types;
 
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_aries_interface_cxx__
-VIDTK_LOGGER("aries_interface_cxx");
-
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 aries_interface_impl* aries_interface::p = 0;
 
@@ -226,7 +223,7 @@ aries_interface_impl
   }
   catch ( aries_interface_exception& e )
   {
-    LOG_INFO( e.what() );
+    LOG_INFO( main_logger, e.what() );
     throw;
   }
 
@@ -364,7 +361,7 @@ aries_interface_impl
   }
   catch ( aries_interface_exception& e )
   {
-    LOG_ERROR( "Typo in vpd->aries map: " << e.what() );
+    LOG_ERROR( main_logger, "Typo in vpd->aries map: " << e.what() );
     throw;
   }
 }
@@ -475,4 +472,5 @@ aries_interface
 ::PVO_NULL = "null";
 
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

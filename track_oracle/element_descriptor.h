@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_ELEMENT_DESCRIPTOR_H
 #define INCL_ELEMENT_DESCRIPTOR_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <string>
 
@@ -21,10 +24,10 @@
 // will match.
 //
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct element_descriptor
+struct TRACK_ORACLE_EXPORT element_descriptor
 {
   // is this element a system type (e.g. __frame_list),
   // a "well known" type meant to be shared across schemas (e.g. frame_number),
@@ -62,7 +65,7 @@ struct element_descriptor
 
 };
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

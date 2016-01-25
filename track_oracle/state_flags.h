@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -37,6 +37,9 @@
 ///
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -46,10 +49,10 @@
 
 class TiXmlElement;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct state_flag_type
+struct TRACK_ORACLE_EXPORT state_flag_type
 {
   void set_flag( const std::string& component, const std::string& status = "" );
   void clear_flag( const std::string& component );
@@ -60,28 +63,26 @@ private:
   std::vector<size_t> data;
 };
 
-std::ostream& operator<<( std::ostream& os, const state_flag_type& t );
-std::istream& operator>>( std::istream& os, state_flag_type& t );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const state_flag_type& t );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& os, state_flag_type& t );
 
 
-namespace dt
-{
-namespace utility
-{
+namespace dt {
+namespace utility {
 
-struct state_flags: public data_term_base, kwiver_io_base<vidtk::state_flag_type>
+struct TRACK_ORACLE_EXPORT state_flags: public data_term_base, kwiver_io_base<state_flag_type>
 {
-  state_flags(): kwiver_io_base< vidtk::state_flag_type >( "attributes" ) {}
-  typedef vidtk::state_flag_type Type;
+  state_flags(): kwiver_io_base< state_flag_type >( "attributes" ) {}
+  typedef state_flag_type Type;
   static context c;
   static std::string get_context_name() { return "attributes"; }
   static std::string get_context_description() { return "domain-defined attribute flags"; }
 };
 
-} // scoring
-} // dt
+} // ...utility
+} // ...dt
 
-} // vidtk
-
+} // ...kwant
+} // ...kwiver
 
 #endif

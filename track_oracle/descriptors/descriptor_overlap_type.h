@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,12 +7,15 @@
 #ifndef INCL_DESCRIPTOR_OVERLAP_H
 #define INCL_DESCRIPTOR_OVERLAP_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
+
 #include <ostream>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct descriptor_overlap_type
+struct TRACK_ORACLE_EXPORT descriptor_overlap_type
 {
   unsigned src_trk_id;             // external ID of "source" (usually GT)
   unsigned dst_trk_id;             // external ID of "dest" (usually computed)
@@ -52,10 +55,10 @@ struct descriptor_overlap_type
   }
 };
 
-std::ostream& operator<<( std::ostream& os, const descriptor_overlap_type& d );
-std::istream& operator>>( std::istream& is, descriptor_overlap_type& );
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_overlap_type& d );
+std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_overlap_type& );
 
-} // vidtk
-
+} // ...kwant
+} // ...kwiver
 
 #endif

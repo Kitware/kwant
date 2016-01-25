@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,8 +11,8 @@ using std::istream;
 using std::streamsize;
 using std::ios;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 descriptor_raw_1d_type
 ::descriptor_raw_1d_type( const vnl_vector<double>& d )
@@ -45,5 +45,5 @@ operator>>( istream& is, descriptor_raw_1d_type& /* d */ )
   return is;
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

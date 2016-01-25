@@ -9,7 +9,7 @@
 #include <track_oracle/track_csv/track_csv.h>
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs_data_term.h>
 
-#include <track_oracle/csv_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
 #include <track_oracle/split.h>
 #include <track_oracle/element_store_base.h>
 #include <track_oracle/track_field.h>

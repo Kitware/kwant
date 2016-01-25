@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -9,15 +9,10 @@
 #include <vector>
 #include <sstream>
 
-#include <utilities/timestamp.h>
-
 #include <track_oracle/track_field.h>
 #include <track_oracle/element_store.h>
 #include <track_oracle/track_field_output_specializations.h>
 #include <track_oracle/data_terms/data_terms.h>
-
-#include <logger/logger.h>
-
 
 using std::make_pair;
 using std::ostream;
@@ -26,15 +21,9 @@ using std::pair;
 using std::runtime_error;
 using std::string;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_field_txx__
-VIDTK_LOGGER("track_field_txx");
-
-
 namespace // anon
 {
-using namespace vidtk;
+using namespace ::kwiver::kwant;
 
 template< typename Type >
 element_store<Type>*
@@ -53,8 +42,8 @@ get_element_store( const field_handle_type& fh )
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 //
 // template metaprogramming to set custom IO handlers
@@ -452,6 +441,15 @@ track_field<T>
   return track_field_io_proxy<Type>( typed_b->get_io_handler(), val );
 }
 
+template< typename T >
+ostream&
+track_field<T>
+::print( std::ostream& os )
+{
+  os << *this;
+  return os;
+}
+
 
 template< typename T>
 ostream& operator<<( ostream& os, const track_field<T>& f ) {
@@ -478,4 +476,5 @@ track_field<T>
   return make_pair( f.result_handle, f.result_value );
 }
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver

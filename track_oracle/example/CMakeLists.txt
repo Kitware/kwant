@@ -2,8 +2,17 @@
 # example using the track oracle
 #
 
-add_executable( track_oracle_example track_oracle_example.cxx )
-target_link_libraries( track_oracle_example track_oracle track_oracle_file_formats data_terms ${Boost_SYSTEM_LIBRARY} )
+add_executable( track_oracle_example
+  track_oracle_example.cxx
+)
+
+target_link_libraries( track_oracle_example
+  track_oracle
+  data_terms
+  vital
+  vital_logger
+  ${Boost_SYSTEM_LIBRARY}
+)
 
 #
 # example track reader
@@ -38,5 +47,10 @@ target_link_libraries( runtime_field_query_example track_oracle track_oracle_fil
 # test the xml tokenizer
 #
 
-add_executable( xml_tokenizer_example xml_tokenizer_example.cxx )
-target_link_libraries( xml_tokenizer_example vidtk_logger track_oracle_tokenizers )
+add_executable( xml_tokenizer_example
+  xml_tokenizer_example.cxx
+)
+target_link_libraries( xml_tokenizer_example
+  vital_logger
+  track_oracle_tokenizers
+)

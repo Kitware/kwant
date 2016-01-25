@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -21,8 +21,8 @@ namespace // anon
 boost::mutex instance_lock;
 };
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 track_oracle_impl&
 track_oracle
@@ -273,5 +273,5 @@ track_oracle
   return track_oracle::get_instance().get_csv_handler_map( headers );
 }
 
-}; // namespace vidtk
-
+} // ...kwant
+} // ...kwiver

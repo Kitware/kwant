@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_ORACLE_IMPL_H
 #define INCL_TRACK_ORACLE_IMPL_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <map>
 #include <string>
@@ -21,7 +24,7 @@ struct csv_element
 {
   // the field handle being emitted, or INVALID_FIELD_HANDLE for bookkeeping field
   // such as _track_sequence or _parent_track
-  vidtk::field_handle_type fh;
+  ::kwiver::kwant::field_handle_type fh;
 
   // true if the field defines a default value which should be emitted if not explicitly
   // set on the row (e.g. world_gcs)
@@ -31,25 +34,25 @@ struct csv_element
   // used to distinguish between the two bookkeeping fields (hack!)
   bool is_track;
 
-  csv_element( vidtk::field_handle_type f, bool e, bool t )
+  csv_element( ::kwiver::kwant::field_handle_type f, bool e, bool t )
     : fh(f), emit_default_if_absent(e), is_track(t)
   {}
 
   csv_element()
-    : fh(vidtk::INVALID_FIELD_HANDLE), emit_default_if_absent(false), is_track(false)
+    : fh(::kwiver::kwant::INVALID_FIELD_HANDLE), emit_default_if_absent(false), is_track(false)
   {}
 };
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 template< typename T> class track_field_functor;
 
 struct xml_output_helper;
 
-class track_oracle_impl
+class TRACK_ORACLE_EXPORT track_oracle_impl
 {
 private:
   // element_pool and name_pool are essentially inverses of each other.
@@ -180,6 +183,7 @@ public:
                                const oracle_entry_handle_type& dst );
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

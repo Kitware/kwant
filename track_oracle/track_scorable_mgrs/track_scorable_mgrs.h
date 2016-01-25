@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -15,14 +15,18 @@
 /// generic track reader.
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_scorable_mgrs/scorable_mgrs_export.h>
+
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs_data_term.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_scorable_mgrs_type: public track_base< track_scorable_mgrs_type >
+struct TRACK_SCORABLE_MGRS_EXPORT
+track_scorable_mgrs_type: public track_base< track_scorable_mgrs_type >
 {
   track_field< dt::tracking::mgrs_pos > mgrs;
 
@@ -37,6 +41,7 @@ struct track_scorable_mgrs_type: public track_base< track_scorable_mgrs_type >
 
 };
 
-}
+} //...kwant
+} //...kwiver
 
 #endif

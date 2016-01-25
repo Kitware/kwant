@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -8,26 +8,21 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <track_oracle/xml_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
 
 using std::istringstream;
 using std::string;
 using std::vector;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_xml_tokenizer_example_cxx__
-VIDTK_LOGGER("xml_tokenizer_example_cxx");
-
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 int main( int argc, char *argv[] )
 {
   if (argc != 3)
   {
-    LOG_INFO( "Usage: " << argv[0] << " xml-file  n-tokens");
+    LOG_INFO( main_logger, "Usage: " << argv[0] << " xml-file  n-tokens");
     return EXIT_FAILURE;
   }
 
@@ -35,14 +30,14 @@ int main( int argc, char *argv[] )
   size_t n;
   if ( ! (iss >> n ))
   {
-    LOG_ERROR( "Couldn't extract n-tokens from '" << argv[2] << "'");
+    LOG_ERROR( main_logger, "Couldn't extract n-tokens from '" << argv[2] << "'");
     return EXIT_FAILURE;
   }
 
-  vector< string > tokens = vidtk::xml_tokenizer::first_n_tokens( argv[1], n );
-  LOG_INFO( "Got " << tokens.size() << " tokens:");
+  vector< string > tokens = kwiver::kwant::xml_tokenizer::first_n_tokens( argv[1], n );
+  LOG_INFO( main_logger, "Got " << tokens.size() << " tokens:");
   for (size_t i=0; i<tokens.size(); ++i)
   {
-    LOG_INFO( i << ":\t '" << tokens[i] << "'");
+    LOG_INFO( main_logger, i << ":\t '" << tokens[i] << "'");
   }
 }

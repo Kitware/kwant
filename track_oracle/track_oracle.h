@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2010-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_ORACLE_H
 #define INCL_TRACK_ORACLE_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_export.h>
 
 #include <string>
 #include <vector>
@@ -15,8 +18,8 @@
 #include <track_oracle/track_oracle_api_types.h>
 #include <track_oracle/element_descriptor.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 /// Interface to the back-end for handling tracks; clients should use track_base / track_field.
 ///
@@ -32,7 +35,7 @@ class element_store_base;
 
 template <typename T> class track_field_functor;
 
-class track_oracle
+class TRACK_ORACLE_EXPORT track_oracle
 {
 public:
 
@@ -96,5 +99,7 @@ private:
   static track_oracle_impl* impl;
 };
 
-} // namespace
+} // ...kwant
+} // ...kwiver
+
 #endif

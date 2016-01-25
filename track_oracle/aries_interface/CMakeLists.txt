@@ -1,11 +1,27 @@
-add_library( scoring_aries_interface
-             aries_interface.h          aries_interface.cxx )
+set( aries_interface_public_headers
+  aries_interface.h
+)
+
+set( aries_interface_sources
+  aries_interface.cxx
+)
+
+kwiver_install_headers(
+  ${aries_interface_public_headers}
+  SUBDIR     kwant/aries_interface
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/scoring_aries_interface_export.h
+  SUBDIR     kwant/aries_interface
+)
+
+kwiver_add_library( scoring_aries_interface
+  ${aries_interface_public_headers}
+  ${aries_interface_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/scoring_aries_interface_export.h
+)
 
 target_link_libraries( scoring_aries_interface
-  PRIVATE vidtk_logger
-  )
-set_target_properties( scoring_aries_interface PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION} )
-install( TARGETS scoring_aries_interface
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
-
+  PRIVATE           vital_logger
+)

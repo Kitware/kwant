@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -45,16 +45,15 @@
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_point_3d.h>
 
-#include <utilities/timestamp.h>
+#include <vital/types/timestamp.h>
 #include <utilities/uuid_able.h>
 
 class TiXmlElement;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-namespace dt
-{
+namespace dt {
 
 /// The data term declaration macros are:
 ///
@@ -72,8 +71,7 @@ namespace dt
 ///
 
 
-namespace tracking
-{
+namespace tracking {
 
   DECL_DT( external_id, unsigned, "track ID; unique within a session but not a UUID" );
   DECL_DT( timestamp_usecs, unsigned long long, "timestamp of a frame, in usecs; epoch is data-dependent" );
@@ -93,26 +91,28 @@ namespace tracking
   DECL_DT_RW_STRCSV( world_location, vgl_point_3d<double>, "world {x,y,z} as a structure" );
   DECL_DT_W_STR( latitude,  double, "latitude, -90 to 90" );
   DECL_DT_W_STR( longitude, double, "longitude, -180 to 180" );
-  DECL_DT_RW_STRXMLCSV( time_stamp, vidtk::timestamp, "timestamp (carries both time and framenumber); epoch is data-dependent" );
+  DECL_DT_RW_STRXMLCSV( time_stamp, vital::timestamp, "timestamp (carries both time and framenumber); epoch is data-dependent" );
   DECL_DT( track_uuid, vidtk::uuid_t, "UUID associated with the track" );
   DECL_DT( track_style, std::string, "track_style, typically indicating the source (tracker, detector, etc.)" );
-} // tracking
 
-namespace events
-{
+} // ...tracking
+
+namespace events {
   DECL_DT( event_id, unsigned, "event ID; unique within a session but not a UUID" );
   DECL_DT_RW_STRXMLCSV( event_type, int, "event type: currently always in the VIRAT domain" );
   DECL_DT( event_probability, double, "event probability" );
   DECL_DT_RW_STR( source_track_ids, std::vector<unsigned>, "Track IDs contributing to the event" );
-}
 
-namespace virat
+} // ...events
 
-{
+namespace virat {
   DECL_DT_RW_STRXML( descriptor_classifier, std::vector<double>, "40-column vector of VIRAT activity probabilities" );
-}
 
-} // dt
-} // vidtk
+} // ...virat
+
+} // ...dt
+
+} // ...kwant
+} // ...kwiver
 
 #endif
