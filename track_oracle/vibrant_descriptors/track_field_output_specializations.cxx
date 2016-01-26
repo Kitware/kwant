@@ -152,7 +152,6 @@ ostream& operator<<( ostream& os,
   return os;
 }
 
-
 } // ...kwant
 } // ...kwiver
 

@@ -39,3 +39,9 @@ kwiver_add_library( vibrant_descriptors
   ${vibrant_descriptors_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/vibrant_descriptors_export.h
 )
+
+target_link_libraries( vibrant_descriptors
+  PUBLIC               track_oracle
+  PRIVATE              vital_logger
+                       ${TinyXML_LIBRARY}
+)
