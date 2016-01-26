@@ -64,29 +64,5 @@ file_format_type
   else return TF_INVALID_TYPE;
 }
 
-template<>
-ostream&
-element_store< file_format_enum >
-::emit_as_XML( ostream& os, const oracle_entry_handle_type& h ) const
-{
-  bool emitted = false;
-  const element_descriptor& ed = this->get_descriptor();
-  map<oracle_entry_handle_type, file_format_enum >::const_iterator p = this->storage.find( h );
-  if (p != this->storage.end())
-  {
-    if ( ed.name == "track_format" )
-    {
-      os << "<!-- source track format "
-         << file_format_type::to_string( p->second )
-         << " -->\n";
-      emitted = true;
-    }
-  }
-
-  return ( ! emitted )
-    ? this->default_xml_output( os, h )
-    : os;
-}
-
 } // ...kwant
 } // ...kwiver

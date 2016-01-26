@@ -9,10 +9,6 @@
 #include <tinyxml.h>
 
 #include <vital/logger/logger.h>
-
-#include <track_oracle/xml_output_common_classes.h>
-#include <track_oracle/descriptors/xml_output_descriptor_classes.h>
-
 static kwiver::vital::logger_handle_t local_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::vector;
@@ -131,33 +127,6 @@ element_store<T>
 {
   size_t c = this->storage.erase( h );
   return (c != 0);
-}
-template< typename T >
-ostream&
-element_store<T>
-::default_xml_output( ostream& os, const oracle_entry_handle_type& h ) const
-{
-  const element_descriptor& ed = this->get_descriptor();
-  typename map<oracle_entry_handle_type, T>::const_iterator p = this->storage.find( h );
-  string my_typeid_str = typeid( static_cast<T*>(0) ).name();
-  if (p == this->storage.end())
-  {
-    os << "<!-- no defined XML format for '" << ed.name << "' (role " << element_descriptor::role2str( ed.role ) << "); no value at this row -->\n";
-  }
-  else
-  {
-    os << "<!-- no defined XML format for '" << ed.name << "'  (role " << element_descriptor::role2str( ed.role ) << ") (typestr " <<  my_typeid_str << ") -->\n";
-  }
-  return os;
-}
-
-template< typename T >
-ostream&
-element_store<T>
-::emit_as_XML_typed( ostream& os,
-                     const oracle_entry_handle_type& h ) const
-{
-  return this->default_xml_output( os, h );
 }
 
 template< typename T >

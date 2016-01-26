@@ -45,8 +45,6 @@ public:
 
   virtual bool copy_value( const oracle_entry_handle_type& src, const oracle_entry_handle_type& dst );
 
-  virtual std::ostream& emit_as_XML( std::ostream& os, const oracle_entry_handle_type& h ) const { return this->emit_as_XML_typed( os, h ); }
-  std::ostream& default_xml_output( std::ostream& os, const oracle_entry_handle_type& h ) const;
   virtual std::ostream& emit_as_kwiver( std::ostream& os, const oracle_entry_handle_type& h, const std::string& indent ) const;
   virtual std::ostream& emit_as_csv( std::ostream& os, const oracle_entry_handle_type& h, bool emit_default_if_missing = false ) const;
   virtual bool read_kwiver_xml_to_row( const oracle_entry_handle_type& h, const TiXmlElement* e );

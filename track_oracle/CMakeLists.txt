@@ -8,14 +8,11 @@ add_subdirectory( utils )
 set( track_oracle_public_headers
   track_oracle_api_types.h
   element_store.h
-  element_store_instantiation.h
   element_store_base.h
   kwiver_io_base.h
   kwiver_io_base_instantiation.h
   kwiver_io_base_data_io.h
   kwiver_io_helpers.h
-  xml_output_common_classes.h
-  descriptors/xml_output_descriptor_classes.h
   descriptors/descriptor_metadata_type.h
   descriptors/descriptor_motion_type.h
   descriptors/descriptor_cutic_type.h
