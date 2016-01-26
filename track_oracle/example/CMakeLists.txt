@@ -12,6 +12,7 @@ target_link_libraries( track_oracle_example
   vital
   vital_logger
   ${Boost_SYSTEM_LIBRARY}
+  vibrant_descriptors
 )
 
 #

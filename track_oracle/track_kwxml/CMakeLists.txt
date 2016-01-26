@@ -32,6 +32,7 @@ target_link_libraries( track_kwxml
   PUBLIC               track_oracle
                        track_oracle_format_base
                        vgl
+                       vibrant_descriptors
                        data_terms
   PRIVATE              logging_map
                        scoring_aries_interface

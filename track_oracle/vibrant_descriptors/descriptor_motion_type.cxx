@@ -4,7 +4,7 @@
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
-#include "descriptor_cutic_type.h"
+#include "descriptor_motion_type.h"
 
 using std::ostream;
 using std::istream;
@@ -14,14 +14,13 @@ namespace kwiver {
 namespace kwant {
 
 ostream&
-operator<<( ostream& os, const descriptor_cutic_type& )
+operator<<( ostream& os, const descriptor_motion_type& )
 {
-  os << "cutic output TODO";
   return os;
 }
 
 istream&
-operator>>( istream& is, descriptor_cutic_type& )
+operator>>( istream& is, descriptor_motion_type& )
 {
   is.setstate( ios::failbit );
   return is;

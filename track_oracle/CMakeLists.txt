@@ -13,12 +13,6 @@ set( track_oracle_public_headers
   kwiver_io_base_instantiation.h
   kwiver_io_base_data_io.h
   kwiver_io_helpers.h
-  descriptors/descriptor_metadata_type.h
-  descriptors/descriptor_motion_type.h
-  descriptors/descriptor_cutic_type.h
-  descriptors/descriptor_overlap_type.h
-  descriptors/descriptor_event_label_type.h
-  descriptors/descriptor_raw_1d_type.h
   element_descriptor.h
   track_base.h
   track_oracle.h
@@ -51,12 +45,6 @@ set( track_oracle_sources
   kwiver_io_base.txx
   kwiver_io_base_data_io.cxx
   kwiver_io_helpers.cxx
-  descriptors/descriptor_metadata_type.cxx
-  descriptors/descriptor_motion_type.cxx
-  descriptors/descriptor_cutic_type.cxx
-  descriptors/descriptor_overlap_type.cxx
-  descriptors/descriptor_event_label_type.cxx
-  descriptors/descriptor_raw_1d_type.cxx
   element_descriptor.cxx
   track_base_impl.cxx
   track_oracle.cxx
@@ -150,6 +138,7 @@ target_link_libraries( track_oracle_format_base
                       ${TinyXML_LIBRARY}
 )
 
+add_subdirectory( vibrant_descriptors )
 add_subdirectory( data_terms )
 add_subdirectory( example )
 add_subdirectory( track_kw18 )

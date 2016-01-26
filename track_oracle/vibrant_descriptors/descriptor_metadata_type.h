@@ -8,14 +8,14 @@
 #define INCL_DESCRIPTOR_METADATA_H
 
 #include <vital/vital_config.h>
-#include <track_oracle/track_oracle_export.h>
+#include <track_oracle/vibrant_descriptors/vibrant_descriptors_export.h>
 
 #include <iostream>
 
 namespace kwiver {
 namespace kwant {
 
-struct TRACK_ORACLE_EXPORT descriptor_metadata_type
+struct VIBRANT_DESCRIPTORS_EXPORT descriptor_metadata_type
 {
   double gsd;
   double sensor_latitude;
@@ -72,8 +72,8 @@ struct TRACK_ORACLE_EXPORT descriptor_metadata_type
 
 };
 
-std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_metadata_type& );
-std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_metadata_type& );
+std::ostream& VIBRANT_DESCRIPTORS_EXPORT operator<<( std::ostream& os, const descriptor_metadata_type& );
+std::istream& VIBRANT_DESCRIPTORS_EXPORT operator>>( std::istream& is, descriptor_metadata_type& );
 
 } // ...kwant
 } // ...kwiver

@@ -16,14 +16,12 @@ namespace kwant {
 ostream&
 operator<<( ostream& os, const descriptor_metadata_type& )
 {
-  os << "metadata output TODO";
   return os;
 }
 
 istream&
 operator>>( istream& is, descriptor_metadata_type& )
 {
-  is.setstate( ios::failbit );
   return is;
 }
 

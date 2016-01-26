@@ -1,0 +1,34 @@
+set( vibrant_descriptors_public_headers
+  descriptor_cutic_type.h
+  descriptor_event_label_type.h
+  descriptor_metadata_type.h
+  descriptor_motion_type.h
+  descriptor_overlap_type.h
+  descriptor_raw_1d_type.h
+)
+
+set( vibrant_descriptors_sources
+  descriptor_cutic_type.cxx
+  descriptor_event_label_type.cxx
+  descriptor_metadata_type.cxx
+  descriptor_motion_type.cxx
+  descriptor_overlap_type.cxx
+  descriptor_raw_1d_type.cxx
+)
+
+kwiver_install_headers(
+  ${vibrant_descriptors_public_headers}
+  SUBDIR        kwant/track_oracle/vibrant_descriptors
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/vibrant_descriptors_export.h
+  SUBDIR        kwant/track_oracle/vibrant_descriptors
+  NOPATH
+)
+
+kwiver_add_library( vibrant_descriptors
+  ${vibrant_descriptors_public_headers}
+  ${vibrant_descriptors_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/vibrant_descriptors_export.h
+)

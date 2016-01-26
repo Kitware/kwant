@@ -49,8 +49,6 @@ operator<<( ostream& os, const descriptor_overlap_type& d )
 istream&
 operator>>( istream& is, descriptor_overlap_type& /* d */ )
 {
-  // TODO
-  is.setstate( ios::failbit );
   return is;
 }
 

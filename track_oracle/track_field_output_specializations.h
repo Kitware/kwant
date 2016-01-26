@@ -14,12 +14,12 @@
 #include <utility>
 #include <track_oracle/track_oracle_api_types.h>
 #include <track_oracle/track_field.h>
-#include <track_oracle/descriptors/descriptor_cutic_type.h>
-#include <track_oracle/descriptors/descriptor_metadata_type.h>
-#include <track_oracle/descriptors/descriptor_motion_type.h>
-#include <track_oracle/descriptors/descriptor_overlap_type.h>
-#include <track_oracle/descriptors/descriptor_event_label_type.h>
-#include <track_oracle/descriptors/descriptor_raw_1d_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_cutic_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_metadata_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_motion_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_overlap_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_event_label_type.h>
+#include <track_oracle/vibrant_descriptors/descriptor_raw_1d_type.h>
 
 namespace kwiver {
 namespace kwant {

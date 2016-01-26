@@ -13,7 +13,7 @@
 ///
 
 #include <vital/vital_config.h>
-#include <track_oracle/track_oracle_export.h>
+#include <track_oracle/vibrant_descriptors/vibrant_descriptors_export.h>
 
 #include <iostream>
 #include <string>
@@ -22,7 +22,7 @@
 namespace kwiver {
 namespace kwant {
 
-struct TRACK_ORACLE_EXPORT single_event_label_type
+struct VIBRANT_DESCRIPTORS_EXPORT single_event_label_type
 {
   std::string activity_name;
   double spatial_overlap;
@@ -41,7 +41,7 @@ struct TRACK_ORACLE_EXPORT single_event_label_type
   }
 };
 
-struct TRACK_ORACLE_EXPORT descriptor_event_label_type
+struct VIBRANT_DESCRIPTORS_EXPORT descriptor_event_label_type
 {
   std::string domain;
   std::vector< single_event_label_type > labels;
@@ -66,8 +66,8 @@ struct TRACK_ORACLE_EXPORT descriptor_event_label_type
   }
 };
 
-std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_event_label_type& d );
-std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_event_label_type& d );
+std::ostream& VIBRANT_DESCRIPTORS_EXPORT operator<<( std::ostream& os, const descriptor_event_label_type& d );
+std::istream& VIBRANT_DESCRIPTORS_EXPORT operator>>( std::istream& is, descriptor_event_label_type& d );
 
 } // ...kwant
 } // ...kwiver

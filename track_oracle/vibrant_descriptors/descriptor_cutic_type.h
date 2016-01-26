@@ -8,7 +8,7 @@
 #define INCL_DESCRIPTOR_CUTIC_H
 
 #include <vital/vital_config.h>
-#include <track_oracle/track_oracle_export.h>
+#include <track_oracle/vibrant_descriptors/vibrant_descriptors_export.h>
 
 #include <vector>
 #include <iostream>
@@ -16,7 +16,7 @@
 namespace kwiver {
 namespace kwant {
 
-struct TRACK_ORACLE_EXPORT descriptor_cutic_type
+struct VIBRANT_DESCRIPTORS_EXPORT descriptor_cutic_type
 {
   //object level classifiers..
   //      (size=number of active models)
@@ -44,8 +44,8 @@ struct TRACK_ORACLE_EXPORT descriptor_cutic_type
 
 };
 
-std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const descriptor_cutic_type& );
-std::istream& TRACK_ORACLE_EXPORT operator>>( std::istream& is, descriptor_cutic_type& );
+std::ostream& VIBRANT_DESCRIPTORS_EXPORT operator<<( std::ostream& os, const descriptor_cutic_type& );
+std::istream& VIBRANT_DESCRIPTORS_EXPORT operator>>( std::istream& is, descriptor_cutic_type& );
 
 } // ...kwant
 } // ...kwiver
