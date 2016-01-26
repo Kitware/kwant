@@ -14,12 +14,6 @@
 #include <utility>
 #include <track_oracle/track_oracle_api_types.h>
 #include <track_oracle/track_field.h>
-#include <track_oracle/vibrant_descriptors/descriptor_cutic_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_metadata_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_motion_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_overlap_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_event_label_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_raw_1d_type.h>
 
 namespace kwiver {
 namespace kwant {
@@ -44,36 +38,6 @@ template< >
 std::ostream& TRACK_ORACLE_EXPORT
 operator<<( std::ostream& os,
             const track_field< std::pair<unsigned int, unsigned int> >& f );
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_cutic_type >& f);
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_metadata_type >& f );
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_motion_type >& f );
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_overlap_type >& f );
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_event_label_type >& f );
-
-template< >
-std::ostream& TRACK_ORACLE_EXPORT
-operator<<( std::ostream& os,
-            const track_field< descriptor_raw_1d_type >& f );
 
 template< >
 std::ostream& TRACK_ORACLE_EXPORT

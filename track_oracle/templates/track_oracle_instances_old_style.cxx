@@ -18,13 +18,6 @@
 
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs.h>
 
-#include <track_oracle/vibrant_descriptors/descriptor_cutic_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_metadata_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_motion_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_overlap_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_event_label_type.h>
-#include <track_oracle/vibrant_descriptors/descriptor_raw_1d_type.h>
-
 #include <track_oracle/track_oracle_instantiation.h>
 #include <track_oracle/track_field_instantiation.h>
 #include <track_oracle/track_field_functor_instantiation.h>
@@ -97,12 +90,6 @@ TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(std::vector< double >);
 TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(std::vector< std::vector< double > >);
 TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(std::vector< std::string >);
 TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(std::set< std::string >);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_cutic_type);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_metadata_type);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_motion_type);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_overlap_type);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_event_label_type);
-TRACK_ORACLE_INSTANTIATE_OLD_STYLE_SPECIAL_OUTPUT(kwiver::kwant::descriptor_raw_1d_type);
 
 #ifdef WIN32
 TRACK_ORACLE_INSTANCES(std::pair<unsigned MACRO_COMMA unsigned >);

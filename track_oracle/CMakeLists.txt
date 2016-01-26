@@ -10,30 +10,30 @@ set( track_oracle_public_headers
   element_store.h
   element_store_base.h
   kwiver_io_base.h
-  kwiver_io_base_instantiation.h
   kwiver_io_base_data_io.h
   kwiver_io_helpers.h
   element_descriptor.h
   track_base.h
   track_oracle.h
-  track_oracle_instantiation.h
   track_oracle_row_view.h
-  track_oracle_row_view_instantiation.h
   track_oracle_frame_view.h
   track_field_host.h
   track_field_base.h
   track_field.h
-  track_field_instantiation.h
   track_field_functor.h
   track_field_functor_library.h
-  track_field_functor_instantiation.h
   track_field_io_proxy.h
-  track_field_output_specializations.h
   schema_algorithm.h
   state_flags.h
 )
 
 set( track_oracle_private_headers
+  kwiver_io_base_instantiation.h
+  track_oracle_instantiation.h
+  track_oracle_row_view_instantiation.h
+  track_field_instantiation.h
+  track_field_functor_instantiation.h
+  track_field_output_specializations.h
   track_base_impl.h
   track_oracle_impl.h
 )
