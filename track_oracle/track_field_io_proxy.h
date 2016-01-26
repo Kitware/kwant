@@ -41,7 +41,10 @@ private:
   T val;
 };
 
-} // ...kwiver
+template < typename Tio >
+std::ostream& TRACK_ORACLE_EXPORT operator<<( std::ostream& os, const track_field_io_proxy<Tio>& iop );
+
 } // ...kwant
+} // ...kwiver
 
 #endif

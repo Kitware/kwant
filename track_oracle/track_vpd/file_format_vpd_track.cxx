@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,14 +12,14 @@
 #include <cstdio>
 #include <ctype.h>
 
-#include <logger/logger.h>
-
 #include <vul/vul_awk.h>
 
 #include <vgl/vgl_box_2d.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -28,10 +28,7 @@ using std::istringstream;
 using std::sscanf;
 using std::string;
 
-VIDTK_LOGGER( "file_format_vpd_track" );
-
-
-namespace {
+namespace { // anon
 
 bool
 get_next_nonblank_line( istream& is, string& line )
@@ -82,8 +79,8 @@ struct vpd_track_line_parser
 
 } // anon namespace
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_vpd_track
@@ -92,7 +89,7 @@ file_format_vpd_track
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -110,7 +107,7 @@ file_format_vpd_track
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -134,7 +131,7 @@ file_format_vpd_track
   {
     if ( ! p.parse( line ))
     {
-      LOG_ERROR( "Couldn't parse '" << line << "'?" );
+      LOG_ERROR( main_logger, "Couldn't parse '" << line << "'?" );
       return false;
     }
 
@@ -168,4 +165,5 @@ file_format_vpd_track
   return true;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -222,13 +222,6 @@ track_oracle
 
 bool
 track_oracle
-::write_kwxml( ostream& os, const track_handle_list_type& tracks )
-{
-  return track_oracle::get_instance().write_kwxml( os, tracks );
-}
-
-bool
-track_oracle
 ::clone_nonsystem_fields( const track_handle_type& src,
                           const track_handle_type& dst )
 {

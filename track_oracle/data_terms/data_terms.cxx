@@ -168,6 +168,7 @@ bool bounding_box::from_csv( const map<string, string>& header_value_map, vgl_bo
 
 bool bounding_box::read_xml( const TiXmlElement* e, vgl_box_2d<double>& d ) const
 {
+  if (! e->GetText() ) return false;
   return kwiver_read( e->GetText(), d );
 }
 
@@ -270,12 +271,13 @@ bool time_stamp::read_xml( const TiXmlElement* e, vital::timestamp& ts ) const
   TiXmlHandle h( const_cast<TiXmlElement*>(e) );
   TiXmlElement* frame_e = h.FirstChild( "frame" ).ToElement();
   TiXmlElement* time_e = h.FirstChild( "time" ).ToElement();
+  if ( (! frame_e) && (! time_e)) return false;
   string frame_s =
-    (frame_e)
+    frame_e && frame_e->GetText()
     ? frame_e->GetText()
     : "none";
   string time_s =
-    (time_e)
+    time_e && time_e->GetText()
     ? time_e->GetText()
     : "none";
   return kwiver_ts_string_read( frame_s, time_s, ts );
@@ -453,6 +455,7 @@ void event_type::write_xml( ostream& os, const string& indent, const int& d ) co
 bool event_type::read_xml( const TiXmlElement* const_e, int& d ) const
 {
   TiXmlElement* e = const_cast< TiXmlElement* >( const_e );
+  if ( ! e->GetText() ) return false;
   const char* domain_str = e->Attribute( "domain" );
   if ( ! domain_str )
   {

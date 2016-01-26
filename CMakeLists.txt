@@ -69,7 +69,7 @@ include_directories( SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/wrappers )
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 option( KWANT_ENABLE_SHAPELIB "Enable Shapelib dependent code" OFF)
-
+option( KWANT_ENABLE_4676 "Enable stanag_4676 format" OFF)
 
 find_package( TinyXML REQUIRED )
 include_directories( SYSTEM ${TinyXML_INCLUDE_DIR} )

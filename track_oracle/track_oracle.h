@@ -77,7 +77,6 @@ public:
   static void set_frames( const track_handle_type& t, const frame_handle_list_type& f );
   static size_t get_n_frames( const track_handle_type& t );
 
-  static bool write_kwxml( std::ostream& os, const track_handle_list_type& tracks );
   static bool write_kwiver( std::ostream& os, const track_handle_list_type& tracks );
   static bool write_csv( std::ostream& os, const track_handle_list_type& tracks, bool csv_v1_semantics = false );
 

@@ -17,4 +17,4 @@
   TRACK_FIELD_INSTANCES_DATA_TERM(T) \
   KWIVER_IO_BASE_INSTANCES(T)
 
-TRACK_ORACLE_INSTANTIATE_DATA_TERM( vidtk::dt::tracking::mgrs_pos );
+TRACK_ORACLE_INSTANTIATE_DATA_TERM( ::kwiver::kwant::dt::tracking::mgrs_pos );

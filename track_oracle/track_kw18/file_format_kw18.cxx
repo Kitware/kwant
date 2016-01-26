@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -21,8 +21,8 @@
 
 #include <boost/algorithm/string/trim.hpp>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -35,11 +35,6 @@ using std::pair;
 using std::sscanf;
 using std::streamsize;
 using std::string;
-
-
-VIDTK_LOGGER( "file_format_kw18" );
-
-
 
 namespace // anon
 {
@@ -105,12 +100,12 @@ struct kw18_line_parser
 };
 
 template< typename T >
-typename vidtk::track_field<T>::Type
-logged_get_field( vidtk::track_field<T>& tf,
-                  vidtk::oracle_entry_handle_type row,
+typename ::kwiver::kwant::track_field<T>::Type
+logged_get_field( ::kwiver::kwant::track_field<T>& tf,
+                  ::kwiver::kwant::oracle_entry_handle_type row,
                   map< string, size_t >& warnings )
 {
-  pair< bool, typename vidtk::track_field<T>::Type > probe = tf.get( row );
+  pair< bool, typename ::kwiver::kwant::track_field<T>::Type > probe = tf.get( row );
   if (! probe.first )
   {
     ++warnings[ tf.get_field_name() ];
@@ -120,15 +115,19 @@ logged_get_field( vidtk::track_field<T>& tf,
 
 template< typename T >
 string
-logged_output( const vidtk::track_field<T>& tf,
-               vidtk::oracle_entry_handle_type row,
+logged_output( const ::kwiver::kwant::track_field< T >& tf,
+               ::kwiver::kwant::oracle_entry_handle_type row,
                map< string, size_t >& warnings )
 {
-  pair< bool, typename vidtk::track_field<T>::Type > probe = tf.get( row );
+  // T is e.g. a data_term< vgl_box_2d<double> >.
+
+  pair< bool, typename ::kwiver::kwant::track_field<T>::Type > probe = tf.get( row );
+  // ... e.g. pair< bool, vgl_box_2d<double> >.
   if ( ! probe.first )
   {
     ++warnings[ tf.get_field_name() ];
   }
+
   ostringstream oss;
   oss  << tf.io_fmt( probe.second );
   return oss.str();
@@ -137,8 +136,8 @@ logged_output( const vidtk::track_field<T>& tf,
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_kw18
@@ -147,7 +146,7 @@ file_format_kw18
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -167,7 +166,7 @@ file_format_kw18
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -210,13 +209,13 @@ file_format_kw18
       {
         oss << vul_sprintf( "; %02.2f%% of file", 100.0*is.tellg()/file_size );
       }
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
 
     if ( ! p.parse( tmp ))
     {
-      LOG_ERROR( "Couldn't parse '" << tmp << "'?" );
+      LOG_ERROR( main_logger, "Couldn't parse '" << tmp << "'?" );
       return false;
     }
 
@@ -281,7 +280,7 @@ file_format_kw18
   ofstream os( fn.c_str() );
   if ( ! os )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "' for writing" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "' for writing" );
     return false;
   }
   this->current_filename = fn;
@@ -352,7 +351,7 @@ file_format_kw18
       sum += i->second;
       os << "# default values for '" << i->first << "': " << i->second << " times\n";
     }
-    LOG_WARN( "Writing " << this->current_filename
+    LOG_WARN( main_logger, "Writing " << this->current_filename
               << " : used " << sum << " total default values for "
               << warnings.size() << " fields" );
   }
@@ -360,4 +359,5 @@ file_format_kw18
   return true;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -2,18 +2,37 @@
 # kst tracks
 #
 
-add_library( track_kst
-             track_kst.h
-             file_format_kst.h    file_format_kst.cxx )
-set_target_properties( track_kst PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_kst_public_headers
+  track_kst.h
+  file_format_kst.h
+)
+
+set( track_kst_sources
+  file_format_kst.cxx
+)
+
+kwiver_install_headers(
+  ${track_kst_public_headers}
+  SUBDIR        kwant/track_oracle/track_kst
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_kst_export.h
+  SUBDIR        kwant/track_oracle/track_kst
+  NOPATH
+)
+
+kwiver_add_library( track_kst
+  ${track_kst_public_headers}
+  ${track_kst_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_kst_export.h
 )
 
 target_link_libraries( track_kst
-  PUBLIC track_oracle track_oracle_format_base vgl data_terms
-  PRIVATE vidtk_logger vul
-  INTERFACE
-  )
-install( TARGETS track_kst
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+  PUBLIC               track_oracle
+                       track_oracle_format_base
+                       vgl
+                       data_terms
+  PRIVATE              vital_logger
+                       vul
 )

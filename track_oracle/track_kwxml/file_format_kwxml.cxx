@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -14,14 +14,15 @@
 
 #include <vul/vul_reg_exp.h>
 
-#include <logger/logger.h>
-
 #include <tinyxml.h>
 #include <boost/lexical_cast.hpp>
 
-#include <track_oracle/xml_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
+#include <track_oracle/utils/logging_map.h>
 #include <track_oracle/aries_interface/aries_interface.h>
-#include <track_oracle/logging_map.h>
+
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 
 using std::istringstream;
@@ -30,8 +31,6 @@ using std::ofstream;
 using std::ostream;
 using std::string;
 using std::vector;
-
-VIDTK_LOGGER( "file_format_kwxml" );
 
 namespace // anon
 {
@@ -46,7 +45,7 @@ read_vector_from_xml( TiXmlElement* descriptor,
   TiXmlElement* e = descriptor->FirstChildElement( tag );
   if ( ! e )
   {
-    LOG_ERROR("No " << tag << " data at " << descriptor->Row() << "?\n");
+    LOG_ERROR( main_logger,"No " << tag << " data at " << descriptor->Row() << "?\n");
     return false;
   }
   istringstream iss( e->Attribute( "value" ));
@@ -61,8 +60,8 @@ read_vector_from_xml( TiXmlElement* descriptor,
 } // anon
 
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 kwxml_reader_opts&
 kwxml_reader_opts
@@ -76,7 +75,7 @@ kwxml_reader_opts
   }
   else
   {
-    LOG_WARN("Assigned a non-kwxml options structure to a kwxml options structure: Slicing the class");
+    LOG_WARN( main_logger,"Assigned a non-kwxml options structure to a kwxml options structure: Slicing the class");
   }
 
   return *this;
@@ -101,20 +100,20 @@ file_format_kwxml
 {
   // dig through the XML wrappers...
 
-  LOG_INFO( "TinyXML loading '" << fn << "': start" );
+  LOG_INFO( main_logger, "TinyXML loading '" << fn << "': start" );
   TiXmlDocument doc( fn.c_str() );
   TiXmlHandle doc_handle( &doc );
   if ( ! doc.LoadFile() )
   {
-    LOG_ERROR("TinyXML (KWXML) couldn't load '" << fn << "'; skipping\n");
+    LOG_ERROR( main_logger,"TinyXML (KWXML) couldn't load '" << fn << "'; skipping\n");
     return false;
   }
-  LOG_INFO( "TinyXML loading '" << fn << "': complete" );
+  LOG_INFO( main_logger, "TinyXML loading '" << fn << "': complete" );
 
   TiXmlNode* xml_root = doc.RootElement();
   if ( ! xml_root )
   {
-    LOG_ERROR("Couldn't load root element from '" << fn << "'; skipping\n");
+    LOG_ERROR( main_logger,"Couldn't load root element from '" << fn << "'; skipping\n");
     return false;
   }
   // The queryResults.xml files don't have a root node, and just have
@@ -129,7 +128,7 @@ file_format_kwxml
 
   TiXmlNode* xml_track_objects = 0;
   track_kwxml_type kwxml;
-  logging_map_type wmap( VIDTK_DEFAULT_LOGGER, VIDTK_LOGGER_SITE );
+  logging_map_type wmap( main_logger, KWIVER_LOGGER_SITE );
 
   while( (xml_track_objects = xml_root->IterateChildren( xml_track_objects )) )
   {
@@ -144,7 +143,7 @@ file_format_kwxml
     TiXmlElement* top_e = xml_track_objects->ToElement();
     if (!top_e)
     {
-      LOG_ERROR("Couldn't cast track to element?\n");
+      LOG_ERROR( main_logger,"Couldn't cast track to element?\n");
       return false;
     }
 
@@ -334,7 +333,7 @@ file_format_kwxml
 
         if( !(iss >> timestamp) )
         {
-          LOG_WARN("XML frame " << frame << ": couldn't parse timestamp string '" << timestamp_str << "' as unsigned long long\n");
+          LOG_WARN( main_logger,"XML frame " << frame << ": couldn't parse timestamp string '" << timestamp_str << "' as unsigned long long\n");
         }
       }
 
@@ -369,7 +368,7 @@ file_format_kwxml
               bool good = true;
               if ( d->QueryStringAttribute( "type", &s.activity_name ) != TIXML_SUCCESS )
               {
-                LOG_WARN( "labels node event sub-node without event-type attribute at " << d->Row() );
+                LOG_WARN( main_logger, "labels node event sub-node without event-type attribute at " << d->Row() );
                 good = false;
               }
               else
@@ -380,18 +379,18 @@ file_format_kwxml
                 }
                 catch (aries_interface_exception&)
                 {
-                  LOG_WARN( "labels node event '" << s.activity_name << "' is not a virat event at " << d->Row() );
+                  LOG_WARN( main_logger, "labels node event '" << s.activity_name << "' is not a virat event at " << d->Row() );
                   good = false;
                 }
               }
               if ( d->QueryDoubleAttribute( "spatialOverlap", &s.spatial_overlap ) != TIXML_SUCCESS )
               {
-                LOG_WARN( "labels node event sub-node without spatialOverlap attribute at " << d->Row() );
+                LOG_WARN( main_logger, "labels node event sub-node without spatialOverlap attribute at " << d->Row() );
                 good = false;
               }
               if ( d->QueryDoubleAttribute( "temporalOverlap", &s.temporal_overlap ) != TIXML_SUCCESS )
               {
-                LOG_WARN( "labels node event sub-node without temporalOverlap attribute at " << d->Row() );
+                LOG_WARN( main_logger, "labels node event sub-node without temporalOverlap attribute at " << d->Row() );
                 good = false;
               }
 
@@ -406,13 +405,13 @@ file_format_kwxml
           } // virat domain
           else
           {
-            LOG_WARN( "labels node with unsupported domain '" << label_domain
+            LOG_WARN( main_logger, "labels node with unsupported domain '" << label_domain
                       << "' (only virat currently support); skipped at " << labels_node->Row() );
           }
         }
         else
         {
-          LOG_WARN( "labels node without domain attribute; skipped at " << labels_node->Row() );
+          LOG_WARN( main_logger, "labels node without domain attribute; skipped at " << labels_node->Row() );
         }
       } // ...if d
     } // ... event labels
@@ -425,7 +424,7 @@ file_format_kwxml
 
       if(!descr_type)
       {
-        LOG_WARN("Descriptor element without type attribute at " << descriptor->Row() << "\n");
+        LOG_WARN( main_logger,"Descriptor element without type attribute at " << descriptor->Row() << "\n");
       }
 
       //Classifier descriptor not currently implemented, but should be added to this loop when done.
@@ -434,7 +433,7 @@ file_format_kwxml
                           (string(descr_type)=="PersonOrVehicleMovement") ))
       {
         vector< double > activity_probabilities;
-        activity_probabilities.resize( vidtk::aries_interface::index_to_activity_map().size(), 0.0 );
+        activity_probabilities.resize( aries_interface::index_to_activity_map().size(), 0.0 );
 
         for ( TiXmlElement* probNode = descriptor->FirstChildElement( "probability" );
               probNode != 0;
@@ -443,18 +442,18 @@ file_format_kwxml
           size_t activity_idx;
           try
           {
-            activity_idx = vidtk::aries_interface::activity_to_index( probNode->Attribute( "activity" ));
+            activity_idx = aries_interface::activity_to_index( probNode->Attribute( "activity" ));
           }
-          catch (vidtk::aries_interface_exception& /*e*/)
+          catch (aries_interface_exception& /*e*/)
           {
-            LOG_ERROR( "Couldn't recognize " << probNode->Attribute("activity")
+            LOG_ERROR( main_logger, "Couldn't recognize " << probNode->Attribute("activity")
                      << " as a valid activity?");
             return false;
           }
           double prob;
           if (probNode->QueryDoubleAttribute( "value", &prob )  != TIXML_SUCCESS )
           {
-            LOG_ERROR( "Couldn't find a probability at " << probNode->Row() << "?");
+            LOG_ERROR( main_logger, "Couldn't find a probability at " << probNode->Row() << "?");
             prob = 0;
           }
           /// Old files could have a value of "-1" written to the
@@ -474,7 +473,7 @@ file_format_kwxml
         TiXmlElement* count_e = descriptor->FirstChildElement( "vectorHOFCount" );
         if ( (!count_e) || (count_e->QueryIntAttribute( "value", &n_rows) != TIXML_SUCCESS))
         {
-          LOG_WARN("No vectorHOFCount at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No vectorHOFCount at " << descriptor->Row() << "?\n");
         }
         for (unsigned i=0; i<static_cast<unsigned>(n_rows); i++)
         {
@@ -487,7 +486,7 @@ file_format_kwxml
           TiXmlElement* e = xml_row_node->ToElement();
           if (!e)
           {
-            LOG_WARN("Couldn't convert to element at " << xml_row_node->Row() << "?\n");
+            LOG_WARN( main_logger,"Couldn't convert to element at " << xml_row_node->Row() << "?\n");
           }
           const string vector_hof_str("vectorHOF");
           if (xml_row_node->Value() != vector_hof_str) continue;
@@ -495,7 +494,7 @@ file_format_kwxml
           int index;
           if (e->QueryIntAttribute( "id", &index ) != TIXML_SUCCESS)
           {
-            LOG_WARN("Couldn't parse id near " << xml_row_node->Row() << "?\n");
+            LOG_WARN( main_logger,"Couldn't parse id near " << xml_row_node->Row() << "?\n");
           }
           vector<double>& hof_row = texas_hof_vectors[index];
 
@@ -515,7 +514,7 @@ file_format_kwxml
         vector< double > dbn1_data;
         if ( ! read_vector_from_xml<double>( descriptor, "vectorRPIDBN1", dbn1_data ) )
         {
-          LOG_WARN("No rpiDBN1 data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No rpiDBN1 data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -528,7 +527,7 @@ file_format_kwxml
         vector< double > dbn2_data;
         if ( ! read_vector_from_xml<double>( descriptor, "vectorRPIDBN2", dbn2_data ) )
         {
-          LOG_WARN("No rpiDBN2 data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No rpiDBN2 data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -541,7 +540,7 @@ file_format_kwxml
         vector< double > kwsoti3_data;
         if ( ! read_vector_from_xml<double>( descriptor, "vectorKWSOTI3", kwsoti3_data ) )
         {
-          LOG_WARN("No KWSOTI3 data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No KWSOTI3 data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -554,7 +553,7 @@ file_format_kwxml
         vector< double > icsihog_data;
         if ( ! read_vector_from_xml<double>( descriptor, "vectorICSIHOG", icsihog_data ) )
         {
-          LOG_WARN("No icsiHOG data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No icsiHOG data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -567,7 +566,7 @@ file_format_kwxml
         vector< double > texashog_data;
         if ( ! read_vector_from_xml<double>( descriptor, "vectorTexasHOG", texashog_data ))
         {
-          LOG_WARN("No texasHOG data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No texasHOG data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -580,7 +579,7 @@ file_format_kwxml
         vector< double > cornell_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", cornell_data ))
         {
-          LOG_WARN("No cornell data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No cornell data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -593,7 +592,7 @@ file_format_kwxml
         vector< double > pvo_hog_data;
         if ( ! read_vector_from_xml<double>( descriptor, "pvoRawScores", pvo_hog_data ))
         {
-          LOG_WARN("No pvoHOG data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No pvoHOG data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -606,7 +605,7 @@ file_format_kwxml
         vector< double > lds_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", lds_data ))
         {
-          LOG_WARN("No UMDLDS data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No UMDLDS data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -619,7 +618,7 @@ file_format_kwxml
         vector< double > per_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", per_data ))
         {
-          LOG_WARN("No UMDPeriodicity data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No UMDPeriodicity data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -632,7 +631,7 @@ file_format_kwxml
         vector< double > ssm_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", ssm_data ))
         {
-          LOG_WARN("No UMDSSM data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No UMDSSM data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -647,7 +646,7 @@ file_format_kwxml
         descriptor_raw_1d_type d;
         if ( ! read_vector_from_xml<double>(descriptor, "vector", d.data ))
         {
-          LOG_WARN( "No raw data at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No raw data at " << descriptor->Row() << "\n" );
         }
         else
         {
@@ -661,23 +660,23 @@ file_format_kwxml
         descriptor_cutic_type cutic;
         if ( ! read_vector_from_xml<double>( descriptor, "scoreClass", cutic.score_class ))
         {
-          LOG_WARN("No scoreClass in CUTIC descriptor at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No scoreClass in CUTIC descriptor at " << descriptor->Row() << "\n");
         }
         else if ( ! read_vector_from_xml<int>( descriptor, "scoreType", cutic.score_type ))
         {
-          LOG_WARN("No scoreType in CUTIC descriptor at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No scoreType in CUTIC descriptor at " << descriptor->Row() << "\n");
         }
         else if ( ! read_vector_from_xml<double>( descriptor, "simTemporal", cutic.sim_temporal ))
         {
-          LOG_WARN("No simTemporal in CUTIC descriptor at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No simTemporal in CUTIC descriptor at " << descriptor->Row() << "\n");
         }
         else if ( ! read_vector_from_xml<short>( descriptor, "descIndex", cutic.desc_index ))
         {
-          LOG_WARN("No descIndex in CUTIC descriptor at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No descIndex in CUTIC descriptor at " << descriptor->Row() << "\n");
         }
         else if ( ! read_vector_from_xml<double>( descriptor, "descRaw", cutic.desc_raw ))
         {
-          LOG_WARN("No descRaw in CUTIC descriptor at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No descRaw in CUTIC descriptor at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -690,7 +689,7 @@ file_format_kwxml
         vector< double > bof_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", bof_data )) //said descRaw
         {
-          LOG_WARN("No CUBoF data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No CUBoF data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -703,7 +702,7 @@ file_format_kwxml
         vector< double > tex_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", tex_data )) //said descRaw
         {
-          LOG_WARN("No CUTexture at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No CUTexture at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -716,7 +715,7 @@ file_format_kwxml
         vector< double > colmom_data;
         if ( ! read_vector_from_xml<double>( descriptor, "data", colmom_data )) //said descRaw
         {
-          LOG_WARN("No CUColMoment data at " << descriptor->Row() << "\n");
+          LOG_WARN( main_logger,"No CUColMoment data at " << descriptor->Row() << "\n");
         }
         else
         {
@@ -732,56 +731,56 @@ file_format_kwxml
         e = descriptor->FirstChildElement( "src_trk_id" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.src_trk_id ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No src_trk_id at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No src_trk_id at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "dst_trk_id" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.dst_trk_id ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No dst_trk_id at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No dst_trk_id at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "src_activity_id" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.src_activity_id ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No src_activity_id at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No src_activity_id at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "dst_activity_id" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.dst_activity_id ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No dst_activity_id at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No dst_activity_id at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "n_frames_src" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.n_frames_src ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No n_frames_src at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No n_frames_src at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "n_frames_dst" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.n_frames_dst ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No n_frames_dst at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No n_frames_dst at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "n_frames_overlap" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &dot.n_frames_overlap ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No n_frames_overlap at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No n_frames_overlap at " << descriptor->Row() << "\n" );
           good = false;
         }
         e = descriptor->FirstChildElement( "mean_centroid_distance" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &dot.mean_centroid_distance ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No mean_centroid_distance at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No mean_centroid_distance at " << descriptor->Row() << "\n" );
           good = false;
         }
         unsigned flag;
         e = descriptor->FirstChildElement( "radial_overlap_flag" );
         if ( (!e) || (e->QueryUnsignedAttribute( "value", &flag) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No n_frames_overlap at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No n_frames_overlap at " << descriptor->Row() << "\n" );
           good = false;
         }
         else
@@ -791,7 +790,7 @@ file_format_kwxml
         e = descriptor->FirstChildElement( "mean_percentage_overlap" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &dot.mean_percentage_overlap ) != TIXML_SUCCESS ))
         {
-          LOG_WARN( "No mean_percentage_overlap at " << descriptor->Row() << "\n" );
+          LOG_WARN( main_logger, "No mean_percentage_overlap at " << descriptor->Row() << "\n" );
           good = false;
         }
 
@@ -806,28 +805,28 @@ file_format_kwxml
           e = descriptor->FirstChildElement( "src_activity_name" );
           if ( (!e) || (e->QueryStringAttribute( "value", &s_descriptor ) != TIXML_SUCCESS ))
           {
-            LOG_WARN( "No src_activity_name at " << descriptor->Row() << "\n" );
+            LOG_WARN( main_logger, "No src_activity_name at " << descriptor->Row() << "\n" );
             good = false;
           }
           i2a_cit probe = i2a.find( dot.src_activity_id );
           s_system = (probe == i2a.end()) ? "" : probe->second;
           if ( s_descriptor != s_system )
           {
-            LOG_WARN( "Src activity index is " << dot.src_activity_id << ", named '" << s_descriptor
+            LOG_WARN( main_logger, "Src activity index is " << dot.src_activity_id << ", named '" << s_descriptor
                       << "' in the file but is now '" << s_system << "' at " << descriptor->Row() );
             good = false;
           }
           e = descriptor->FirstChildElement( "dst_activity_name" );
           if ( (!e) || (e->QueryStringAttribute( "value", &s_descriptor ) != TIXML_SUCCESS ))
           {
-            LOG_WARN( "No dst_activity_name at " << descriptor->Row() << "\n" );
+            LOG_WARN( main_logger, "No dst_activity_name at " << descriptor->Row() << "\n" );
             good = false;
           }
           probe = i2a.find( dot.dst_activity_id );
           s_system = (probe == i2a.end()) ? "" : probe->second;
           if ( s_descriptor != s_system )
           {
-            LOG_WARN( "Dst activity index is " << dot.dst_activity_id << ", named '" << s_descriptor
+            LOG_WARN( main_logger, "Dst activity index is " << dot.dst_activity_id << ", named '" << s_descriptor
                       << "' in the file but is now '" << s_system << "' at " << descriptor->Row() );
             good = false;
           }
@@ -846,7 +845,7 @@ file_format_kwxml
         TiXmlElement* e = descriptor->FirstChildElement( "score" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &d ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No queryResultScore value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No queryResultScore value at " << descriptor->Row() << "?\n");
         }
         else
         {
@@ -868,73 +867,73 @@ file_format_kwxml
           meta.gsd = 0;
         } else if ( (e->QueryDoubleAttribute( "value", &meta.gsd ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("Could not read GSD at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"Could not read GSD at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "SensorLatitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.sensor_latitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No SensorLatitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No SensorLatitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "SensorLongitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.sensor_longitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No SensorLongitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No SensorLongitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "UpperLeftCornerLatitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.upper_left_corner_latitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No UpperLeftCornerLatitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No UpperLeftCornerLatitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "UpperLeftCornerLongitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.upper_left_corner_longitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No UpperLeftCornerLongitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No UpperLeftCornerLongitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "UpperRightCornerLatitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.upper_right_corner_latitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No UpperRightCornerLatitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No UpperRightCornerLatitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "UpperRightCornerLongitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.upper_right_corner_longitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No UpperRightCornerLongitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No UpperRightCornerLongitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "LowerLeftCornerLatitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.lower_left_corner_latitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No LowerLeftCornerLatitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No LowerLeftCornerLatitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "LowerLeftCornerLongitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.lower_left_corner_longitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No LowerLeftCornerLongitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No LowerLeftCornerLongitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "LowerRightCornerLatitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.lower_right_corner_latitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No LowerRightCornerLatitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No LowerRightCornerLatitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "LowerRightCornerLongitude" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.lower_right_corner_longitude ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No LowerRightCornerLongitude value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No LowerRightCornerLongitude value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "HorizontalFieldOfView" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.horizontal_field_of_view ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No HorizontalFieldOfView value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No HorizontalFieldOfView value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "VerticalFieldOfView" );
         if ( (!e) || (e->QueryDoubleAttribute( "value", &meta.vertical_field_of_view ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No VerticalFieldOfView value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No VerticalFieldOfView value at " << descriptor->Row() << "?\n");
         }
         e = descriptor->FirstChildElement( "TimeStampMicrosecondsSince1970" );
         const char *str_time_stamp = 0;
         if ( (!e) || (str_time_stamp = e->Attribute( "value" )) == NULL )
         {
-          LOG_WARN("No TimeStampMicrosecondsSince1970 value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No TimeStampMicrosecondsSince1970 value at " << descriptor->Row() << "?\n");
         }
         try
         {
@@ -948,7 +947,7 @@ file_format_kwxml
         e = descriptor->FirstChildElement( "SlantRange" );
         if ( (!e) || (e->QueryFloatAttribute( "value", &meta.slant_range ) != TIXML_SUCCESS ))
         {
-          LOG_WARN("No SlantRange value at " << descriptor->Row() << "?\n");
+          LOG_WARN( main_logger,"No SlantRange value at " << descriptor->Row() << "?\n");
         }
         kwxml.descriptor_metadata() = meta;
       }
@@ -983,7 +982,7 @@ file_format_kwxml
           TiXmlElement* e = descriptor->FirstChildElement( tags[d_index] );
           if ( (!e) || (e->QueryDoubleAttribute( "value", ptrs[d_index] ) != TIXML_SUCCESS))
           {
-            LOG_WARN("No " << tags[d_index] << " at " << descriptor->Row() << "in motionDescriptor\n");
+            LOG_WARN( main_logger,"No " << tags[d_index] << " at " << descriptor->Row() << "in motionDescriptor\n");
           }
         }
         kwxml.descriptor_motion() = d;
@@ -997,7 +996,7 @@ file_format_kwxml
         }
         else
         {
-          LOG_WARN("At " << descriptor->Row()
+          LOG_WARN( main_logger,"At " << descriptor->Row()
                    << ": descriptor has no type\n");
         }
       }
@@ -1013,26 +1012,5 @@ file_format_kwxml
 
 }
 
-bool
-file_format_kwxml
-::write( const string& fn,
-         const track_handle_list_type& tracks ) const
-{
-  ofstream os( fn.c_str() );
-  if ( ! os )
-  {
-    LOG_ERROR( "Couldn't open '" << fn << "' for writing" );
-    return false;
-  }
-  return this->write( os, tracks );
-}
-
-bool
-file_format_kwxml
-::write( ostream& os,
-         const track_handle_list_type& tracks ) const
-{
-  return track_oracle::write_kwxml( os, tracks );
-}
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

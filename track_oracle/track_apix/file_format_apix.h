@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_APIX_H
 #define INCL_FILE_FORMAT_APIX_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_apix/track_apix_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_apix/track_apix.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct apix_reader_opts: public file_format_reader_opts_base
+struct TRACK_APIX_EXPORT apix_reader_opts: public file_format_reader_opts_base
 {
   bool verbose;  // if true, reader will compare MGRS and lat/lon fields in shapefile
 
@@ -23,7 +26,7 @@ struct apix_reader_opts: public file_format_reader_opts_base
   apix_reader_opts() { reset(); }
 };
 
-class file_format_apix: public file_format_base
+class TRACK_APIX_EXPORT file_format_apix: public file_format_base
 {
 public:
   file_format_apix(): file_format_base( TF_APIX, "APIX-compatible shapefile" )
@@ -53,6 +56,7 @@ private:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

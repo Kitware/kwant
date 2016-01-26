@@ -9,14 +9,12 @@
 #include <vul/vul_reg_exp.h>
 #include <vgl/vgl_point_2d.h>
 
-#include <logger/logger.h>
-
 #include <tinyxml.h>
 
 #include <boost/lexical_cast.hpp>
 
-#include <track_oracle/xml_tokenizer.h>
-#include <track_oracle/logging_map.h>
+#include <track_oracle/utils/tokenizers.h>
+#include <track_oracle/utils/logging_map.h>
 #include <track_oracle/track_xgtf/track_xgtf.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 
@@ -26,7 +24,8 @@
 #include <cstdio>
 #include <utility>
 
-VIDTK_LOGGER( "file_format_xgtf" );
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::multimap;
 using std::pair;
@@ -84,7 +83,7 @@ build_named_node_map( xml_node_t* node,
       xml_element_t* e = xml_child_node->ToElement();
       if ( !e )
       {
-        LOG_ERROR( "Error reading line " << xml_child_node->Row()
+        LOG_ERROR( main_logger, "Error reading line " << xml_child_node->Row()
                    << " could not be converted into an element" );
         return false;
       }
@@ -93,7 +92,7 @@ build_named_node_map( xml_node_t* node,
       const char* attr_name = e->Attribute( "name" );
       if ( !attr_name )
       {
-        LOG_ERROR( "Error reading line " << xml_child_node->Row()
+        LOG_ERROR( main_logger, "Error reading line " << xml_child_node->Row()
                    << " has no 'name' attribute" );
         return false;
       }
@@ -102,7 +101,7 @@ build_named_node_map( xml_node_t* node,
       named_nodes_c_it probe = named_nodes.find( attr_name );
       if ( probe != named_nodes.end() )
       {
-        LOG_ERROR( "Error reading line " << xml_child_node->Row()
+        LOG_ERROR( main_logger, "Error reading line " << xml_child_node->Row()
                    << " has duplicate '" << attr_name << "' attributes" );
         return false;
       }
@@ -134,7 +133,7 @@ parse_framespan( const string& framespan_str,
   }
   if ( !okay )
   {
-    LOG_ERROR( "Couldn't parse framespan '" << framespan_str << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse framespan '" << framespan_str << "'" );
   }
 
   return okay;
@@ -162,7 +161,7 @@ parse_framespan_set( const string& framespan_str,
   }
   if ( !okay )
   {
-    LOG_ERROR( "Couldn't parse framespan '" << framespan_str << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse framespan '" << framespan_str << "'" );
   }
 
   return okay;
@@ -181,33 +180,33 @@ extract_bounding_box( xml_node_t* xml_node,
   xml_element_t* e = xml_node->ToElement();
   if ( !e )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't convert xmlnode to element?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't convert xmlnode to element?" );
     return false;
   }
   if ( !parse_framespan( e->Attribute( "framespan" ), span ) )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't extract framespan?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't extract framespan?" );
     return false;
   }
   int h, w, x, y;
   if ( e->QueryIntAttribute( "height", &h ) != TIXML_SUCCESS )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't extract height?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't extract height?" );
     return false;
   }
   if ( e->QueryIntAttribute( "width", &w ) != TIXML_SUCCESS )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't extract width?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't extract width?" );
     return false;
   }
   if ( e->QueryIntAttribute( "x", &x ) != TIXML_SUCCESS )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't extract x?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't extract x?" );
     return false;
   }
   if ( e->QueryIntAttribute( "y", &y ) != TIXML_SUCCESS )
   {
-    LOG_ERROR( "extract_bounding_box: Couldn't extract y?" );
+    LOG_ERROR( main_logger, "extract_bounding_box: Couldn't extract y?" );
     return false;
   }
 
@@ -230,17 +229,17 @@ extract_occlusion( xml_node_t* xml_node,
   xml_element_t* e = xml_node->ToElement();
   if ( !e )
   {
-    LOG_ERROR( "extract_occlusion: Couldn't convert xmlnode to element?" );
+    LOG_ERROR( main_logger, "extract_occlusion: Couldn't convert xmlnode to element?" );
     return false;
   }
   if ( !parse_framespan( e->Attribute("framespan"), span ) )
   {
-    LOG_ERROR( "extract_occlusion: Couldn't extract framespan?" );
+    LOG_ERROR( main_logger, "extract_occlusion: Couldn't extract framespan?" );
     return false;
   }
   if ( e->QueryDoubleAttribute( "value", &occlusion_value ) != TIXML_SUCCESS )
   {
-    LOG_ERROR( "extract_occlusion: Couldn't extract value?" );
+    LOG_ERROR( main_logger, "extract_occlusion: Couldn't extract value?" );
     return false;
   }
   return true;
@@ -256,17 +255,17 @@ extract_occlusion( xml_node_t* xml_node,
 
 bool
 extract_viper_frame_data( const named_nodes_t& named_nodes,
-                          vidtk::track_handle_type& this_track,
-                          map< unsigned int, vidtk::frame_handle_type>& xgtf_frame_map )
+                          ::kwiver::kwant::track_handle_type& this_track,
+                          map< unsigned int, ::kwiver::kwant::frame_handle_type>& xgtf_frame_map )
 {
-  static vidtk::track_xgtf_type xgtf_schema;
+  static ::kwiver::kwant::track_xgtf_type xgtf_schema;
   xgtf_frame_map.clear();
 
   // first, pull the bounding boxes from "Location"
   named_nodes_c_it probe = named_nodes.find( "Location" );
   if ( probe == named_nodes.end() )
   {
-    LOG_ERROR( "Couldn't find Location node?" );
+    LOG_ERROR( main_logger, "Couldn't find Location node?" );
     return false;
   }
 
@@ -287,7 +286,7 @@ extract_viper_frame_data( const named_nodes_t& named_nodes,
     // create a box for each frame in the span
     for ( unsigned frame = span.first; frame <= span.second; ++frame )
     {
-      vidtk::frame_handle_type frame_handle = xgtf_schema( this_track ).create_frame();
+      ::kwiver::kwant::frame_handle_type frame_handle = xgtf_schema( this_track ).create_frame();
       xgtf_schema[ frame_handle ].bounding_box() = box;
       xgtf_schema[ frame_handle ].frame_number() = frame;
       xgtf_frame_map[ frame ] = frame_handle;
@@ -314,7 +313,7 @@ extract_viper_frame_data( const named_nodes_t& named_nodes,
       // bounding boxes (assuming the MITRE annotators were... non-specific.)
       for ( unsigned int frame = span.first; frame <= span.second; ++frame )
       {
-        map< unsigned, vidtk::frame_handle_type >::const_iterator frame_it = xgtf_frame_map.find( frame );
+        map< unsigned, ::kwiver::kwant::frame_handle_type >::const_iterator frame_it = xgtf_frame_map.find( frame );
         if ( frame_it != xgtf_frame_map.end() )
         {
           xgtf_schema[ frame_it->second ].occlusion() = occ_value;
@@ -348,11 +347,11 @@ extract_viper_activities( const named_nodes_t& named_nodes,
                           unsigned int /*viperID*/,
                           bool promote_pvmoving,
                           xgtf_style style,
-                          vidtk::logging_map_type& warnings )
+                          ::kwiver::logging_map_type& warnings )
 {
   // get the current string-to-index map for VIRAT
-  size_t PERSON_MOVING_INDEX = vidtk::aries_interface::activity_to_index( "PersonMoving" );
-  size_t VEHICLE_MOVING_INDEX = vidtk::aries_interface::activity_to_index( "VehicleMoving" );
+  size_t PERSON_MOVING_INDEX = ::kwiver::kwant::aries_interface::activity_to_index( "PersonMoving" );
+  size_t VEHICLE_MOVING_INDEX = ::kwiver::kwant::aries_interface::activity_to_index( "VehicleMoving" );
 
   // start walking down the nodes
   for ( named_nodes_c_it n = named_nodes.begin(); n != named_nodes.end(); ++n )
@@ -371,7 +370,7 @@ extract_viper_activities( const named_nodes_t& named_nodes,
       xml_element_t* e = xml_bvalue_node->ToElement();
       if ( !e )
       {
-        LOG_ERROR( "extract_viper_activities: couldn't convert " << activity_name
+        LOG_ERROR( main_logger, "extract_viper_activities: couldn't convert " << activity_name
                    << " bvalues to element?" );
         return false;
       }
@@ -450,16 +449,16 @@ extract_viper_activities( const named_nodes_t& named_nodes,
         try
         {
           act_type.second = static_cast<unsigned int>(
-            vidtk::aries_interface::activity_to_index( activity_name ) );
+            ::kwiver::kwant::aries_interface::activity_to_index( activity_name ) );
           // if we get here, it worked
           act_type.first = true;
 
-          if ( vidtk::aries_interface::promote_to_PERSON_MOVING( act_type.second ) )
+          if ( ::kwiver::kwant::aries_interface::promote_to_PERSON_MOVING( act_type.second ) )
           {
             promote_type.first = true;
             promote_type.second = PERSON_MOVING_INDEX;
           }
-          else if ( vidtk::aries_interface::promote_to_VEHICLE_MOVING( act_type.second ) )
+          else if ( ::kwiver::kwant::aries_interface::promote_to_VEHICLE_MOVING( act_type.second ) )
           {
             promote_type.first = true;
             promote_type.second = VEHICLE_MOVING_INDEX;
@@ -469,7 +468,7 @@ extract_viper_activities( const named_nodes_t& named_nodes,
             warnings.add_msg( activity_name + " not promoted" );
           }
         }
-        catch ( vidtk::aries_interface_exception& aries_type_exception )
+        catch ( ::kwiver::kwant::aries_interface_exception& aries_type_exception )
         {
           warnings.add_msg( string( "unrecognized activity: " ) + activity_name + ": " + aries_type_exception.what() );
           if ( activity_name == "Bicycling" )
@@ -508,7 +507,7 @@ extract_viper_activities( const named_nodes_t& named_nodes,
           pair< unsigned int, unsigned int > span;
           if ( !parse_framespan( e->Attribute("framespan"), span ) )
           {
-            LOG_ERROR( "Couldn't parse framespan for " << activity_name << "?" );
+            LOG_ERROR( main_logger, "Couldn't parse framespan for " << activity_name << "?" );
             return false;
           }
           if ( span.first < object_span.first )
@@ -540,14 +539,14 @@ doc_to_source_node( const string& filename, xml_document_t& doc )
   xml_node_t* xml_root = doc.RootElement();
   if ( !xml_root )
   {
-    LOG_ERROR( "Couldn't load root element from '" << filename << "'; skippig" );
+    LOG_ERROR( main_logger, "Couldn't load root element from '" << filename << "'; skippig" );
     return 0;
   }
 
   xml_node_t* xml_data = xml_root->FirstChild( "data" );
   if ( !xml_data )
   {
-    LOG_ERROR( "Couldn't find the 'data' child in '" << filename << "'; skipping" );
+    LOG_ERROR( main_logger, "Couldn't find the 'data' child in '" << filename << "'; skipping" );
     return 0;
   }
 
@@ -555,7 +554,7 @@ doc_to_source_node( const string& filename, xml_document_t& doc )
   xml_node_t* xml_source = xml_data->FirstChild( "sourcefile" );
   if ( !xml_source )
   {
-    LOG_ERROR( "Couldn't find the 'sourcefile' child in '" << filename << "'; skipping" );
+    LOG_ERROR( main_logger, "Couldn't find the 'sourcefile' child in '" << filename << "'; skipping" );
     return 0;
   }
 
@@ -566,8 +565,8 @@ doc_to_source_node( const string& filename, xml_document_t& doc )
 } // anon
 
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 xgtf_reader_opts&
 xgtf_reader_opts
@@ -581,7 +580,7 @@ xgtf_reader_opts
   }
   else
   {
-    LOG_WARN("Assigned a non-xgtf options structure to a xgtf options structure: Slicing the class");
+    LOG_WARN(main_logger, "Assigned a non-xgtf options structure to a xgtf options structure: Slicing the class");
   }
 
   return *this;
@@ -609,7 +608,7 @@ file_format_xgtf
 ::read( const string& fn,
         track_handle_list_type& tracks ) const
 {
-  logging_map_type warnings( VIDTK_DEFAULT_LOGGER, VIDTK_LOGGER_SITE );
+  logging_map_type warnings( main_logger, KWIVER_LOGGER_SITE );
   track_xgtf_type xgtf_schema;
 
   tracks.clear();
@@ -620,9 +619,9 @@ file_format_xgtf
 
   if ( !doc.LoadFile() )
   {
-    LOG_ERROR( "TinyXML couldn't load '" << fn << "'; skipping" );
-    LOG_ERROR( "Error description: " << doc.ErrorDesc() );
-    LOG_ERROR( "Error location: row " << doc.ErrorRow() << "; col " << doc.ErrorCol() );
+    LOG_ERROR( main_logger, "TinyXML couldn't load '" << fn << "'; skipping" );
+    LOG_ERROR( main_logger, "Error description: " << doc.ErrorDesc() );
+    LOG_ERROR( main_logger, "Error location: row " << doc.ErrorRow() << "; col " << doc.ErrorCol() );
     return false;
   }
 
@@ -693,7 +692,7 @@ file_format_xgtf
               ( viper_class != "No_Annotation_Zone" ) &&
               ( viper_class != "Environment_Induced_Movement" ) )
     {
-      LOG_ERROR( "XGTF reader: file '" << fn << "' row " << xmle->Row()
+      LOG_ERROR( main_logger, "XGTF reader: file '" << fn << "' row " << xmle->Row()
                  << " track " << viperID << ":unknown class '" << viper_class << "'" );
       return false;
     }
@@ -706,7 +705,7 @@ file_format_xgtf
     // framespan is REQUIRED
     if ( !xmle->Attribute( "framespan" ) )
     {
-      LOG_WARN( "xgtf_reader: viper_class " << viper_class << " has no framespan near row "
+      LOG_WARN( main_logger, "xgtf_reader: viper_class " << viper_class << " has no framespan near row "
                 << xmle->Row() << "?  Skipping" );
       continue;
     }
@@ -718,7 +717,7 @@ file_format_xgtf
     vector< pair<unsigned int, unsigned int> > objectspan_set;
     if ( !parse_framespan_set( xmle->Attribute( "framespan" ), objectspan_set ) )
     {
-      LOG_ERROR( "...while reading '" << fn << "'" );
+      LOG_ERROR( main_logger, "...while reading '" << fn << "'" );
       return false;
     }
     object_span.first = objectspan_set.front().first;
@@ -732,7 +731,7 @@ file_format_xgtf
     named_nodes_t named_nodes;
     if ( !build_named_node_map( xml_viper_object, named_nodes ) )
     {
-      LOG_ERROR( "...while reading '" << fn << "'" );
+      LOG_ERROR( main_logger, "...while reading '" << fn << "'" );
       return false;
     }
 
@@ -745,7 +744,7 @@ file_format_xgtf
     map< unsigned, frame_handle_type > xgtf_frame_map;
     if ( !extract_viper_frame_data( named_nodes, xgtf_track, xgtf_frame_map ) )
     {
-      LOG_ERROR( "...while reading '" << fn << "'" );
+      LOG_ERROR( main_logger, "...while reading '" << fn << "'" );
       return false;
     }
 
@@ -762,7 +761,7 @@ file_format_xgtf
                                     style,
                                     warnings ) )
     {
-      LOG_ERROR( "...while reading '" << fn << "'" );
+      LOG_ERROR( main_logger, "...while reading '" << fn << "'" );
       return false;
     }
 
@@ -771,7 +770,7 @@ file_format_xgtf
     // =====
 
 
-    vidtk::track_xgtf_type dst_schema;
+    ::kwiver::kwant::track_xgtf_type dst_schema;
     for ( viper_activity_list_c_it act_it = activities.begin(); act_it != activities.end(); ++act_it )
     {
       //
@@ -804,7 +803,7 @@ file_format_xgtf
           bool emit_warning = warnings.add_msg( msg );
           if ( emit_warning )
           {
-            LOG_WARN( "xgtf_reader: "
+            LOG_WARN( main_logger, "xgtf_reader: "
                       << "id: " << viperID << " event: " << act_it->second
                       << " frame: " << frame  << " (framespan " << act_it->first.first
                       << ":" << act_it->first.second << ") has no data? "
@@ -836,9 +835,9 @@ file_format_xgtf
 
   if ( !warnings.empty() )
   {
-    LOG_INFO( "xgtf_reader: Warnings from loading '"  << fn << "':");
+    LOG_INFO( main_logger, "xgtf_reader: Warnings from loading '"  << fn << "':");
     warnings.dump_msgs();
-    LOG_INFO( "xgtf_reader: end of warnings" );
+    LOG_INFO( main_logger, "xgtf_reader: end of warnings" );
   }
 
   // all done!
@@ -846,5 +845,5 @@ file_format_xgtf
 
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

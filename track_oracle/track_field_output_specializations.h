@@ -75,7 +75,6 @@ std::ostream& TRACK_ORACLE_EXPORT
 operator<<( std::ostream& os,
             const track_field< descriptor_raw_1d_type >& f );
 
-
 template< >
 std::ostream& TRACK_ORACLE_EXPORT
 operator<<( std::ostream& os,

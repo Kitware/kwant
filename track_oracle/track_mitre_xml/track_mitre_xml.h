@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2011 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_MITRE_XML_H
 #define INCL_TRACK_MITRE_XML_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_mitre_xml/track_mitre_xml_export.h>
 
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
@@ -17,10 +20,10 @@ This is a reader for the XML tracks MITRE supplies as queries ("*_BOX.xml")
 for VIRAT.
 */
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_mitre_xml_type: public track_base< track_mitre_xml_type >
+struct TRACK_MITRE_XML_EXPORT track_mitre_xml_type: public track_base< track_mitre_xml_type >
 {
   // frame level data
   track_field< vgl_box_2d<double> >& bounding_box;
@@ -33,6 +36,7 @@ struct track_mitre_xml_type: public track_base< track_mitre_xml_type >
   }
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -11,7 +11,7 @@ using std::ostream;
 namespace kwiver {
 namespace kwant {
 
-template< typename T >
+template< typename T > TRACK_ORACLE_EXPORT
 ostream& operator<<( ostream& os, const track_field_io_proxy<T>& iop )
 {
   return iop.io_ptr->to_stream( os, iop.val );

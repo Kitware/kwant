@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,14 +12,10 @@
 #include <cstdio>
 #include <cctype>
 
-#include <logger/logger.h>
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_vatic_reader_cxx__
-VIDTK_LOGGER("track_vatic_reader_cxx");
-
-//
 #include <boost/tokenizer.hpp>
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -30,8 +26,8 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_vatic
@@ -75,7 +71,7 @@ file_format_vatic
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't read vatic tracks from '" << fn << "'");
+    LOG_ERROR( main_logger, "Couldn't read vatic tracks from '" << fn << "'");
     return false;
   }
 
@@ -88,7 +84,7 @@ file_format_vatic
 ::read( istream& is,
         track_handle_list_type& tracks ) const
 {
-  vidtk::track_vatic_type vatic;
+  track_vatic_type vatic;
 
   // detect when a new track has started
 
@@ -192,5 +188,5 @@ file_format_vatic
 
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

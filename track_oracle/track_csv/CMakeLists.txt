@@ -2,18 +2,38 @@
 # Generic CSV tracks
 #
 
-add_library( track_csv
-             track_csv.h
-             file_format_csv.h  file_format_csv.cxx )
-set_target_properties( track_csv PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_csv_public_headers
+  track_csv.h
+  file_format_csv.h
+)
+
+set( track_csv_sources
+  file_format_csv.cxx
+)
+
+kwiver_install_headers(
+  ${track_csv_public_headers}
+  SUBDIR        kwant/track_oracle/track_csv
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_csv_export.h
+  SUBDIR        kwant/track_oracle/track_csv
+  NOPATH
+)
+
+kwiver_add_library( track_csv
+  ${track_csv_public_headers}
+  ${track_csv_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_csv_export.h
 )
 
 target_link_libraries( track_csv
-  PUBLIC track_oracle_format_base
-  PRIVATE track_oracle data_terms vidtk_logger scorable_mgrs_data_term track_oracle_tokenizers vul
-  )
-
-install( TARGETS track_csv
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+  PUBLIC               track_oracle_format_base
+  PRIVATE              track_oracle
+                       data_terms
+                       vital_logger
+                       scorable_mgrs_data_term
+                       track_oracle_tokenizers
+                       vul
 )

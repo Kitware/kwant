@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -21,20 +21,23 @@
 /// Pending unification of events, only handles VIRAT events (same as ever.)
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_event_adapter_export.h>
+
 #include <string>
 
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 
-#include <track_oracle/logging_map.h>
+#include <track_oracle/utils/logging_map.h>
 #include <track_oracle/track_oracle_api_types.h>
 
 #include <track_oracle/data_terms/data_terms.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct event_data_block
+struct TRACK_ORACLE_EVENT_ADAPTER_EXPORT event_data_block
 {
   bool valid;
   bool debug;
@@ -61,7 +64,7 @@ struct event_data_block
                                                const dt::tracking::timestamp_usecs::Type* ts ) const;
 };
 
-struct event_data_schema: public track_base< event_data_schema >
+struct TRACK_ORACLE_EVENT_ADAPTER_EXPORT event_data_schema: public track_base< event_data_schema >
 {
   track_field< dt::tracking::external_id > external_id;
   track_field< dt::events::source_track_ids > source_track_ids;
@@ -80,7 +83,7 @@ struct event_data_schema: public track_base< event_data_schema >
 };
 
 
-class event_adapter
+class TRACK_ORACLE_EVENT_ADAPTER_EXPORT event_adapter
 {
 public:
 
@@ -103,8 +106,8 @@ public:
   //
 
   static void set_event_track_data( const track_handle_type& new_track,
-                                   const event_data_block& b,
-                                   logging_map_type& msgs );
+                                    const event_data_block& b,
+                                    logging_map_type& msgs );
 
   //
   // Given a source track handle and an event_data_block,
@@ -119,5 +122,7 @@ public:
 private:
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+
 #endif

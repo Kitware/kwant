@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_XGTF_H
 #define INCL_FILE_FORMAT_XGTF_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_xgtf/track_xgtf_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_xgtf/track_xgtf.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct xgtf_reader_opts: public file_format_reader_opts_base
+struct TRACK_XGTF_EXPORT xgtf_reader_opts: public file_format_reader_opts_base
 {
   bool promote_pvmoving; // if set, some activities will be converted to {p,v}moving
 
@@ -24,7 +27,7 @@ struct xgtf_reader_opts: public file_format_reader_opts_base
 };
 
 
-class file_format_xgtf: public file_format_base
+class TRACK_XGTF_EXPORT file_format_xgtf: public file_format_base
 {
 public:
   file_format_xgtf(): file_format_base( TF_XGTF, "ViPER ground truth (using VIRAT schemas)" )
@@ -55,6 +58,7 @@ private:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

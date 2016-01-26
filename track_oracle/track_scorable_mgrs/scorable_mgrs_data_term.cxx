@@ -87,7 +87,7 @@ bool mgrs_pos::read_xml( const TiXmlElement* const_e, scorable_mgrs& m ) const
     TiXmlElement* northing_e = zone->FirstChild( "northing" )->ToElement();
     TiXmlElement* easting_e = zone->FirstChild( "easting" )->ToElement();
     const char* index_str = zone->Attribute( "index" );
-    if ( ! ( northing_e && easting_e && index_str ))
+    if ( ! ( northing_e && easting_e && index_str && zone_e->GetText() ))
     {
       LOG_ERROR( main_logger, "MGRS: zone missing index, zone, northing and/or easting at " << zone->Row() );
       return false;

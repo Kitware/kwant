@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -10,13 +10,10 @@
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs_data_term.h>
 
 #include <track_oracle/utils/tokenizers.h>
-#include <track_oracle/split.h>
 #include <track_oracle/element_store_base.h>
 #include <track_oracle/track_field.h>
 #include <track_oracle/data_terms/data_terms.h>
 #include <track_oracle/state_flags.h>
-
-#include <logger/logger.h>
 
 #include <boost/smart_ptr.hpp>
 #include <boost/lexical_cast.hpp>
@@ -32,7 +29,9 @@
 #include <fstream>
 #include <vector>
 
-VIDTK_LOGGER("file_format_csv");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
+
 
 using std::map;
 using std::string;
@@ -46,19 +45,20 @@ using std::runtime_error;
 
 namespace // anon
 {
+using namespace ::kwiver::kwant;
 
 void
-parse_csv_row( vidtk::oracle_entry_handle_type row,
+parse_csv_row( oracle_entry_handle_type row,
                const map<string, string>& header_value_map,
                const vector< bool >& value_present_flags,
-               const vidtk::csv_handler_map_type& handlers )
+               const csv_handler_map_type& handlers )
 {
-  for (vidtk::csv_handler_map_cit i = handlers.begin(); i != handlers.end(); ++i)
+  for (csv_handler_map_cit i = handlers.begin(); i != handlers.end(); ++i)
   {
     // do we have the values for this element?  (Allow partial
     // instances and let the data type complain)
     size_t value_count = 0;
-    const vidtk::csv_header_index_type& header_indices = i->second;
+    const csv_header_index_type& header_indices = i->second;
     for (size_t j=0; j<header_indices.size(); ++j)
     {
       if (value_present_flags[ header_indices[j] ]) ++value_count;
@@ -67,7 +67,7 @@ parse_csv_row( vidtk::oracle_entry_handle_type row,
     // skip this element if no values present
     if (value_count == 0) continue;
 
-    vidtk::element_store_base* b = vidtk::track_oracle::get_mutable_element_store_base( i->first );
+    element_store_base* b = track_oracle::get_mutable_element_store_base( i->first );
     b->read_csv_to_row( row, header_value_map );
   }
 }
@@ -85,17 +85,17 @@ struct redundant_object_helper_type
 
   redundant_object_helper_type()
   {
-    vidtk::field_handle_type world_location_fh = vidtk::track_oracle::lookup_by_name( vidtk::dt::tracking::world_location::c.name );
-    this->world_location_store = vidtk::track_oracle::get_mutable_element_store_base( world_location_fh );
-    vidtk::field_handle_type obj_location_fh = vidtk::track_oracle::lookup_by_name( vidtk::dt::tracking::obj_location::c.name );
-    this->obj_location_store = vidtk::track_oracle::get_mutable_element_store_base( obj_location_fh );
-    vidtk::field_handle_type bounding_box_fh = vidtk::track_oracle::lookup_by_name( vidtk::dt::tracking::bounding_box::c.name );
-    this->bounding_box_store = vidtk::track_oracle::get_mutable_element_store_base( bounding_box_fh );
-    vidtk::field_handle_type track_uuid_fh = vidtk::track_oracle::lookup_by_name( vidtk::dt::tracking::track_uuid::c.name );
-    this->track_uuid_store = vidtk::track_oracle::get_mutable_element_store_base( track_uuid_fh );
+    field_handle_type world_location_fh = track_oracle::lookup_by_name( dt::tracking::world_location::c.name );
+    this->world_location_store = track_oracle::get_mutable_element_store_base( world_location_fh );
+    field_handle_type obj_location_fh = track_oracle::lookup_by_name( dt::tracking::obj_location::c.name );
+    this->obj_location_store = track_oracle::get_mutable_element_store_base( obj_location_fh );
+    field_handle_type bounding_box_fh = track_oracle::lookup_by_name( dt::tracking::bounding_box::c.name );
+    this->bounding_box_store = track_oracle::get_mutable_element_store_base( bounding_box_fh );
+    field_handle_type track_uuid_fh = track_oracle::lookup_by_name( dt::tracking::track_uuid::c.name );
+    this->track_uuid_store = track_oracle::get_mutable_element_store_base( track_uuid_fh );
   }
 
-  void apply_at_row( vidtk::oracle_entry_handle_type row,
+  void apply_at_row( oracle_entry_handle_type row,
                      const map< string, string>& header_value_map )
   {
 
@@ -191,17 +191,17 @@ struct redundant_object_helper_type
   }
 
 private:
-  vidtk::element_store_base* world_location_store;
-  vidtk::element_store_base* obj_location_store;
-  vidtk::element_store_base* bounding_box_store;
-  vidtk::element_store_base* track_uuid_store;
+  element_store_base* world_location_store;
+  element_store_base* obj_location_store;
+  element_store_base* bounding_box_store;
+  element_store_base* track_uuid_store;
 };
 
 } // anon
 
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 
 file_format_csv
@@ -281,7 +281,7 @@ file_format_csv
   vector<string> headers;
   if (!csv_tokenizer::get_record(is, headers) && !is.eof())
   {
-    LOG_ERROR("Failed to read CSV header record");
+    LOG_ERROR( main_logger,"Failed to read CSV header record");
     return false;
   }
 
@@ -297,7 +297,7 @@ file_format_csv
   if (( track_sequence_probe == headers.end() ) &&
       ( external_id_probe == headers.end() ))
   {
-    LOG_ERROR( "CSV headers do not contain either external_id or _track_sequence; cannot parse" );
+    LOG_ERROR( main_logger, "CSV headers do not contain either external_id or _track_sequence; cannot parse" );
     return false;
   }
 
@@ -316,14 +316,14 @@ file_format_csv
   vector<string>::iterator frame_probe = find( headers.begin(), headers.end(), frame_tag );
   if ( frame_probe == headers.end() )
   {
-    LOG_ERROR( "CSV headers do not contain expected frame tag '" << frame_tag << "'; cannot parse" );
+    LOG_ERROR( main_logger, "CSV headers do not contain expected frame tag '" << frame_tag << "'; cannot parse" );
     return false;
   }
   size_t frame_index = frame_probe - headers.begin();
 
   {
     string style = (new_style_flag) ? "new" : "old";
-    LOG_INFO( "Detected " << style << "-style CSV" );
+    LOG_INFO( main_logger, "Detected " << style << "-style CSV" );
   }
 
   //
@@ -354,7 +354,7 @@ file_format_csv
       {
         oss << vul_sprintf( "; %02.2f%% of file", 100.0*is.tellg()/file_size );
       }
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
 
@@ -363,7 +363,7 @@ file_format_csv
 
     if (!is && !is.eof())
     {
-      LOG_ERROR("I/O error reading CSV at record " << record);
+      LOG_ERROR( main_logger,"I/O error reading CSV at record " << record);
       return false;
     }
     if (values.empty())
@@ -374,7 +374,7 @@ file_format_csv
 
     if ( values.size() != headers.size() )
     {
-      LOG_ERROR( "Line " << record << " has " << values.size() << " entries; expected "
+      LOG_ERROR( main_logger, "Line " << record << " has " << values.size() << " entries; expected "
                  << headers.size() << "; skipping" );
       continue;
     }
@@ -432,7 +432,7 @@ file_format_csv
         }
         else
         {
-          LOG_ERROR( "FATAL: record " << record << " belongs to " << this_frame_belongs_to
+          LOG_ERROR( main_logger, "FATAL: record " << record << " belongs to " << this_frame_belongs_to
                      << ", which has no handle" );
           throw runtime_error( "logic error in csv reader" );
         }
@@ -476,4 +476,6 @@ file_format_csv
   return track_oracle::write_csv( os, tracks );
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+

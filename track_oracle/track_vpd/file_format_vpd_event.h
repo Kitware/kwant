@@ -7,11 +7,14 @@
 #ifndef INCL_FILE_FORMAT_VPD_EVENT_H
 #define INCL_FILE_FORMAT_VPD_EVENT_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_vpd/track_vpd_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_vpd/track_vpd_event.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 ///
 /// In order to accomodate multi-track events, the VIRAT Public Data
@@ -22,7 +25,7 @@ namespace vidtk
 /// verify that the objects referred have actually been loaded.
 
 
-class file_format_vpd_event: public file_format_base
+class TRACK_VPD_EXPORT file_format_vpd_event: public file_format_base
 {
 public:
   file_format_vpd_event(): file_format_base( TF_VPD_EVENT, "VIRAT Public Data 2.0 event" )
@@ -48,6 +51,7 @@ private:
   using file_format_base::read;
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

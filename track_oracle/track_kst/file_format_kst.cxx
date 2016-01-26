@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,14 +12,14 @@
 #include <cstdio>
 #include <ctype.h>
 
-#include <logger/logger.h>
-
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_point_2d.h>
 #include <vul/vul_timer.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -30,10 +30,7 @@ using std::pair;
 using std::string;
 using std::vector;
 
-VIDTK_LOGGER( "file_format_kst" );
-
-
-namespace {
+namespace { // anon
 
 bool
 get_next_nonblank_line( istream& is, string& line )
@@ -121,7 +118,7 @@ kst_node
 {
   if ( index >= this->elist.size() )
   {
-    LOG_ERROR( "Attempt to access node " << index << " in element list of size " << this->elist.size() );
+    LOG_ERROR( main_logger, "Attempt to access node " << index << " in element list of size " << this->elist.size() );
     return 0;
   }
   return this->elist[ index ];
@@ -135,7 +132,7 @@ kst_node
   if ( ! e ) return false;
   if ( e->get_etype() != KST_STRING )
   {
-    LOG_ERROR( "Tried to access node as " << KST_STRING << "; found " << e->get_etype() );
+    LOG_ERROR( main_logger, "Tried to access node as " << KST_STRING << "; found " << e->get_etype() );
     return false;
   }
   kst_string* es = dynamic_cast< kst_string *>( e );
@@ -159,7 +156,7 @@ kst_node
   istringstream iss( es );
   if ( ! ( iss >> i ))
   {
-    LOG_ERROR( "Couldn't parse int from '" << es << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse int from '" << es << "'" );
     return false;
   }
   return true;
@@ -174,7 +171,7 @@ kst_node
   istringstream iss( es );
   if ( ! ( iss >> d ))
   {
-    LOG_ERROR( "Couldn't parse double from '" << es << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse double from '" << es << "'" );
     return false;
   }
   return true;
@@ -189,7 +186,7 @@ kst_node
   istringstream iss( es );
   if ( ! ( iss >> ts ))
   {
-    LOG_ERROR( "Couldn't parse unsigned long long from '" << es << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse unsigned long long from '" << es << "'" );
     return false;
   }
   return true;
@@ -203,7 +200,7 @@ kst_node
   if ( ! e ) return false;
   if ( e->get_etype() != KST_NODE_PTR )
   {
-    LOG_ERROR( "Tried to access node as " << KST_NODE_PTR << "; found " << e->get_etype() );
+    LOG_ERROR( main_logger, "Tried to access node as " << KST_NODE_PTR << "; found " << e->get_etype() );
     return false;
   }
   kst_node_ptr* n = dynamic_cast< kst_node_ptr *>( e );
@@ -235,7 +232,7 @@ kst_node
   if ( ! this->e_is_node( index, n )) return false;
   if ( n->elist.size() != 2 )
   {
-    LOG_ERROR( "Parsing box; expected two elements; found " << n->elist.size() );
+    LOG_ERROR( main_logger, "Parsing box; expected two elements; found " << n->elist.size() );
     return false;
   }
   vector<double> ul, lr;
@@ -244,12 +241,12 @@ kst_node
 
   if ( ul.size() != 2)
   {
-    LOG_ERROR( "Parsing box; upper left contains " << ul.size() << " elements; expected 2" );
+    LOG_ERROR( main_logger, "Parsing box; upper left contains " << ul.size() << " elements; expected 2" );
     return false;
   }
   if ( lr.size() != 2)
   {
-    LOG_ERROR( "Parsing box; lower right contains " << lr.size() << " elements; expected 2" );
+    LOG_ERROR( main_logger, "Parsing box; lower right contains " << lr.size() << " elements; expected 2" );
     return false;
   }
 
@@ -285,7 +282,7 @@ get_token( istream& is )
     if ( token_index == token_buf_size )
     {
       token_buf[ token_buf_size - 1 ] = 0;
-      LOG_ERROR( "KST token more than " << token_buf_size << " characters?  Partial token:\n'"
+      LOG_ERROR( main_logger, "KST token more than " << token_buf_size << " characters?  Partial token:\n'"
                  << token_buf << "'\n" );
       return make_pair("",false);
     }
@@ -433,8 +430,8 @@ parse_kst_tree( istream& is )
 
 } // anon namespace
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_kst
@@ -443,7 +440,7 @@ file_format_kst
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -463,11 +460,11 @@ file_format_kst
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
-  LOG_INFO( "KST: reading '" << fn << "'" );
+  LOG_INFO( main_logger, "KST: reading '" << fn << "'" );
   return this->read( is, tracks );
 }
 
@@ -481,13 +478,13 @@ file_format_kst
   kst_node* kst_tree = parse_kst_tree( is );
   unsigned n_toplevel_elements = kst_tree->elist.size();
 
-  LOG_INFO( "KST: Parsed " << n_toplevel_elements << " elements in "
+  LOG_INFO( main_logger, "KST: Parsed " << n_toplevel_elements << " elements in "
             << timer.real() / 1000.0 << " seconds" );
   timer.mark();
 
   if ( n_toplevel_elements < 3 )
   {
-    LOG_ERROR( "KST tree only has " << n_toplevel_elements
+    LOG_ERROR( main_logger, "KST tree only has " << n_toplevel_elements
                << " nodes; expecting at least 3" );
     return false;
   }
@@ -499,7 +496,7 @@ file_format_kst
            //(p1 == "RESULTS") && (p2 == "1" )))
            (p1 == "RESULTS") && (p2 == "2" )))
   {
-    LOG_ERROR( "KST version string is '" << p1 << "'; '" << p2 << "; expecting 'RESULTS 2'" );
+    LOG_ERROR( main_logger, "KST version string is '" << p1 << "'; '" << p2 << "; expecting 'RESULTS 2'" );
     return false;
   }
 
@@ -514,7 +511,7 @@ file_format_kst
   {
     string s("");
     bool rc = kst_tree->e_is_str( index+i, s);
-    LOG_DEBUG( "index " << index << " +i " << i << " : " << index+i << " : " << rc << " '" << s << "'" );
+    LOG_DEBUG( main_logger, "index " << index << " +i " << i << " : " << index+i << " : " << rc << " '" << s << "'" );
   }
 #endif
 
@@ -527,7 +524,7 @@ file_format_kst
     {
       string s("");
       bool rc = kst_tree->e_is_str( index+3, s);
-      LOG_DEBUG( "instance: index " << index << " +3 " << 3 << " : " << index+3 << " : " << rc << " '" << s << "'" );
+      LOG_DEBUG( main_logger, "instance: index " << index << " +3 " << 3 << " : " << index+3 << " : " << rc << " '" << s << "'" );
     }
 #endif
     if ( ! kst_tree->e_is_int( index+3, instance_id )) return false;
@@ -621,17 +618,17 @@ file_format_kst
 
   } // while more KST elements
 
-  LOG_INFO( "KST: Parsed " << tracks.size() << " tracks in "
+  LOG_INFO( main_logger, "KST: Parsed " << tracks.size() << " tracks in "
             << timer.real()  / 1000.0 << " seconds" );
   timer.mark();
   // clean up
   delete kst_tree;
-  LOG_INFO( "KST: Cleaned up tree in " << timer.real() / 1000.0 << " seconds");
+  LOG_INFO( main_logger, "KST: Cleaned up tree in " << timer.real() / 1000.0 << " seconds");
 
   // all done
   return true;
 
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

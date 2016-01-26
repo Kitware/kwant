@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2011-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_COMMS_XML_H
 #define INCL_TRACK_COMMS_XML_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_comms_xml/track_comms_xml_export.h>
 
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
@@ -16,10 +19,10 @@ This is a reader for the XML tracks comms supplies as queries ("comms-*.xml")
 for VIRAT.
 */
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_comms_xml_type: public track_base< track_comms_xml_type >
+struct TRACK_COMMS_XML_EXPORT track_comms_xml_type: public track_base< track_comms_xml_type >
 {
   // track level data
   track_field< std::string >& track_source;
@@ -40,6 +43,7 @@ struct track_comms_xml_type: public track_base< track_comms_xml_type >
   }
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

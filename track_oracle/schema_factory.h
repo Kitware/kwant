@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,21 +13,25 @@
 // than with the track_oracle core.)
 //
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_oracle_file_formats_export.h>
+
 #include <string>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 class track_base_impl;
 
-namespace schema_factory
-{
+namespace schema_factory {
 
-bool clone_field_into_schema( track_base_impl& schema,
-                              const std::string& name );
+bool TRACK_ORACLE_FILE_FORMATS_EXPORT
+clone_field_into_schema( track_base_impl& schema,
+                         const std::string& name );
 
-} // schema_factory
+} // ...schema_factory
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_TRACK_WRITER_APIX_H
 #define INCL_TRACK_WRITER_APIX_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_apix/track_apix_export.h>
+
 #include <string>
 #include <track_oracle/track_oracle.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_apix_writer
+struct TRACK_APIX_EXPORT track_apix_writer
 {
 
 // only one track per shapefile
@@ -24,6 +27,7 @@ write( track_handle_type trk, const std::string& filename, const std::string tim
 
 };
 
-} // namespace
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,16 +7,19 @@
 #ifndef INCL_TRACK_VATIC_H
 #define INCL_TRACK_VATIC_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_vatic/track_vatic_export.h>
+
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_point_2d.h>
 #include <set>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_vatic_type: public track_base< track_vatic_type >
+struct TRACK_VATIC_EXPORT track_vatic_type: public track_base< track_vatic_type >
 {
   // track level data
   track_field< unsigned int >& external_id;
@@ -43,6 +46,7 @@ struct track_vatic_type: public track_base< track_vatic_type >
   }
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

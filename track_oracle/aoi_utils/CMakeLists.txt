@@ -1,15 +1,32 @@
-add_library( track_oracle_aoi_utils
-  aoi_utils.h        aoi_utils.cxx
+set( track_oracle_aoi_utils_public_headers
+  aoi_utils.h
 )
 
-set_target_properties( track_oracle_aoi_utils PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_oracle_aoi_utils_sources
+  aoi_utils.cxx
+)
+
+kwiver_install_headers(
+  ${track_oracle_aoi_utils_public_headers}
+  SUBDIR             kwant/track_oracle/aoi_utils
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_aoi_utils_export.h
+  SUBDIR             kwant/track_oracle/aoi_utils
+  NOPATH
+)
+
+kwiver_add_library( track_oracle_aoi_utils
+  ${track_oracle_aoi_utils_public_headers}
+  ${track_oracle_aoi_utils_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_aoi_utils_export.h
 )
 
 target_link_libraries( track_oracle_aoi_utils
-  PRIVATE track_oracle track_scorable_mgrs vidtk_logger vgl ${Boost_REGEX_LIBRARY}
-)
-
-install( TARGETS track_oracle_aoi_utils
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+  PRIVATE              track_oracle
+                       track_scorable_mgrs
+                       vital_logger
+                       vgl
+                       ${Boost_REGEX_LIBRARY}
 )

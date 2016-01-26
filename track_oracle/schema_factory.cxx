@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,10 +13,10 @@
 using std::pair;
 using std::string;
 
-namespace vidtk
-{
-namespace schema_factory
-{
+namespace kwiver {
+namespace kwant {
+
+namespace schema_factory {
 
 bool
 clone_field_into_schema( track_base_impl& schema,
@@ -37,4 +37,6 @@ clone_field_into_schema( track_base_impl& schema,
   return schema.add_field_at_position( f );
 }
 
-}} // vidtk::schema_factory
+} // ...schema_factory
+} // ...kwant
+} // ...kwiver

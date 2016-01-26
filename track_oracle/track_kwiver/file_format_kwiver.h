@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_KWIVER_H
 #define INCL_FILE_FORMAT_KWIVER_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_kwiver/track_kwiver_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_kwiver/track_kwiver.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class file_format_kwiver: public file_format_base
+class TRACK_KWIVER_EXPORT file_format_kwiver: public file_format_base
 {
 public:
   file_format_kwiver(): file_format_base( TF_KWIVER, "Kitware kwiver file" )
@@ -48,6 +51,7 @@ public:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

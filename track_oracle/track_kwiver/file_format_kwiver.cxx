@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,12 +11,12 @@
 
 #include <tinyxml.h>
 
-#include <track_oracle/xml_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
+#include <track_oracle/utils/logging_map.h>
 #include <track_oracle/element_store_base.h>
-#include <track_oracle/logging_map.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::ofstream;
 using std::ostream;
@@ -24,22 +24,19 @@ using std::string;
 using std::vector;
 using std::string;
 
-VIDTK_LOGGER( "file_format_kwxml" );
-
-
 namespace // anon
 {
-using namespace vidtk;
+using namespace ::kwiver::kwant;
 
 
 struct kwiver_xml_helper
 {
-  logging_map_type* w;
+  ::kwiver::logging_map_type* w;
   void add_field_to_row( oracle_entry_handle_type row, const string& name, TiXmlNode* node );
   void read_frame( TiXmlNode* xml_f, frame_handle_type f );
   track_handle_type read_track( TiXmlNode* xml_t );
   kwiver_xml_helper()
-    : w( new logging_map_type( VIDTK_DEFAULT_LOGGER, VIDTK_LOGGER_SITE ))
+    : w( new ::kwiver::logging_map_type( main_logger, KWIVER_LOGGER_SITE ))
   {}
   ~kwiver_xml_helper()
   {
@@ -56,7 +53,7 @@ kwiver_xml_helper
   TiXmlElement* e = node->ToElement();
   if ( ! e )
   {
-    LOG_ERROR( "Couldn't convert '" << name << "' to an element at row " << node->Row() );
+    LOG_ERROR( main_logger, "Couldn't convert '" << name << "' to an element at row " << node->Row() );
     return;
   }
   field_handle_type fh = track_oracle::lookup_by_name( name );
@@ -113,9 +110,8 @@ kwiver_xml_helper
 
 } // anon
 
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_kwiver
@@ -138,31 +134,31 @@ file_format_kwiver
 
   kwiver_xml_helper helper;
 
-  LOG_INFO( "TinyXML loading '" << fn << "': start" );
+  LOG_INFO( main_logger, "TinyXML loading '" << fn << "': start" );
   TiXmlDocument doc( fn.c_str() );
   TiXmlHandle doc_handle( &doc );
   if ( ! doc.LoadFile() )
   {
-    LOG_ERROR("TinyXML (KWXML) couldn't load '" << fn << "'; skipping\n");
+    LOG_ERROR( main_logger,"TinyXML (KWXML) couldn't load '" << fn << "'; skipping\n");
     return false;
   }
-  LOG_INFO( "TinyXML loading '" << fn << "': complete" );
+  LOG_INFO( main_logger, "TinyXML loading '" << fn << "': complete" );
 
   TiXmlNode* xml_root = doc.RootElement();
   if ( ! xml_root )
   {
-    LOG_ERROR("Couldn't load root element from '" << fn << "'; skipping\n");
+    LOG_ERROR( main_logger,"Couldn't load root element from '" << fn << "'; skipping\n");
     return false;
   }
 
   if ( string("kwiver") != xml_root->Value() )
   {
-    LOG_ERROR( "Root node of '" << fn << "' was '" << xml_root->Value() << "'; expecting 'kwiver'; skipping\n" );
+    LOG_ERROR( main_logger, "Root node of '" << fn << "' was '" << xml_root->Value() << "'; expecting 'kwiver'; skipping\n" );
     return false;
   }
 
   TiXmlNode* xml_track_objects = 0;
-  logging_map_type wmap( VIDTK_DEFAULT_LOGGER, VIDTK_LOGGER_SITE );
+  logging_map_type wmap( main_logger, KWIVER_LOGGER_SITE );
 
   const string track_str("track");
   while( (xml_track_objects = xml_root->IterateChildren( xml_track_objects )) )
@@ -178,7 +174,7 @@ file_format_kwiver
     }
   }
 
-  LOG_INFO( "Read kwiver file " << fn << ": " << helper.w->n_msgs() << " warnings" );
+  LOG_INFO( main_logger, "Read kwiver file " << fn << ": " << helper.w->n_msgs() << " warnings" );
   helper.w->dump_msgs();
 
   return true;
@@ -201,6 +197,5 @@ file_format_kwiver
   return track_oracle::write_kwiver( os, tracks );
 }
 
-
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -1,11 +1,14 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #ifndef INCL_TRACK_FILTER_KWE_H
 #define INCL_TRACK_FILTER_KWE_H
+
+#include <vital/vital_config.h>
+#include <track_oracle/track_filter_kwe/track_filter_kwe_export.h>
 
 #include <track_oracle/event_adapter.h>
 
@@ -43,10 +46,10 @@
 /// be handled by domains.)
 ///
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_filter_kwe_type: public event_data_schema
+struct TRACK_FILTER_KWE_EXPORT track_filter_kwe_type: public event_data_schema
 {
   static bool read( const std::string& fn,
                     const track_handle_list_type& ref_tracks,
@@ -54,6 +57,8 @@ struct track_filter_kwe_type: public event_data_schema
                     track_handle_list_type& new_tracks );
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+
 
 #endif

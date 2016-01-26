@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010, 2012, 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,14 +7,17 @@
 #ifndef INCL_TRACK_KW_18_H
 #define INCL_TRACK_KW_18_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_kw18/track_kw18_export.h>
+
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 #include <track_oracle/data_terms/data_terms.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct track_kw18_type: public track_base< track_kw18_type >
+struct TRACK_KW18_EXPORT track_kw18_type: public track_base< track_kw18_type >
 {
 
   track_field< dt::tracking::external_id > external_id;
@@ -55,6 +58,7 @@ struct track_kw18_type: public track_base< track_kw18_type >
 
 };
 
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

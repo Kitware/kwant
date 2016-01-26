@@ -17,7 +17,7 @@ namespace kwiver
 {
 
 logging_map_type
-::logging_map_type( kwiver_logger* logger, const vital::logger_ns::location_info& s )
+::logging_map_type( vital::logger_handle_t logger, const vital::logger_ns::location_info& s )
   : my_logger(logger), site( s ), output_prefix( "" )
 {
 }

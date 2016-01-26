@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -20,7 +20,7 @@
 using std::floor;
 using std::string;
 
-using vidtk::geographic::geo_coords;
+using kwiver::geographic::geo_coords;
 using namespace boost::posix_time;
 
 namespace  // anon
@@ -53,7 +53,7 @@ private:
 public:
   explicit dbf_record_type( const string& prefix );
   ~dbf_record_type();
-  void emit_record( int row, vidtk::frame_handle_type frame, const string& time_format_string );
+  void emit_record( int row, ::kwiver::kwant::frame_handle_type frame, const string& time_format_string );
 };
 
 
@@ -105,10 +105,10 @@ dbf_record_type
 void
 dbf_record_type
 ::emit_record( int row,
-               vidtk::frame_handle_type frame,
+               ::kwiver::kwant::frame_handle_type frame,
                const string& time_format_string )
 {
-  static vidtk::track_apix_type trk;
+  static ::kwiver::kwant::track_apix_type trk;
 
   geo_coords ll2mgrs( trk[frame].lat(), trk[frame].lon() );
 
@@ -116,7 +116,7 @@ dbf_record_type
   int utc_time_ms;
   string time_string;
   reformat_time( time_format_string,
-                 trk[frame].utc_timestamp().time_in_secs(),
+                 trk[frame].utc_timestamp().get_time_seconds(),
                  utc_time_secs,
                  utc_time_ms,
                  time_string );
@@ -128,7 +128,7 @@ dbf_record_type
   DBFWriteIntegerAttribute( this->fh, row, this->msField, utc_time_ms );
   DBFWriteStringAttribute( this->fh, row, this->timeStrField, time_string.c_str() );
   DBFWriteStringAttribute( this->fh, row, this->MGRSField, ll2mgrs.mgrs_representation().c_str() );
-  DBFWriteIntegerAttribute( this->fh, row, this->frameNumField, trk[frame].utc_timestamp().frame_number() );
+  DBFWriteIntegerAttribute( this->fh, row, this->frameNumField, trk[frame].utc_timestamp().get_frame() );
   DBFWriteIntegerAttribute( this->fh, row, this->interplatField, 0 );
 }
 
@@ -163,8 +163,8 @@ void reformat_time( const string time_format_string,
 
 } // anon namespace
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 track_apix_writer
@@ -174,9 +174,9 @@ track_apix_writer
 {
   shp_record_type shp( filename );
   dbf_record_type dbf( filename);
-  static vidtk::track_apix_type trk;
+  static track_apix_type trk;
 
-  vidtk::frame_handle_list_type frames = track_oracle::get_frames( t );
+  frame_handle_list_type frames = track_oracle::get_frames( t );
   for (unsigned i=0; i<frames.size(); ++i)
   {
     shp.emit_point( trk[ frames[i] ].lat(), trk[ frames[i] ].lon() );
@@ -185,4 +185,5 @@ track_apix_writer
   return true;
 }
 
-} // vidtk namespace
+} // ...kwant
+} // ...kwiver

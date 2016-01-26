@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -10,20 +10,19 @@
 #include <fstream>
 #include <sstream>
 
-#include <logger/logger.h>
-
 #include <tinyxml.h>
 
-#include <track_oracle/xml_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
+
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 
 using std::string;
 using std::vector;
 
-VIDTK_LOGGER( "file_format_mitre_xml" );
-
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_mitre_xml
@@ -47,14 +46,14 @@ file_format_mitre_xml
   TiXmlDocument doc( fn.c_str() );
   if ( ! doc.LoadFile() )
   {
-    LOG_ERROR( "MITRE XML file '" << fn << "': TinyXML failed to load document");
+    LOG_ERROR( main_logger, "MITRE XML file '" << fn << "': TinyXML failed to load document");
     return false;
   }
 
   TiXmlNode* xmlRoot = doc.RootElement();
   if ( ! xmlRoot )
   {
-    LOG_INFO( "MITRE XML file '" << fn << "': TinyXML found no root node?");
+    LOG_INFO( main_logger, "MITRE XML file '" << fn << "': TinyXML found no root node?");
     return false;
   }
 
@@ -65,7 +64,7 @@ file_format_mitre_xml
     TiXmlElement* e = xmlTrackObjects->ToElement();
     if (!e)
     {
-      LOG_ERROR( "MITRE XML file '" << fn << "': TinyXML couldn't cast to element?");
+      LOG_ERROR( main_logger, "MITRE XML file '" << fn << "': TinyXML couldn't cast to element?");
       return false;
     }
 
@@ -75,27 +74,27 @@ file_format_mitre_xml
     // Get the data from the element...
     if (e->QueryIntAttribute( "frameNumber", &frameNumber) != TIXML_SUCCESS)
     {
-      LOG_INFO( "MITRE XML file '" << fn << "': row " << e->Row() << ": no frameNumber?");
+      LOG_INFO( main_logger, "MITRE XML file '" << fn << "': row " << e->Row() << ": no frameNumber?");
       return false;
     }
     if (e->QueryDoubleAttribute( "height", &height ) != TIXML_SUCCESS )
     {
-      LOG_INFO( "MITRE XML file '" << fn << "': row " << e->Row() << ": no height?");
+      LOG_INFO( main_logger, "MITRE XML file '" << fn << "': row " << e->Row() << ": no height?");
       return false;
       }
     if (e->QueryDoubleAttribute( "width", &width ) != TIXML_SUCCESS )
     {
-      LOG_INFO( "MITRE XML file '" << fn << "': row " << e->Row() << ": no width?");
+      LOG_INFO( main_logger, "MITRE XML file '" << fn << "': row " << e->Row() << ": no width?");
       return false;
     }
     if (e->QueryDoubleAttribute( "x", &x ) != TIXML_SUCCESS )
     {
-      LOG_INFO( "MITRE XML file '" << fn << "': row " << e->Row() << ": no x?");
+      LOG_INFO( main_logger, "MITRE XML file '" << fn << "': row " << e->Row() << ": no x?");
       return false;
     }
     if (e->QueryDoubleAttribute( "y", &y ) != TIXML_SUCCESS )
     {
-      LOG_INFO( "MITRE XML file '" << fn << "': row " << e->Row() << ": no y?");
+      LOG_INFO( main_logger, "MITRE XML file '" << fn << "': row " << e->Row() << ": no y?");
       return false;
     }
 
@@ -120,5 +119,5 @@ file_format_mitre_xml
 
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

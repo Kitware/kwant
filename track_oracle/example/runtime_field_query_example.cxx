@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -19,24 +19,18 @@
 #include <track_oracle/track_field.h>
 #include <track_oracle/file_format_manager.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::string;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_runtime_field_query_example_cxx__
-VIDTK_LOGGER("runtime_field_query_example_cxx");
-
-
-using namespace vidtk;
+using namespace kwiver::kwant;
 
 int main( int argc, char *argv[] )
 {
   if (argc != 3)
   {
-    LOG_INFO( "Usage: " << argv[0] << " track-file field_name\n"
+    LOG_INFO( main_logger, "Usage: " << argv[0] << " track-file field_name\n"
              << "Load in a track file, attempt to see if it supplies field_name.\n"
              << "(Type is assumed to be double.)");
     return EXIT_FAILURE;
@@ -47,13 +41,13 @@ int main( int argc, char *argv[] )
   track_handle_list_type tracks;
   if (! file_format_manager::read( track_fn, tracks ))
   {
-    LOG_ERROR( "Error: couldn't read tracks from '" << track_fn << "'; exiting");
+    LOG_ERROR( main_logger, "Error: couldn't read tracks from '" << track_fn << "'; exiting");
     return EXIT_FAILURE;
   }
-  LOG_INFO( "Info: read " << tracks.size() << " tracks");
+  LOG_INFO( main_logger, "Info: read " << tracks.size() << " tracks");
   if ( tracks.empty() )
   {
-    LOG_INFO( "Info: reader succeeded but no tracks were loaded?  Weird!");
+    LOG_INFO( main_logger, "Info: reader succeeded but no tracks were loaded?  Weird!");
     return EXIT_FAILURE;
   }
 
@@ -93,10 +87,10 @@ int main( int argc, char *argv[] )
 
   // all done
 
-  LOG_INFO( "Info: found " << count << " instances of '" << argv[2] << "' in the file");
+  LOG_INFO( main_logger, "Info: found " << count << " instances of '" << argv[2] << "' in the file");
   if (count > 0)
   {
-    LOG_INFO( "Info: ... the sum was " << sum << " and the average was " << sum / count << "");
+    LOG_INFO( main_logger, "Info: ... the sum was " << sum << " and the average was " << sum / count << "");
   }
 
 }

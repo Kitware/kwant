@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_CSV_H
 #define INCL_FILE_FORMAT_CSV_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_csv/track_csv_export.h>
+
 #include <track_oracle/track_csv/track_csv.h>
 #include <track_oracle/file_format_base.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class file_format_csv: public file_format_base
+class TRACK_CSV_EXPORT file_format_csv: public file_format_base
 {
 public:
   file_format_csv();
@@ -43,6 +46,7 @@ protected:
   bool internal_stream_read( std::istream& is, size_t file_size, track_handle_list_type& tracks ) const;
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -177,6 +177,7 @@ bool
 kwiver_io_base<DATA_TERM_T>
 ::read_xml( const TiXmlElement* e, Type& val ) const
 {
+  if (! e->GetText()) return false;
   return this->from_str( e->GetText(), val );
 }
 

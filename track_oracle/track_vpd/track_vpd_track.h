@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,19 +7,22 @@
 #ifndef INCL_TRACK_VPD_H
 #define INCL_TRACK_VPD_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_vpd/track_vpd_export.h>
+
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 #include <string>
 #include <utility>
 #include <vgl/vgl_box_2d.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 /// This is the track_oracle schema for the VIRAT Public Data 2.0 object
 /// tracks.
 
-struct track_vpd_track_type: public track_base< track_vpd_track_type >
+struct TRACK_VPD_EXPORT track_vpd_track_type: public track_base< track_vpd_track_type >
 {
   track_field< unsigned >& object_id;
   track_field< unsigned >& object_type;
@@ -37,7 +40,7 @@ struct track_vpd_track_type: public track_base< track_vpd_track_type >
   static unsigned str_to_object_type( const std::string& s );
 };
 
-
-} // namespace vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

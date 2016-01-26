@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,11 +12,11 @@
 
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/util/tokenizers.h>
+#include <track_oracle/utils/tokenizers.h>
 #include <track_oracle/data_terms/data_terms.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -26,8 +26,6 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
-
-VIDTK_LOGGER( "file_format_e2at_callout" );
 
 namespace { // anon
 
@@ -71,12 +69,12 @@ parse_latlon( const string& s,
   istringstream latss( re.match(1) ), lonss( re.match(3) );
   if ( ! ( latss >> lat ))
   {
-    LOG_ERROR( "Logic error: expected to parse a latitude from '" << re.match(1) << "'" );
+    LOG_ERROR( main_logger, "Logic error: expected to parse a latitude from '" << re.match(1) << "'" );
     return false;
   }
   if ( ! ( lonss >> lon ))
   {
-    LOG_ERROR( "Logic error: expected to parse a longitude from '" << re.match(3) << "'" );
+    LOG_ERROR( main_logger, "Logic error: expected to parse a longitude from '" << re.match(3) << "'" );
     return false;
   }
   char ns = re.match(2)[0];
@@ -95,8 +93,8 @@ parse_latlon( const string& s,
 
 } // anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 void
 trim( string& s )
@@ -123,7 +121,7 @@ file_format_e2at_callout
   ifstream is( fn.c_str() );
   if (! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "' for inspection" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "' for inspection" );
     return false;
   }
 
@@ -135,7 +133,7 @@ file_format_e2at_callout
     {
       if (i == 0)
       {
-        LOG_ERROR( "Couldn't read first line from '" << fn << "' during inspection" );
+        LOG_ERROR( main_logger, "Couldn't read first line from '" << fn << "' during inspection" );
       }
       return false;
     }
@@ -161,7 +159,7 @@ file_format_e2at_callout
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open '" << fn << "'" );
     return false;
   }
 
@@ -187,14 +185,14 @@ file_format_e2at_callout
     tokens = csv_tokenizer::parse( line );
     if (tokens.size() < 5)
     {
-      LOG_WARN( "E2AT callout: line " << c << ": skipping too-short line '" << line << "'" );
+      LOG_WARN( main_logger, "E2AT callout: line " << c << ": skipping too-short line '" << line << "'" );
       continue;
     }
 
     pair< string, double > ts_probe = parse_time( tokens[1] );
     if ( ! ts_probe.first.empty() )
     {
-      LOG_WARN( "E2AT callout: line " << c << ": skipping due to timestamp conversion failure '" << ts_probe.first << "'; line is '" << line << "'" );
+      LOG_WARN( main_logger, "E2AT callout: line " << c << ": skipping due to timestamp conversion failure '" << ts_probe.first << "'; line is '" << line << "'" );
       continue;
     }
 
@@ -219,4 +217,5 @@ file_format_e2at_callout
   return true;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

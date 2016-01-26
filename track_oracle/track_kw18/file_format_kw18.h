@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_KW18_H
 #define INCL_FILE_FORMAT_KW18_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_kw18/track_kw18_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_kw18/track_kw18.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class file_format_kw18: public file_format_base
+class TRACK_KW18_EXPORT file_format_kw18: public file_format_base
 {
 public:
   file_format_kw18(): file_format_base( TF_KW18, "Kitware generic tracks" )
@@ -55,6 +58,7 @@ private:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,10 +1,8 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
-
-
 
 #include "track_filter_kwe.h"
 
@@ -19,12 +17,11 @@
 #include <vul/vul_file.h>
 
 #include <track_oracle/aries_interface/aries_interface.h>
-#include <track_oracle/logging_map.h>
 #include <track_oracle/event_adapter.h>
+#include <track_oracle/utils/logging_map.h>
 
-#include <logger/logger.h>
-
-VIDTK_LOGGER("track_filter_kwe_cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::ifstream;
 using std::string;
@@ -33,8 +30,8 @@ using std::pair;
 using std::make_pair;
 using std::ostringstream;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 track_filter_kwe_type
@@ -44,11 +41,11 @@ track_filter_kwe_type
         track_handle_list_type& new_tracks )
 {
 
-  logging_map_type wmsgs( VIDTK_DEFAULT_LOGGER, VIDTK_LOGGER_SITE );
+  logging_map_type wmsgs( main_logger, KWIVER_LOGGER_SITE );
   ifstream is( fn.c_str() );
   if ( ! is )
   {
-    LOG_ERROR( "Couldn't open KWE '" << fn << "'" );
+    LOG_ERROR( main_logger, "Couldn't open KWE '" << fn << "'" );
     return false;
   }
 
@@ -61,13 +58,13 @@ track_filter_kwe_type
     pair< bool, unsigned > probe = id_field.get( ref_tracks[i].row );
     if ( ! probe.first )
     {
-      LOG_ERROR( "d2d track without external ID?" );
+      LOG_ERROR( main_logger, "d2d track without external ID?" );
       return false;
     }
     pair< id2handle_it, bool > insert_test = id2handle.insert( make_pair(probe.second, ref_tracks[i]) );
     if ( ! insert_test.second )
     {
-      LOG_ERROR( "Duplicate track IDs " << probe.second );
+      LOG_ERROR( main_logger, "Duplicate track IDs " << probe.second );
       return false;
     }
   }
@@ -84,7 +81,7 @@ track_filter_kwe_type
       ostringstream oss;
       oss << "Read " << nlines << " lines; " << new_tracks.size() << " events";
       oss << vul_sprintf( "; %02.2f%% of file", 100.0*is.tellg()/file_size );
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
       timer.mark();
     }
 
@@ -109,7 +106,7 @@ track_filter_kwe_type
     // do this first to correctly set track_style
     if ( ! track_oracle::clone_nonsystem_fields( probe->second, new_track ))
     {
-      LOG_ERROR( "Couldn't clone non-system track level fields?" );
+      LOG_ERROR( main_logger, "Couldn't clone non-system track level fields?" );
       continue;
     }
 
@@ -125,12 +122,12 @@ track_filter_kwe_type
 
   if ( ! wmsgs.empty() )
   {
-    LOG_INFO( "Skipped KWE events: ");
+    LOG_INFO( main_logger, "Skipped KWE events: ");
     wmsgs.dump_msgs();
   }
 
   return true;
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

@@ -153,8 +153,8 @@ target_link_libraries( track_oracle_format_base
                       ${TinyXML_LIBRARY}
 )
 
+add_subdirectory( data_terms )
 add_subdirectory( example )
-
 add_subdirectory( track_kw18 )
 
 if (KWANT_ENABLE_SHAPELIB)
@@ -164,25 +164,50 @@ endif()
 
 add_subdirectory( aoi_utils )
 
-add_subdirectory( data_terms )
+set( track_oracle_event_adapter_public_headers
+  event_adapter.h
+)
 
-add_library( track_oracle_event_adapter
-  event_adapter.h  event_adapter.cxx )
+set( track_oracle_event_adapter_sources
+  event_adapter.cxx
+)
+
+kwiver_install_headers(
+  ${track_oracle_event_adapter_public_headers}
+  SUBDIR            kwant/track_oracle
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_event_adapter_export.h
+  SUBDIR            kwant/track_oracle
+  NOPATH
+)
+
+kwiver_add_library( track_oracle_event_adapter
+  ${track_oracle_event_adapter_public_headers}
+  ${track_oracle_event_adapter_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_event_adapter_export.h
+)
+
 target_link_libraries( track_oracle_event_adapter
-  PUBLIC logging_map data_terms
-  PRIVATE track_oracle scoring_aries_interface vital_logger vul )
-set_target_properties( track_oracle_event_adapter
-  PROPERTIES VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION} )
-install( TARGETS track_oracle_event_adapter
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
+  PUBLIC               logging_map
+                       data_terms
+  PRIVATE              track_oracle
+                       scoring_aries_interface
+                       vital_logger
+                       vul
+)
 
-#  add_subdirectory( track_4676 )
-  add_subdirectory( track_comms_xml )
-  add_subdirectory( track_mitre_xml )
-  add_subdirectory( track_kwxml )
-  add_subdirectory( track_xgtf )
+if (KWANT_ENABLE_4676)
+  add_subdirectory( track_4676 )
+  set( TRACK_ORACLE_4676_LIBRARY track_4676 )
+endif()
+
+add_subdirectory( track_comms_xml )
+add_subdirectory( track_mitre_xml )
+add_subdirectory( track_kwxml )
+add_subdirectory( track_xgtf )
 add_subdirectory( track_kwiver )
-
 add_subdirectory( track_csv )
 add_subdirectory( track_kst )
 add_subdirectory( track_vatic )
@@ -191,37 +216,51 @@ add_subdirectory( track_scorable_mgrs )
 add_subdirectory( track_e2at_callout )
 add_subdirectory( track_filter_kwe)
 
-add_library( track_oracle_file_formats
-             file_format_schema.h  file_format_schema.cxx
-             file_format_manager.h file_format_manager.cxx
-             schema_factory.h      schema_factory.cxx )
+set( track_oracle_file_formats_public_headers
+  file_format_manager.h
+  schema_factory.h
+)
+
+set( track_oracle_file_formats_sources
+  file_format_manager.cxx
+  schema_factory.cxx
+)
+
+kwiver_install_headers(
+  ${track_oracle_file_formats_public_headers}
+  SUBDIR        kwant/track_oracle
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_file_formats_export.h
+  SUBDIR        kwant/track_oracle
+  NOPATH
+)
+
+kwiver_add_library( track_oracle_file_formats
+  ${track_oracle_file_formats_public_headers}
+  ${track_oracle_file_formats_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_oracle_file_formats_export.h
+)
 
 target_link_libraries( track_oracle_file_formats
-  PUBLIC
-  track_oracle
-  track_kw18
-  track_mitre_xml
-  track_comms_xml
-  track_kwxml
-  track_xgtf
-  track_kst
-  track_vatic
-  track_vpd
-  track_e2at_callout
-  #  track_4676
-  track_csv
-  track_kwiver
-  track_oracle_tokenizers
-  track_filter_kwe
-  ${TRACK_ORACLE_APIX_LIBRARY}
+  PUBLIC               track_oracle
+                       track_kw18
+                       track_mitre_xml
+                       track_comms_xml
+                       track_kwxml
+                       track_xgtf
+                       track_kst
+                       track_vatic
+                       track_vpd
+                       track_e2at_callout
+                       ${TRACK_4676_LIBRARY}
+                       track_csv
+                       track_kwiver
+                       track_oracle_tokenizers
+                       track_filter_kwe
+                       ${TRACK_ORACLE_APIX_LIBRARY}
 
-  PRIVATE
-  ${Boost_THREAD_LIBRARY}
-  vul
+  PRIVATE              ${Boost_THREAD_LIBRARY}
+                       vul
 )
-
-install( TARGETS track_oracle_file_formats 
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
-)
-
-

@@ -70,7 +70,7 @@
 ///
 
 #include <vital/vital_config.h>
-#include <track_oracle/track_oracle_export.h>
+#include <track_oracle/track_oracle_file_formats_export.h>
 
 #include <vector>
 #include <string>
@@ -91,7 +91,7 @@ struct element_descriptor;
 typedef std::map< file_format_enum, file_format_base* > format_map_type;
 typedef std::map< file_format_enum, file_format_base* >::const_iterator format_map_cit;
 
-class TRACK_ORACLE_EXPORT file_format_manager
+class TRACK_ORACLE_FILE_FORMATS_EXPORT file_format_manager
 {
 public:
 

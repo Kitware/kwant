@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -20,8 +20,8 @@
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/schema_factory.h>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::map;
 using std::ostringstream;
@@ -29,12 +29,7 @@ using std::string;
 using std::vector;
 
 
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_track_format_example_cxx__
-VIDTK_LOGGER("track_format_example_cxx");
-
-
-using namespace vidtk;
+using namespace kwiver::kwant;
 
 // holds our on-the-fly schema
 struct adhoc_schema: public track_base< adhoc_schema >
@@ -51,7 +46,7 @@ int main( int argc, char *argv[] )
     string opt( argv[1] );
     if ((opt == "-h") || (opt == "-?"))
     {
-      LOG_INFO( "Usage: " << argv[0] << " [field-name] [field-name ...]\n"
+      LOG_INFO( main_logger, "Usage: " << argv[0] << " [field-name] [field-name ...]\n"
                << "With no arguments, lists all fields of known track formats\n"
                << "With field names, construct schema from fields and return track formats that match it");
       return EXIT_FAILURE;
@@ -77,13 +72,13 @@ dump_all_formats()
     file_format_base* ff = file_format_manager::get_format( tf );
     if ( ! ff )
     {
-      LOG_INFO( "No format manager for enumeration " << tfi << "?");
+      LOG_INFO( main_logger, "No format manager for enumeration " << tfi << "?");
       continue;
     }
 
     map< field_handle_type, track_base_impl::schema_position_type > schema_elements =
       ff->enumerate_schema();
-    LOG_INFO( "Format " << file_format_type::to_string( ff->get_format() ) << " (" << ff->format_description() << ") contains "
+    LOG_INFO( main_logger, "Format " << file_format_type::to_string( ff->get_format() ) << " (" << ff->format_description() << ") contains "
              << schema_elements.size() << " elements:");
     for (map< field_handle_type, track_base_impl::schema_position_type >::const_iterator i = schema_elements.begin();
          i != schema_elements.end();
@@ -98,9 +93,9 @@ dump_all_formats()
       }
       element_descriptor e = track_oracle::get_element_descriptor( i->first );
       oss << "\t " << e.name;
-      LOG_INFO( oss.str() );
+      LOG_INFO( main_logger, oss.str() );
     }
-    LOG_INFO( "schema enumeration complete");
+    LOG_INFO( main_logger, "schema enumeration complete");
   }
 }
 
@@ -113,22 +108,22 @@ match_against_schema( int argc, char *argv[] )
   for (int i = 1; i < argc; ++i)
   {
     bool rc = schema_factory::clone_field_into_schema( schema, argv[i] );
-    LOG_INFO( "Cloned '" << argv[i] << "' into schema: " << rc << "");
+    LOG_INFO( main_logger, "Cloned '" << argv[i] << "' into schema: " << rc << "");
   }
 
   // create a gratuitous instance of it and print
   {
     track_handle_type t = schema.create();
     /*frame_handle_type f =*/ schema.create_frame();
-    LOG_INFO( "Final schema: " << schema( t ) << "");
+    LOG_INFO( main_logger, "Final schema: " << schema( t ) << "");
   }
 
   // what matches it?
   vector< file_format_enum > matches = file_format_manager::format_matches_schema( schema );
-  LOG_INFO( "Schema matches " << matches.size() << " formats:");
+  LOG_INFO( main_logger, "Schema matches " << matches.size() << " formats:");
   for (size_t i = 0; i< matches.size(); ++i)
   {
-    LOG_INFO( file_format_type::to_string( matches[i] ) << "");
+    LOG_INFO( main_logger, file_format_type::to_string( matches[i] ) << "");
   }
 
 }

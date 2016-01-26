@@ -1,16 +1,18 @@
 /*ckwg +5
- * Copyright 2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
 #include "track_vpd_track.h"
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::string;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 string
 track_vpd_track_type
@@ -39,4 +41,5 @@ track_vpd_track_type
   return 0;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

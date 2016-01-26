@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -18,18 +18,20 @@
 /// ***
 ///
 
+#include <vital/vital_config.h>
+#include <track_oracle/aoi_utils/track_oracle_aoi_utils_export.h>
+
 #include <string>
 #include <stdexcept>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-namespace aoi_utils
-{
+namespace aoi_utils {
 
 struct aoi_impl;
 
-class aoi_t
+class TRACK_ORACLE_AOI_UTILS_EXPORT aoi_t
 {
 public:
   enum flavor_t { INVALID, PIXEL, GEO };
@@ -50,14 +52,14 @@ private:
   aoi_impl* p;
 };
 
-class aoi_exception: public std::runtime_error
+class TRACK_ORACLE_AOI_UTILS_EXPORT aoi_exception: public std::runtime_error
 {
 public:
   explicit aoi_exception( const std::string& s ): std::runtime_error( s ) {}
 };
 
-} // aoi_utils
-} // vidtk
-
+} // ...aoi_utils
+} // ...kwant
+} // ...kwiver
 
 #endif

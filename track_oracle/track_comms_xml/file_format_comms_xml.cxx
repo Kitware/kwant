@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,12 +13,13 @@
 #include <algorithm>
 #include <iterator>
 
-#include <logger/logger.h>
-
 #include <tinyxml.h>
 
-#include <track_oracle/xml_tokenizer.h>
+#include <track_oracle/utils/tokenizers.h>
 #include <vgl/vgl_point_2d.h>
+
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::back_inserter;
 using std::copy;
@@ -27,17 +28,15 @@ using std::reverse;
 using std::string;
 using std::vector;
 
-VIDTK_LOGGER( "file_format_comms_xml" );
-
 namespace // anon
 {
 
 bool
 load_tracks( const string& filename,
              const string& query_id,
-             vidtk::track_comms_xml_type& comms_xml,
+             ::kwiver::kwant::track_comms_xml_type& comms_xml,
              TiXmlNode* activitySet,
-             vidtk::track_handle_list_type& track_ids )
+             ::kwiver::kwant::track_handle_list_type& track_ids )
 {
   TiXmlNode* xmlTrackObjects = 0;
   while( (xmlTrackObjects = activitySet->IterateChildren( xmlTrackObjects )) )
@@ -45,7 +44,7 @@ load_tracks( const string& filename,
     TiXmlElement* e = xmlTrackObjects->ToElement();
     if (!e)
     {
-      LOG_ERROR( "COMMS XML file '" << filename << "': TinyXML couldn't cast to element?" );
+      LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': TinyXML couldn't cast to element?" );
       return false;
     }
 
@@ -60,13 +59,13 @@ load_tracks( const string& filename,
 
     if ( e->QueryStringAttribute( "strmid", &track_source ) != TIXML_SUCCESS )
     {
-      LOG_ERROR( "COMMS XML file '" << filename << "': row " << e->Row() << ": no strmid?" );
+      LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << e->Row() << ": no strmid?" );
       return false;
     }
 
     if ( e->QueryValueAttribute( "sim", &prob ) != TIXML_SUCCESS )
     {
-      LOG_WARN( "COMMS XML file '" << filename << "': row " << e->Row() << ": no prob? ");
+      LOG_WARN( main_logger, "COMMS XML file '" << filename << "': row " << e->Row() << ": no prob? ");
     }
 
     // Can't use vul_file here because we always use POSIX directory separators.
@@ -74,7 +73,7 @@ load_tracks( const string& filename,
     copy( track_source.rbegin(), sep, back_inserter( track_source_file ) );
     reverse( track_source_file.begin(), track_source_file.end() );
 
-    vidtk::track_handle_type t = comms_xml.create();
+    ::kwiver::kwant::track_handle_type t = comms_xml.create();
     track_ids.push_back( t );
 
     comms_xml.track_source() = track_source_file;
@@ -87,7 +86,7 @@ load_tracks( const string& filename,
       TiXmlElement* f = xmlFrameObjects->ToElement();
       if (!f)
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': TinyXML couldn't cast to element?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': TinyXML couldn't cast to element?" );
         return false;
       }
 
@@ -97,31 +96,31 @@ load_tracks( const string& filename,
       // Get the data from the element...
       if (f->QueryValueAttribute( "frame", &frameTime) != TIXML_SUCCESS)
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': row " << f->Row() << ": no frame?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << f->Row() << ": no frame?" );
         return false;
       }
       if (f->QueryValueAttribute( "xmin", &x1 ) != TIXML_SUCCESS )
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': row " << f->Row() << ": no xmin?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << f->Row() << ": no xmin?" );
         return false;
       }
       if (f->QueryValueAttribute( "ymin", &y1 ) != TIXML_SUCCESS )
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': row " << f->Row() << ": no ymin?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << f->Row() << ": no ymin?" );
         return false;
       }
       if (f->QueryValueAttribute( "xmax", &x2 ) != TIXML_SUCCESS )
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': row " << f->Row() << ": no xmax?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << f->Row() << ": no xmax?" );
         return false;
       }
       if (f->QueryValueAttribute( "ymax", &y2 ) != TIXML_SUCCESS )
       {
-        LOG_ERROR( "COMMS XML file '" << filename << "': row " << f->Row() << ": no ymax?" );
+        LOG_ERROR( main_logger, "COMMS XML file '" << filename << "': row " << f->Row() << ": no ymax?" );
         return false;
       }
 
-      vidtk::frame_handle_type h = comms_xml.create_frame();
+      ::kwiver::kwant::frame_handle_type h = comms_xml.create_frame();
       comms_xml[ h ].timestamp() = 1000 * frameTime;
       comms_xml[ h ].bounding_box() =
         vgl_box_2d<double>(
@@ -134,10 +133,10 @@ load_tracks( const string& filename,
   return true;
 }
 
-} // anon
+} // ...anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 comms_xml_reader_opts&
 comms_xml_reader_opts
@@ -151,7 +150,7 @@ comms_xml_reader_opts
   }
   else
   {
-    LOG_WARN("Assigned a non-comms_xml options structure to a comms_xml options structure: Slicing the class");
+    LOG_WARN( main_logger,"Assigned a non-comms_xml options structure to a comms_xml options structure: Slicing the class");
   }
 
   return *this;
@@ -179,7 +178,7 @@ file_format_comms_xml
   TiXmlDocument doc( fn.c_str() );
   if ( ! doc.LoadFile() )
   {
-    LOG_ERROR( "COMMS XML file '" << fn << "': TinyXML failed to load document");
+    LOG_ERROR( main_logger, "COMMS XML file '" << fn << "': TinyXML failed to load document");
     return false;
   }
 
@@ -192,7 +191,7 @@ file_format_comms_xml
     TiXmlElement* e = r->ToElement();
     if (!e)
     {
-      LOG_ERROR( "COMMS XML file '" << fn << "': TinyXML couldn't cast to element?");
+      LOG_ERROR( main_logger, "COMMS XML file '" << fn << "': TinyXML couldn't cast to element?");
       return false;
     }
 
@@ -219,4 +218,5 @@ file_format_comms_xml
 
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

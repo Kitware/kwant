@@ -2,14 +2,35 @@
 # vatic tracks
 #
 
-add_library( track_vatic
-             track_vatic.h
-             file_format_vatic.h        file_format_vatic.cxx )
-set_target_properties( track_vatic PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_vatic_public_headers
+  track_vatic.h
+  file_format_vatic.h
 )
 
-target_link_libraries( track_vatic PUBLIC track_oracle track_oracle_format_base vgl vidtk_logger )
-install( TARGETS track_vatic
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+set( track_vatic_sources
+  file_format_vatic.cxx
+)
+
+kwiver_install_headers(
+  ${track_vatic_public_headers}
+  SUBDIR        kwant/track_oracle/track_vatic
+)
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_vatic_export.h
+  SUBDIR        kwant/track_oracle/track_vatic
+  NOPATH
+)
+
+kwiver_add_library( track_vatic
+  ${track_vatic_public_headers}
+  ${track_vatic_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_vatic_export.h
+)
+
+target_link_libraries( track_vatic
+PUBLIC                 track_oracle
+                       track_oracle_format_base
+                       vgl
+                       vital_logger
 )

@@ -16,7 +16,7 @@
 ///
 
 #include <vital/vital_config.h>
-#include <track_oracle/track_scorable_mgrs/scorable_mgrs_export.h>
+#include <track_oracle/track_scorable_mgrs/track_scorable_mgrs_export.h>
 
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>

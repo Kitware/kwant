@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -12,12 +12,12 @@
 #include <cstdio>
 #include <ctype.h>
 
-#include <logger/logger.h>
-
 #include <vgl/vgl_box_2d.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::getline;
 using std::ifstream;
@@ -28,9 +28,6 @@ using std::ostringstream;
 using std::sscanf;
 using std::string;
 using std::vector;
-
-VIDTK_LOGGER( "file_format_vpd_event" );
-
 
 namespace {
 
@@ -88,7 +85,7 @@ struct vpd_mapping_line_parser
     istringstream iss( s );
     if (! ( iss >> event_id >> event_type >> event_duration >> start_frame >> end_frame >> n_objects ))
     {
-      LOG_ERROR( "VPD_EVENT: Mapping parser: couldn't parse preamble in '" << s << "'" );
+      LOG_ERROR( main_logger, "VPD_EVENT: Mapping parser: couldn't parse preamble in '" << s << "'" );
       return false;
     }
     unsigned object_id = 0;
@@ -103,7 +100,7 @@ struct vpd_mapping_line_parser
     }
     if (object_id_list.size() != n_objects)
     {
-      LOG_WARN( "VPD_EVENT: Mapping parser: line '" << s << "' specifies "
+      LOG_WARN( main_logger, "VPD_EVENT: Mapping parser: line '" << s << "' specifies "
                 << n_objects << " objects but has states for " << object_id_list.size() );
     }
 
@@ -119,7 +116,7 @@ mapping_fn_from_event_fn( const string& s )
   size_t p = mapping_fn.rfind( key );
   if ( p == string::npos )
   {
-    LOG_ERROR( "VPD_EVENT: Could not find a '" << key << "' string in event filename '" << s << "'" );
+    LOG_ERROR( main_logger, "VPD_EVENT: Could not find a '" << key << "' string in event filename '" << s << "'" );
     return "";
   }
   mapping_fn.replace( p, key.length(), ".mapping.txt" );
@@ -166,8 +163,8 @@ open_event_and_mapping_streams( const string& event_fn,
 
 } // anon namespace
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 bool
 file_format_vpd_event
@@ -206,7 +203,7 @@ file_format_vpd_event
   string errors;
   if ( ! open_event_and_mapping_streams( event_fn, event_is, mapping_is, errors ))
   {
-    LOG_ERROR( "VPD_EVENT: " << errors );
+    LOG_ERROR( main_logger, "VPD_EVENT: " << errors );
     return false;
   }
 
@@ -220,14 +217,14 @@ file_format_vpd_event
     {
       if (mappings.find( p.event_id ) != mappings.end() )
       {
-        LOG_ERROR( "VPD_EVENT: mapping for '" << event_fn << "': duplicate event ID " << p.event_id );
+        LOG_ERROR( main_logger, "VPD_EVENT: mapping for '" << event_fn << "': duplicate event ID " << p.event_id );
         return false;
       }
       mappings[ p.event_id ] = p;
     }
     else
     {
-      LOG_ERROR( "VPD_EVENT: Couldn't parse mapping line '" << tmp << "'" );
+      LOG_ERROR( main_logger, "VPD_EVENT: Couldn't parse mapping line '" << tmp << "'" );
       return false;
     }
   }
@@ -249,7 +246,7 @@ file_format_vpd_event
   {
     if ( ! event_p.parse( tmp ))
     {
-      LOG_ERROR( "VPD_EVENT: file '" << event_fn << "': couldn't parse '" << tmp << "'" );
+      LOG_ERROR( main_logger, "VPD_EVENT: file '" << event_fn << "': couldn't parse '" << tmp << "'" );
       return false;
     }
 
@@ -271,7 +268,7 @@ file_format_vpd_event
       map< unsigned, vpd_mapping_line_parser >::const_iterator m = mappings.find( event_p.event_id );
       if ( m == mappings.end())
       {
-        LOG_ERROR( "VPD_EVENT: Event file '" << event_fn << "': event " << event_p.event_id << " not in mapping file" );
+        LOG_ERROR( main_logger, "VPD_EVENT: Event file '" << event_fn << "': event " << event_p.event_id << " not in mapping file" );
         return false;
       }
       // verify event, start_frame, end_frame
@@ -281,7 +278,7 @@ file_format_vpd_event
       if (m->second.end_frame != event_p.end_frame) mismatch_fields += " end_frame ";
       if (! mismatch_fields.empty())
       {
-        LOG_ERROR( "VPD_EVENT: Event file '" << event_fn << "': event vs. mapping mismatch in fields " << mismatch_fields );
+        LOG_ERROR( main_logger, "VPD_EVENT: Event file '" << event_fn << "': event vs. mapping mismatch in fields " << mismatch_fields );
         return false;
       }
 
@@ -307,5 +304,5 @@ file_format_vpd_event
   return true;
 }
 
-
-} // vidtk
+} // ...kwant
+} // ...kwiver

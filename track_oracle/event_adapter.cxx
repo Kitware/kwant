@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -16,9 +16,8 @@
 #include <track_oracle/aries_interface/aries_interface.h>
 #include <track_oracle/data_terms/data_terms.h>
 
-#include <logger/logger.h>
-
-VIDTK_LOGGER("event_adapter_cxx");
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::pair;
 using std::stringstream;
@@ -27,8 +26,8 @@ using std::vector;
 using std::make_pair;
 using std::string;
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 pair<bool, bool>
 event_data_block
@@ -37,17 +36,17 @@ event_data_block
 {
   if ( ! this->valid )
   {
-    LOG_ERROR( "Logic error: timepoint_in_window on an invalid data block" );
+    LOG_ERROR( main_logger, "Logic error: timepoint_in_window on an invalid data block" );
     return make_pair( false, false );
   }
   if ( ! ( this->has_fn || this->has_ts ))
   {
-    LOG_ERROR( "Logic error: event data block marked valid but has no timestamp / frame number?" );
+    LOG_ERROR( main_logger, "Logic error: event data block marked valid but has no timestamp / frame number?" );
     return make_pair( false, false );
   }
   if ( ! ( fn || ts ))
   {
-    LOG_ERROR( "Logic error: timepoint_in_window called with null time data" );
+    LOG_ERROR( main_logger, "Logic error: timepoint_in_window called with null time data" );
     return make_pair( false, false );
   }
 
@@ -63,7 +62,7 @@ event_data_block
     bool fn_check = ( this->start_fn <= *fn ) && ( *fn <= this->end_fn );
     if ( ret.first && ( ret.second != fn_check ))
     {
-      LOG_WARN( "event_adapter: timepoint in window: timestamp check for " << *ts
+      LOG_WARN( main_logger, "event_adapter: timepoint in window: timestamp check for " << *ts
                 << " says " << ret.second << "; framenumber check for " << *fn
                 << " says " << fn_check << "; going with framenumber" );
     }
@@ -87,7 +86,7 @@ event_adapter
   vul_awk awk( line_ss );
   if ( awk.NF() < 14)
   {
-    LOG_ERROR( "Expected at least 14 tokens; found in " << awk.NF() << " in '" << line << "'" );
+    LOG_ERROR( main_logger, "Expected at least 14 tokens; found in " << awk.NF() << " in '" << line << "'" );
     return false;
   }
   stringstream ss( string(awk[2]) + " " + awk[13] + " " + awk[4] + " " + awk[6] + " "
@@ -104,7 +103,7 @@ event_adapter
            >> b.event_probability
          ))
   {
-    LOG_ERROR( "Couldn't parse CSV line '" << line << "'" );
+    LOG_ERROR( main_logger, "Couldn't parse CSV line '" << line << "'" );
     return false;
   }
 
@@ -116,11 +115,11 @@ event_adapter
 
   if ((b.start_ts > 0) && (log( static_cast<double>(b.start_ts) ) < 28.0 ))
   {
-    LOG_WARN( "Warning: KWE start timestamp '" << b.start_ts << "' may not be in usecs" );
+    LOG_WARN( main_logger, "Warning: KWE start timestamp '" << b.start_ts << "' may not be in usecs" );
   }
   if ((b.end_ts > 0) && (log( static_cast<double>(b.end_ts) ) < 28.0 ))
   {
-    LOG_WARN( "Warning: KWE end timestamp '" << b.end_ts << "' may not be in usecs" );
+    LOG_WARN( main_logger, "Warning: KWE end timestamp '" << b.end_ts << "' may not be in usecs" );
   }
 
   vidtk::event_types::enum_types kwe_event_type = static_cast<vidtk::event_types::enum_types>( vidtk_event_type );
@@ -237,7 +236,7 @@ event_adapter
   if (b.debug)
   {
     size_t nf = track_oracle::get_n_frames( new_track );
-    LOG_DEBUG( "Created track of activity " << b.event_type << " prob " <<
+    LOG_DEBUG( main_logger, "Created track of activity " << b.event_type << " prob " <<
                b.event_probability << " with " << nf << " frames" );
   }
 
@@ -245,4 +244,5 @@ event_adapter
 }
 
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

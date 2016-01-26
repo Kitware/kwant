@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2014 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_KWXML_H
 #define INCL_FILE_FORMAT_KWXML_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_kwxml/track_kwxml_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_kwxml/track_kwxml.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct kwxml_reader_opts: public file_format_reader_opts_base
+struct TRACK_KWXML_EXPORT kwxml_reader_opts: public file_format_reader_opts_base
 {
   std::string track_style_filter; // if set, only load tracks whose <trackStyle> matches this
 
@@ -27,7 +30,7 @@ struct kwxml_reader_opts: public file_format_reader_opts_base
   kwxml_reader_opts(){ reset(); }
 };
 
-class file_format_kwxml: public file_format_base
+class TRACK_KWXML_EXPORT file_format_kwxml: public file_format_base
 {
 public:
   file_format_kwxml(): file_format_base( TF_KWXML, "Kitware descriptor XML" )
@@ -37,7 +40,7 @@ public:
   }
   virtual ~file_format_kwxml() {}
 
-  virtual int supported_operations() const { return FF_READ_FILE | FF_WRITE; }
+  virtual int supported_operations() const { return FF_READ_FILE; }
 
   // return a dynamically-allocated instance of the schema
   virtual track_base_impl* schema_instance() const { return new track_kwxml_type(); }
@@ -52,20 +55,12 @@ public:
   virtual bool read( const std::string& fn,
                      track_handle_list_type& tracks ) const;
 
-  // write tracks to the file
-  virtual bool write( const std::string& fn,
-                      const track_handle_list_type& tracks ) const;
-
-  // write tracks to a stream
-  virtual bool write( std::ostream& os,
-                      const track_handle_list_type& tracks ) const;
-
-
 private:
   kwxml_reader_opts opts;
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

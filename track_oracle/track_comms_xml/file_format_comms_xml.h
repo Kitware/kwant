@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_COMMS_XML_H
 #define INCL_FILE_FORMAT_COMMS_XML_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_comms_xml/track_comms_xml_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_comms_xml/track_comms_xml.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-struct comms_xml_reader_opts: public file_format_reader_opts_base
+struct TRACK_COMMS_XML_EXPORT comms_xml_reader_opts: public file_format_reader_opts_base
 {
   // When reading comms files, which contain tracks from different queries, set
   // this to instruct the reader to only load tracks from the specific query.
@@ -27,7 +30,7 @@ struct comms_xml_reader_opts: public file_format_reader_opts_base
 };
 
 
-class file_format_comms_xml: public file_format_base
+class TRACK_COMMS_XML_EXPORT file_format_comms_xml: public file_format_base
 {
 public:
   file_format_comms_xml(): file_format_base( TF_COMMS_XML, "MITRE VIRAT test harness comms XML" )
@@ -56,6 +59,7 @@ private:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

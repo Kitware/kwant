@@ -163,9 +163,6 @@ public:
   bool add_to_domain( const track_handle_type& track, const domain_handle_type& domain );
   bool set_domain( const handle_list_type& handles, domain_handle_type domain );
 
-  // emit the list of tracks as KWXML
-  bool write_kwxml( std::ostream& os, const track_handle_list_type& tracks );
-
   // emit the list of tracks as kwiver XML
   bool write_kwiver( std::ostream& os, const track_handle_list_type& tracks );
 

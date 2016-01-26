@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2013-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_VPD_TRACK_H
 #define INCL_FILE_FORMAT_VPD_TRACK_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_vpd/track_vpd_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_vpd/track_vpd_track.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class file_format_vpd_track: public file_format_base
+class TRACK_VPD_EXPORT file_format_vpd_track: public file_format_base
 {
 public:
   file_format_vpd_track(): file_format_base( TF_VPD_TRACK, "VIRAT Public Data 2.0 object track" )
@@ -40,6 +43,7 @@ public:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -11,17 +11,16 @@
 #include <sstream>
 #include <cstdio>
 
-#include <logger/logger.h>
-
 #include <shapefil.h>
 #include <geographic/geo_coords.h>
 #include <vul/vul_reg_exp.h>
 
 
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
+
 using std::map;
 using std::string;
-
-VIDTK_LOGGER( "file_format_apix" );
 
 namespace // anon
 {
@@ -43,8 +42,8 @@ struct shp_handle_type
 } // anon
 
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 apix_reader_opts&
 apix_reader_opts
@@ -58,7 +57,7 @@ apix_reader_opts
   }
   else
   {
-    LOG_WARN("Assigned a non-apix options structure to a apix options structure: Slicing the class");
+    LOG_WARN( main_logger, "Assigned a non-apix options structure to a apix options structure: Slicing the class");
   }
 
   return *this;
@@ -80,7 +79,7 @@ file_format_apix
   shp_handle_type h( fn );
   if ( h.hDBF == NULL )
   {
-    LOG_ERROR( "Couldn't open '" << fn << "' to read an APIX track" );
+    LOG_ERROR( main_logger,  "Couldn't open '" << fn << "' to read an APIX track" );
     return false;
   }
 
@@ -104,7 +103,7 @@ file_format_apix
   {
     if ( field_map.find( reqFields[i] ) == field_map.end() )
     {
-      LOG_ERROR( "APIX track file '" << fn << "' does not contain a '" << reqFields[i] << "' field" );
+      LOG_ERROR( main_logger,  "APIX track file '" << fn << "' does not contain a '" << reqFields[i] << "' field" );
       allOkay = false;
     }
   }
@@ -121,25 +120,25 @@ file_format_apix
     int tsecs = DBFReadIntegerAttribute( h.hDBF, i, field_map[ "DataUTCTim" ] );
     int tmsecs = DBFReadIntegerAttribute( h.hDBF, i, field_map[ "DataTimeMS" ] );
     int frame_num = DBFReadIntegerAttribute( h.hDBF, i, field_map[ "FrameNum" ] );
-    apix_track[ f ].utc_timestamp() = vidtk::timestamp( (tsecs*1.0e6) + (tmsecs*1.0e3), frame_num );
+    apix_track[ f ].utc_timestamp() = vital::timestamp( (tsecs*1.0e6) + (tmsecs*1.0e3), frame_num );
 
     if ( this->opts.verbose )
     {
       // double-check MGRS vs lat-lon
       string mgrs = DBFReadStringAttribute( h.hDBF, i, field_map[ "MGRS" ] );
-      vidtk::geographic::geo_coords mgrs_coords( mgrs );
-      vidtk::geographic::geo_coords latlon_coords( apix_track[f].lat(), apix_track[f].lon() );
+      kwiver::geographic::geo_coords mgrs_coords( mgrs );
+      kwiver::geographic::geo_coords latlon_coords( apix_track[f].lat(), apix_track[f].lon() );
 
       if ( ! ( mgrs_coords.is_valid() && latlon_coords.is_valid() ))
       {
-        LOG_INFO( "APIX track file '" << fn << "' frame " << frame_num << ": geocoord error: "
+        LOG_INFO( main_logger,  "APIX track file '" << fn << "' frame " << frame_num << ": geocoord error: "
                   << "mgrs '" << mgrs << "'; valid: " << mgrs_coords.is_valid() << "; lat/lon "
                   << apix_track[f].lat() << "," << apix_track[f].lon() << ": valid: " << latlon_coords.is_valid() );
         continue;
       }
       double dEasting = latlon_coords.easting() - mgrs_coords.easting();
       double dNorthing = latlon_coords.northing() - mgrs_coords.northing();
-      LOG_INFO( "Info: APIX track file '" << fn << "' frame " << frame_num << ": lat/long vs MGRS "
+      LOG_INFO( main_logger, "Info: APIX track file '" << fn << "' frame " << frame_num << ": lat/long vs MGRS "
                 << dEasting << " , " << dNorthing << " " << tsecs << "." << tmsecs );
     }
   }
@@ -148,4 +147,6 @@ file_format_apix
   return true;
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
+

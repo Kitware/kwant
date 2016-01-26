@@ -4,12 +4,17 @@
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
 
+#undef TRACK_4676_ENABLED
+
+
 #include "file_format_manager.h"
 #include <fstream>
 #include <stdexcept>
 #include <sstream>
 #include <vul/vul_string.h>
 #include <vul/vul_file.h>
+
+#include <vital/types/timestamp.h>
 
 #include <track_oracle/file_format_schema.h>
 #include <track_oracle/file_format_base.h>
@@ -30,15 +35,17 @@
 #include <track_oracle/track_vpd/file_format_vpd_track.h>
 #include <track_oracle/track_vpd/file_format_vpd_event.h>
 #include <track_oracle/track_e2at_callout/file_format_e2at_callout.h>
-// #include <track_oracle/track_4676/file_format_4676.h>
+#ifdef TRACK_4676_ENABLED
+#include <track_oracle/track_4676/file_format_4676.h>
+#endif
 #include <track_oracle/track_csv/file_format_csv.h>
 #include <track_oracle/track_kwiver/file_format_kwiver.h>
 #include <track_oracle/schema_algorithm.h>
 
 #include <boost/thread/mutex.hpp>
 
-#include <logger/logger.h>
-
+#include <vital/logger/logger.h>
+static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
 
 using std::ifstream;
 using std::make_pair;
@@ -49,21 +56,15 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 
-
-#undef VIDTK_DEFAULT_LOGGER
-#define VIDTK_DEFAULT_LOGGER __vidtk_logger_auto_file_format_manager_cxx__
-VIDTK_LOGGER("file_format_manager_cxx");
-
-
-vidtk::file_format_manager_impl* vidtk::file_format_manager::impl = 0;
+::kwiver::kwant::file_format_manager_impl* ::kwiver::kwant::file_format_manager::impl = 0;
 
 namespace // anon
 {
 boost::mutex instance_lock;
 };
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
 typedef map< file_format_enum, track_base_impl* > schema_map_type;
 typedef map< file_format_enum, track_base_impl* >::const_iterator schema_map_cit;
@@ -114,7 +115,9 @@ file_format_manager_impl
   formats[ TF_VPD_TRACK ] = new file_format_vpd_track();
   formats[ TF_VPD_EVENT ] = new file_format_vpd_event();
   formats[ TF_E2AT_CALLOUT ] = new file_format_e2at_callout();
-//  formats[ TF_4676 ] = new file_format_4676();
+#ifdef TRACK_4676_ENABLED
+  formats[ TF_4676 ] = new file_format_4676();
+#endif
   formats[ TF_CSV ] = new file_format_csv();
   formats[ TF_KWIVER ] = new file_format_kwiver();
 
@@ -348,13 +351,13 @@ file_format_manager
     ifstream is_check( fn.c_str() );
     if ( ! is_check )
     {
-      LOG_ERROR( "FileFormatManager: File not found: '" << fn << "'" );
+      LOG_ERROR( main_logger, "FileFormatManager: File not found: '" << fn << "'" );
       return false;
     }
   }
   if ( vul_file::size( fn ) == 0)
   {
-    LOG_WARN( "File '" << fn << "' is empty" );
+    LOG_WARN( main_logger, "File '" << fn << "' is empty" );
     return true;
   }
 
@@ -364,7 +367,7 @@ file_format_manager
   file_format_base* b = get_instance().get_format( f );
   if (! b)
   {
-    LOG_ERROR( "Logic error: no reader for format " << f << " for '" << fn << "'?");
+    LOG_ERROR( main_logger, "Logic error: no reader for format " << f << " for '" << fn << "'?");
     return false;
   }
 
@@ -390,24 +393,24 @@ file_format_manager
     vector< file_format_enum > formats = get_instance().globs_match( fn );
     if ( formats.size() != 1 )
     {
-      LOG_ERROR( "Can't determine a unique filetype to write '" << fn << "'; found " << formats.size() << " formats" );
+      LOG_ERROR( main_logger, "Can't determine a unique filetype to write '" << fn << "'; found " << formats.size() << " formats" );
       return false;
     }
     format = formats[0];
-    LOG_INFO( "file_format_manager autodetected format " << file_format_type::to_string( format )
+    LOG_INFO( main_logger, "file_format_manager autodetected format " << file_format_type::to_string( format )
               << " for '" << fn << "'" );
   }
 
   file_format_base* b = get_instance().get_format( format );
   if ( !b )
   {
-    LOG_ERROR( "Logic error: no writer for format " << format << " for '" << fn << "'?" );
+    LOG_ERROR( main_logger, "Logic error: no writer for format " << format << " for '" << fn << "'?" );
     return false;
   }
 
   if ( ! ( b->supported_operations() & FF_WRITE))
   {
-    LOG_ERROR( "Detected format " << file_format_type::to_string( format ) << " for '"
+    LOG_ERROR( main_logger, "Detected format " << file_format_type::to_string( format ) << " for '"
                << fn << "' does not support writing\n" );
     return false;
   }
@@ -489,7 +492,7 @@ file_format_manager
       // make sure the position is valid
       if (j->second == track_base_impl::INVALID)
       {
-        LOG_ERROR( "Bad schema position for " << track_oracle::get_element_descriptor(j->first).name
+        LOG_ERROR( main_logger, "Bad schema position for " << track_oracle::get_element_descriptor(j->first).name
                    << " in " << file_format_type::to_string( i->first ) );
         return false;
       }
@@ -512,7 +515,7 @@ file_format_manager
   // remove any fields NOT named in the header_map (unless header_map is empty, in which case, keep all)
   if ( ! header_map.empty() )
   {
-    LOG_INFO( "Before discard: " << all_elements.size() );
+    LOG_INFO( main_logger, "Before discard: " << all_elements.size() );
     for (map<field_handle_type, track_base_impl::schema_position_type>::iterator i = all_elements.begin();
          i != all_elements.end();
          /* do nothing */)
@@ -521,17 +524,17 @@ file_format_manager
       {
         map<field_handle_type, track_base_impl::schema_position_type>::iterator scoot = i;
         scoot++;
-        LOG_INFO( "Discarding element " << track_oracle::get_element_descriptor( i->first ).name );
+        LOG_INFO( main_logger, "Discarding element " << track_oracle::get_element_descriptor( i->first ).name );
         all_elements.erase( i->first );
         i = scoot;
       }
       else
       {
-        LOG_INFO( "Keeping element " << track_oracle::get_element_descriptor( i->first ).name );
+        LOG_INFO( main_logger, "Keeping element " << track_oracle::get_element_descriptor( i->first ).name );
         ++i;
       }
     }
-    LOG_INFO( "After discard: " << all_elements.size() );
+    LOG_INFO( main_logger, "After discard: " << all_elements.size() );
   }
 
   // create track fields for the items we'll set explicitly
@@ -564,7 +567,7 @@ file_format_manager
     }
   }
 
-  LOG_INFO( "Test tracks contain " << track_elements.size() << " track-level elements and "
+  LOG_INFO( main_logger, "Test tracks contain " << track_elements.size() << " track-level elements and "
             << frame_elements.size() << " frame elements" );
 
 
@@ -602,7 +605,7 @@ file_format_manager
       frame_number( f.row ) = fn_counter++;
       unsigned long long ts_usecs = (frame_number(f.row) * 1000 * 1000) + (500 * 1000) + 500;
       timestamp_usecs( f.row ) = ts_usecs;
-      time_stamp( f.row ) = timestamp( ts_usecs / 1.0e6,  frame_number(f.row) );
+      time_stamp( f.row ) = vital::timestamp( ts_usecs / 1.0e6,  frame_number(f.row) );
 
       ostringstream track_oss, frame_oss;
       track_oss << "track_" << external_id( t.row );
@@ -642,4 +645,5 @@ file_format_manager
   return file_format_manager::write( fn, tracks, TF_INVALID_TYPE );
 }
 
-} // vidtk
+} // ...kwant
+} // ...kwiver

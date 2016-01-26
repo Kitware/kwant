@@ -12,7 +12,7 @@
 ///
 
 #include <vital/vital_config.h>
-#include <logging_map_export.h>
+#include <track_oracle/utils/logging_map_export.h>
 
 #include <string>
 #include <map>
@@ -26,7 +26,7 @@ namespace kwiver
 class LOGGING_MAP_EXPORT logging_map_type
 {
 public:
-  logging_map_type( vital::kwiver_logger* logger, const vital::logger_ns::location_info& s  );
+  logging_map_type( vital::logger_handle_t logger, const vital::logger_ns::location_info& s  );
 
   logging_map_type& set_output_prefix( const std::string& s );
   bool add_msg( const std::string& msg );
@@ -36,7 +36,7 @@ public:
   void clear();
 
 private:
-  vital::kwiver_logger* my_logger;
+  vital::logger_handle_t my_logger;
   vital::logger_ns::location_info site;
   std::string output_prefix;
   std::map< std::string, std::size_t > msg_map;

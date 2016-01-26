@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2012-2013 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2012-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -7,13 +7,16 @@
 #ifndef INCL_FILE_FORMAT_KST_H
 #define INCL_FILE_FORMAT_KST_H
 
+#include <vital/vital_config.h>
+#include <track_oracle/track_kst/track_kst_export.h>
+
 #include <track_oracle/file_format_base.h>
 #include <track_oracle/track_kst/track_kst.h>
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-class file_format_kst: public file_format_base
+class TRACK_KST_EXPORT file_format_kst: public file_format_base
 {
 public:
   file_format_kst(): file_format_base( TF_KST, "VisGUI query results" )
@@ -40,6 +43,7 @@ public:
 
 };
 
-} // vidtk
+} // ...kwant
+} // ...kwiver
 
 #endif

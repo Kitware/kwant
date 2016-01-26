@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2014-2015 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2014-2016 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -19,9 +19,6 @@
 
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
-
-#include <logger/logger.h>
-VIDTK_LOGGER("aoi_utils_cxx");
 
 using std::vector;
 using std::map;
@@ -53,10 +50,10 @@ struct pixel_aoi_t
 
 void
 parse_aoi_string( const string& s,
-                  vidtk::aoi_utils::aoi_t::flavor_t& flavor,
+                  ::kwiver::kwant::aoi_utils::aoi_t::flavor_t& flavor,
                   vector< vgl_point_2d<double> >& points )
 {
-  flavor = vidtk::aoi_utils::aoi_t::INVALID;
+  flavor = ::kwiver::kwant::aoi_utils::aoi_t::INVALID;
   points.clear();
 
   boost::regex pixel_geom_re( "(\\d+)x(\\d+)([\\+\\-]\\d+)([\\+\\-]\\d+)" );
@@ -73,7 +70,7 @@ parse_aoi_string( const string& s,
     int h = boost::lexical_cast<int>( string( what[2].first, what[2].second ) );
     int x = boost::lexical_cast<int>( string( what[3].first, what[3].second ) );
     int y = boost::lexical_cast<int>( string( what[4].first, what[4].second ) );
-    flavor = vidtk::aoi_utils::aoi_t::PIXEL;
+    flavor = ::kwiver::kwant::aoi_utils::aoi_t::PIXEL;
     points.push_back( vgl_point_2d<double>(x,   y   ));
     points.push_back( vgl_point_2d<double>(x+w, y   ));
     points.push_back( vgl_point_2d<double>(x+w, y+h ));
@@ -84,12 +81,12 @@ parse_aoi_string( const string& s,
   // otherwise, is it a pixel or a lat/lon?
   if ( regex_search( a, b, what, pixel_tag_re ))
   {
-    flavor = vidtk::aoi_utils::aoi_t::PIXEL;
+    flavor = ::kwiver::kwant::aoi_utils::aoi_t::PIXEL;
     a = what[1].second;
   }
   else
   {
-    flavor = vidtk::aoi_utils::aoi_t::GEO;
+    flavor = ::kwiver::kwant::aoi_utils::aoi_t::GEO;
   }
 
   // start picking off the numbers
@@ -107,7 +104,7 @@ parse_aoi_string( const string& s,
 //
 
 vector< mgrs_aoi_t >
-create_geo_poly( const vector< vidtk::scorable_mgrs >& corners )
+create_geo_poly( const vector< ::kwiver::kwant::scorable_mgrs >& corners )
 
 {
   size_t n_corners = corners.size();
@@ -115,7 +112,7 @@ create_geo_poly( const vector< vidtk::scorable_mgrs >& corners )
   {
     if ( ! corners[i].valid )
     {
-      throw vidtk::aoi_utils::aoi_exception( "AOI: invalid geo corner" );
+      throw ::kwiver::kwant::aoi_utils::aoi_exception( "AOI: invalid geo corner" );
     }
   }
 
@@ -136,8 +133,8 @@ create_geo_poly( const vector< vidtk::scorable_mgrs >& corners )
   zone_to_corner_map_t zone_to_corner_map;
   for (size_t i=0; i<n_corners; ++i)
   {
-    const vidtk::scorable_mgrs& s = corners[i];
-    for (size_t j=0; j<vidtk::scorable_mgrs::N_ZONES; ++j)
+    const ::kwiver::kwant::scorable_mgrs& s = corners[i];
+    for (size_t j=0; j<::kwiver::kwant::scorable_mgrs::N_ZONES; ++j)
     {
       if ( ! s.entry_valid[j] ) continue;
       zone_to_corner_map[ s.zone[j] ].push_back( make_pair( i, j ));
@@ -154,10 +151,10 @@ create_geo_poly( const vector< vidtk::scorable_mgrs >& corners )
     for (size_t j=0; j<v.size(); ++j)
     {
       const corner_zone_pair& czp = v[j];
-      const vidtk::scorable_mgrs& s = corners[ czp.first ];
+      const ::kwiver::kwant::scorable_mgrs& s = corners[ czp.first ];
       if (! s.entry_valid[czp.second] )
       {
-        throw vidtk::aoi_utils::aoi_exception( "AOI: invalid MGRS comparison constructing geo AOI" );
+        throw ::kwiver::kwant::aoi_utils::aoi_exception( "AOI: invalid MGRS comparison constructing geo AOI" );
       }
       pts.push_back( vgl_point_2d<double>( s.easting[ czp.second ], s.northing[ czp.second ] ));
     }
@@ -172,19 +169,18 @@ create_geo_poly( const vector< vidtk::scorable_mgrs >& corners )
 
   if ( aoi_list.empty() )
   {
-    throw vidtk::aoi_utils::aoi_exception( "AOI: geo AOI failed to generate any UTM polygons; perhaps no single zone holds all corners?" );
+    throw ::kwiver::kwant::aoi_utils::aoi_exception( "AOI: geo AOI failed to generate any UTM polygons; perhaps no single zone holds all corners?" );
   }
 
   return aoi_list;
 }
 
-} // anon
+} // ...anon
 
-namespace vidtk
-{
+namespace kwiver {
+namespace kwant {
 
-namespace aoi_utils
-{
+namespace aoi_utils {
 
 //
 // implementations for pixel and geo AOIs.
@@ -461,5 +457,6 @@ aoi_t
     );
 }
 
-} // aoi_utils
-} // vidtk
+} // ...aoi_utils
+} // ...kwant
+} // ...kwiver

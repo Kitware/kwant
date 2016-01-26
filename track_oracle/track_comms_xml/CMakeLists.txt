@@ -2,17 +2,37 @@
 # comms XML tracks
 #
 
-add_library( track_comms_xml
-             track_comms_xml.h
-             file_format_comms_xml.h        file_format_comms_xml.cxx )
-set_target_properties( track_comms_xml PROPERTIES
-  VERSION ${vidtk_VERSION} SOVERSION ${vidtk_VERSION}
+set( track_comms_xml_public_headers
+  track_comms_xml.h
+  file_format_comms_xml.h
+)
+
+set( track_comms_xml_sources
+  file_format_comms_xml.cxx
+)
+
+kwiver_install_headers(
+  ${track_comms_xml_public_headers}
+  SUBDIR         kwant/track_oracle/track_comms_xml
+  )
+
+kwiver_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/track_comms_xml_export.h
+  SUBDIR     kwant/track_oracle/track_comms_xml
+  NOPATH
+)
+
+kwiver_add_library( track_comms_xml
+  ${track_comms_xml_public_headers}
+  ${track_comms_xml_sources}
+  ${CMAKE_CURRENT_BINARY_DIR}/track_comms_xml_export.h
 )
 
 target_link_libraries( track_comms_xml
-  PUBLIC track_oracle track_oracle_format_base vgl
-  PRIVATE vidtk_logger ${TinyXML_LIBRARY} track_oracle_tokenizers
-  )
-install( TARGETS track_comms_xml
-  RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
+  PUBLIC               track_oracle
+                       track_oracle_format_base
+                       vgl
+  PRIVATE              vital_logger
+                       ${TinyXML_LIBRARY}
+                       track_oracle_tokenizers
 )
