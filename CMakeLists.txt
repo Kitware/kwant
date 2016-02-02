@@ -70,6 +70,7 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 option( KWANT_ENABLE_SHAPELIB "Enable Shapelib dependent code" OFF)
 option( KWANT_ENABLE_4676 "Enable stanag_4676 format" OFF)
+option( KWANT_ENABLE_SCORING "Build the scoring code" ON)
 
 find_package( TinyXML REQUIRED )
 include_directories( SYSTEM ${TinyXML_INCLUDE_DIR} )
@@ -81,3 +82,7 @@ add_subdirectory( utilities )
 # add_subdirectory( stanag_4676 )
 
 add_subdirectory( track_oracle )
+
+if (KWANT_ENABLE_SCORING)
+  add_subdirectory( scoring_framework )
+endif()
