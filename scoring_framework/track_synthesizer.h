@@ -59,6 +59,7 @@
 ///
 
 #include <scoring_framework/score_core.h>
+#include <scoring_framework/track_synthesizer_export.h>
 
 namespace kwiver {
 namespace kwant {
@@ -76,7 +77,7 @@ namespace kwant {
 // trickier to precisely predict the amount of spatial
 // overlap.
 //
-struct track_synthesizer_params
+struct TRACK_SYNTHESIZER_EXPORT track_synthesizer_params
 {
   double box_side_length; // boxes are square
   double overlap_distance; // must be in range [0, box_side_length)
@@ -85,7 +86,7 @@ struct track_synthesizer_params
 };
 
 
-class box_pool
+class TRACK_SYNTHESIZER_EXPORT box_pool
 {
 public:
   explicit box_pool( const track_synthesizer_params& params );
@@ -99,7 +100,7 @@ private:
 // each call to make_tracks generates independent sets of
 // tracks (track IDs restart at zero, etc.)
 
-class track_synthesizer
+class TRACK_SYNTHESIZER_EXPORT track_synthesizer
 {
 public:
   explicit track_synthesizer( const track_synthesizer_params& p )
