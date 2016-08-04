@@ -15,6 +15,9 @@ using std::make_pair;
 using std::map;
 using std::ostringstream;
 
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::track_handle_type;
+
 namespace kwiver {
 namespace kwant {
 
@@ -134,7 +137,7 @@ overall_phase3_hadwav
   }
   LOG_INFO( main_logger, "CP (target) avg over " << t2t.n_computed_tracks << "");
 
-  track_field< dt::utility::state_flags > state_flags;
+  track_field< kwiver::track_oracle::dt::utility::state_flags > state_flags;
 
   // compute overall Pd/FA (or FAR)
   unsigned n_hit_true_tracks = 0;

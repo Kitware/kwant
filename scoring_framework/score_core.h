@@ -12,7 +12,7 @@
 
 #include <utility>
 #include <vgl/vgl_box_2d.h>
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 
@@ -29,7 +29,9 @@
 namespace kwiver {
 namespace kwant {
 
-typedef std::pair< track_handle_type, track_handle_type > track2track_type;
+namespace kwto = ::kwiver::track_oracle;
+
+typedef std::pair< kwto::track_handle_type, kwto::track_handle_type > track2track_type;
 typedef unsigned long long ts_type;
 typedef std::pair<ts_type,ts_type> ts_frame_range;
 
@@ -37,14 +39,14 @@ typedef std::pair<ts_type,ts_type> ts_frame_range;
 // order so that IN_AOI_UNMATCHED is zero (default).
 enum FRAME_MATCH_STATE { IN_AOI_UNMATCHED = 0, OUTSIDE_AOI, IN_AOI_MATCHED };
 
-struct SCORE_CORE_EXPORT scorable_track_type: public track_base< scorable_track_type >
+struct SCORE_CORE_EXPORT scorable_track_type: public kwto::track_base< scorable_track_type >
 {
-  track_field< unsigned >& external_id;
-  track_field< vgl_box_2d<double> >& bounding_box;
-  track_field< unsigned >& timestamp_frame;
-  track_field< ts_type >& timestamp_usecs;
-  track_field< int >& frame_has_been_matched;
-  track_field< unsigned >& frames_in_aoi;
+  kwto::track_field< unsigned >& external_id;
+  kwto::track_field< vgl_box_2d<double> >& bounding_box;
+  kwto::track_field< unsigned >& timestamp_frame;
+  kwto::track_field< ts_type >& timestamp_usecs;
+  kwto::track_field< int >& frame_has_been_matched;
+  kwto::track_field< unsigned >& frames_in_aoi;
   scorable_track_type()
     : external_id( Track.add_field< unsigned >( "external_id" ) ),
       bounding_box( Frame.add_field< vgl_box_2d<double> >( "bounding_box" )),

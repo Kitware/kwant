@@ -14,10 +14,14 @@
 #include <vgl/vgl_intersection.h>
 
 #include <track_oracle/track_base.h>
+#ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/track_scorable_mgrs/scorable_mgrs.h>
+#endif
 
 namespace kwiver {
 namespace kwant {
+
+namespace kwto = ::kwiver::track_oracle;
 
 struct phase1_parameters;
 
@@ -42,35 +46,39 @@ struct phase1_parameters;
 // The implementation is an awkward example of a track oracle union.
 //
 
-struct SCORE_CORE_EXPORT quickfilter_box_type: public track_base< quickfilter_box_type >
+struct SCORE_CORE_EXPORT quickfilter_box_type: public kwto::track_base< quickfilter_box_type >
 {
   enum {COORD_NONE=0, COORD_IMG, COORD_MGRS};
   // what coordinate system is the bounding box?
-  track_field< int >& coord_system;
+  kwto::track_field< int >& coord_system;
 
   // valid only if coord_system is COORD_IMG.
-  track_field< vgl_box_2d<double> >& img_box;
+  kwto::track_field< vgl_box_2d<double> >& img_box;
 
-  // relevant only if coord_system is COORD_MGRS.
-  // True if all points added so far have at least one
-  // compatible zone.  Initialized to true; once false, stays
-  // false.
-  track_field< bool >& mgrs_valid_latch;
-
+#ifdef KWANT_ENABLE_MGRS
   // valid only if coord_system is COORD_MGRS.
   // It's tempting to have a vgl_box_2d<double> of northing/easting
   // to avoid having to duplicate all vgl_box_2d's nice logic for
   // adding to a bounding box, but on the other hand scorable_mgrs
   // already handles arbitrating between MGRS zones.
-  track_field< scorable_mgrs >& sw_point;
-  track_field< scorable_mgrs >& ne_point;
+  kwto::track_field< kwto::scorable_mgrs >& sw_point;
+  kwto::track_field< kwto::scorable_mgrs >& ne_point;
+#endif
+
+  // relevant only if coord_system is COORD_MGRS.
+  // True if all points added so far have at least one
+  // compatible zone.  Initialized to true; once false, stays
+  // false.
+  kwto::track_field< bool >& mgrs_valid_latch;
 
   quickfilter_box_type():
     coord_system( Track.add_field< int >( "qf_box_coord_system" )),
     img_box( Track.add_field< vgl_box_2d<double> >( "qf_box_img_box" )),
-    mgrs_valid_latch( Track.add_field<bool>( "mgrs_valid_latch" )),
-    sw_point( Track.add_field< scorable_mgrs >( "qf_box_sw_point" )),
-    ne_point( Track.add_field< scorable_mgrs >( "qf_box_ne_point" ))
+#ifdef KWANT_ENABLE_MGRS
+    sw_point( Track.add_field< kwto::scorable_mgrs >( "qf_box_sw_point" )),
+    ne_point( Track.add_field< kwto::scorable_mgrs >( "qf_box_ne_point" )),
+#endif
+    mgrs_valid_latch( Track.add_field<bool>( "mgrs_valid_latch" ))
   {}
 
   // these are initialized to invalid; set to (truth, computed)
@@ -79,35 +87,39 @@ struct SCORE_CORE_EXPORT quickfilter_box_type: public track_base< quickfilter_bo
 
   // client's main function to add instances of this data
   // structure to the track list
-  static void add_quickfilter_boxes( const track_handle_list_type& t,
+  static void add_quickfilter_boxes( const kwto::track_handle_list_type& t,
                                      const phase1_parameters& params );
 
+#ifdef KWANT_ENABLE_MGRS
   // incorporates s such that {sw,ne}_point is the convex hull of the points
   // and s.  Throws if coord_system == coord_img.
-  void add_scorable_mgrs( const track_handle_type& t,
-                          scorable_mgrs s );
+  void add_scorable_mgrs( const kwto::track_handle_type& t,
+                          kwto::scorable_mgrs s );
+#endif
 
   // Adds box to the box already associated with the track.
   // Throws if coord_system == coord_mgrs.
-  void add_image_box( const track_handle_type& t,
+  void add_image_box( const kwto::track_handle_type& t,
                       vgl_box_2d<double> box );
 
+#ifdef KWANT_ENABLE_MGRS
   // If either (or both) of t1/t2 have coord_system != coord_mgrs, return -1.
   // If either (or both) of t1/t2 contain invalid {se,ne} points, return -1.
   // If t1/t2 do not have compatible zones for both sets of {sw,ne}_points, return 0.
   // Otherwise, t1/t2 have compatible MGRS boxes; return area of overlap (or 0 if none.)
   // (The idea is that -1 means "you need to examine t1 and t2 on a frame-by-frame
   // basis", while >=0 is a valid result.)
-  double mgrs_box_intersect( const track_handle_type& t1,
-                             const track_handle_type& t2 );
+  double mgrs_box_intersect( const kwto::track_handle_type& t1,
+                             const kwto::track_handle_type& t2 );
 
-  double img_box_intersect( const track_handle_type& t1,
-                            const track_handle_type& t2 );
+#endif
+  double img_box_intersect( const kwto::track_handle_type& t1,
+                            const kwto::track_handle_type& t2 );
 
   // return >=0 if valid boxes could be compared; return -1 if no
   // quickfilter decision could be made.
-  double quickfilter_check( const track_handle_type& t1,
-                            const track_handle_type& t2,
+  double quickfilter_check( const kwto::track_handle_type& t1,
+                            const kwto::track_handle_type& t2,
                             bool use_radial_overlap );
 
 };

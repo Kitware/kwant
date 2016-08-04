@@ -1,5 +1,11 @@
-find_package( GeographicLib REQUIRED )
-include_directories ( ${GeographicLib_INCLUDE_DIR} )
+OPTION(KWANT_ENABLE_MGRS  "Enable track_oracle's lat/lon <-> MGRS capabilities (disable until further notice)" OFF )
+
+if (KWANT_ENABLE_MGRS)
+  message( FATAL_ERROR "Building the MGRS code is blocked until lat/lon <-> MGRS capabilities are available" )
+endif()
+
+#find_package( GeographicLib REQUIRED )
+#include_directories ( ${GeographicLib_INCLUDE_DIR} )
 
 ########################################
 # timestamp utilities
@@ -78,7 +84,7 @@ kwiver_add_library( score_core
 
 target_link_libraries( score_core
   PUBLIC               track_oracle
-                       track_scorable_mgrs
+                       ${TRACK_ORACLE_SCORABLE_MGRS_LIBRARY}
                        timestamp_utilities
                        vul
                        vgl
@@ -217,5 +223,6 @@ kwiver_add_library( track_synthesizer
 target_link_libraries( track_synthesizer
   PUBLIC               track_oracle
                        score_core
-  PRIVATE              vnl
+  PRIVATE              vital_logger
+                       vnl
 )

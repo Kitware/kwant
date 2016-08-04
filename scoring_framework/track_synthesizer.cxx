@@ -18,6 +18,10 @@ using std::runtime_error;
 using std::sqrt;
 using std::string;
 
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+
 namespace kwiver {
 namespace kwant {
 

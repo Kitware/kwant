@@ -9,7 +9,9 @@
 #include <stdexcept>
 #include <algorithm>
 
+#ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#endif
 #include <scoring_framework/score_core.h>
 #include <scoring_framework/phase1_parameters.h>
 
@@ -24,6 +26,13 @@ using std::pair;
 using std::runtime_error;
 using std::vector;
 
+using kwiver::track_oracle::field_handle_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::track_oracle_core;
+
 pair< unsigned, unsigned > kwiver::kwant::quickfilter_box_type::debug_track_ids = make_pair( static_cast<unsigned>(-1), static_cast<unsigned>(-1));
 
 
@@ -32,6 +41,8 @@ pair< unsigned, unsigned > kwiver::kwant::quickfilter_box_type::debug_track_ids 
 namespace /* anon */
 {
 using namespace ::kwiver::kwant;
+
+#ifdef KWANT_ENABLE_MGRS
 
 bool
 check_debug( const track_handle_type& t,
@@ -71,7 +82,7 @@ add_quickfilter_box_radial_frame( const track_handle_type& t,
   static track_scorable_mgrs_type local_track_view;
 
   field_handle_type mgrs_field = local_track_view.mgrs.get_field_handle();
-  if (! track_oracle::field_has_row( f.row, mgrs_field )) return;
+  if (! track_oracle_core::field_has_row( f.row, mgrs_field )) return;
 
   static quickfilter_box_type qf_box;
 
@@ -91,6 +102,7 @@ add_quickfilter_box_radial_frame( const track_handle_type& t,
     qf_box.add_scorable_mgrs( t, corner );
  }
 }
+#endif
 
 void
 add_quickfilter_box_spatial_frame( const track_handle_type& t,
@@ -102,7 +114,7 @@ add_quickfilter_box_spatial_frame( const track_handle_type& t,
   // about zones, etc.
   static scorable_track_type local_track_view;
   field_handle_type bbox_field = local_track_view.bounding_box.get_field_handle();
-  if ( ! track_oracle::field_has_row( f.row, bbox_field )) return;
+  if ( ! track_oracle_core::field_has_row( f.row, bbox_field )) return;
 
   vgl_box_2d<double> box = local_track_view[ f ].bounding_box();
   box.expand_about_centroid( r );
@@ -118,13 +130,17 @@ add_quickfilter_box( const track_handle_type& t,
   if ( ! t.is_valid() ) return;
 
   bool use_radial_overlap = (params.radial_overlap >= 0.0);
-  frame_handle_list_type f = track_oracle::get_frames( t );
+  frame_handle_list_type f = track_oracle_core::get_frames( t );
 
   for (size_t i=0; i<f.size(); ++i)
   {
     if (use_radial_overlap)
     {
+#ifdef KWANT_ENABLE_MGRS
       add_quickfilter_box_radial_frame( t, f[i], params.radial_overlap );
+#else
+      throw std::runtime_error("Use of radial overlap without MGRS support");
+#endif
     }
     else
     {
@@ -138,6 +154,7 @@ add_quickfilter_box( const track_handle_type& t,
 namespace kwiver {
 namespace kwant {
 
+#ifdef KWANT_ENABLE_MGRS
 void
 quickfilter_box_type
 ::add_scorable_mgrs( const track_handle_type& t,
@@ -280,6 +297,7 @@ quickfilter_box_type
   if (dbg) LOG_DEBUG( main_logger, "scorable mgrs: " << t.row  << " exiting okay" );
   // all done!
 }
+#endif
 
 void
 quickfilter_box_type
@@ -303,6 +321,7 @@ quickfilter_box_type
   this->img_box() = box;
 }
 
+#ifdef KWANT_ENABLE_MGRS
 double
 quickfilter_box_type
 ::mgrs_box_intersect( const track_handle_type& t1,
@@ -374,7 +393,7 @@ quickfilter_box_type
   // need to do a frame-by-frame comparison
   return -1.0;
 }
-
+#endif
 
 double
 quickfilter_box_type
@@ -418,10 +437,21 @@ quickfilter_box_type
                      const track_handle_type& t2,
                      bool use_radial_overlap )
 {
+#ifdef KWANT_ENABLE_MGRS
   return
     (use_radial_overlap)
     ? this->mgrs_box_intersect( t1, t2 )
     : this->img_box_intersect( t1, t2 );
+#else
+  if (use_radial_overlap)
+  {
+    throw std::runtime_error("Use of radial overlap without MGRS support");
+  }
+  else
+  {
+    return this->img_box_intersect( t1, t2 );
+  }
+#endif
 }
 
 

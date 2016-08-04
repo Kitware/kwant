@@ -22,6 +22,13 @@ using std::ostringstream;
 using std::pair;
 using std::runtime_error;
 
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_oracle_core;
+
 namespace kwiver {
 namespace kwant {
 
@@ -74,7 +81,7 @@ track2track_phase2_hadwav
   for (size_t i = 0; i < c.size(); ++i)
   {
     track_handle_type const& ct = c[i];
-    frame_handle_list_type const frames = track_oracle::get_frames( ct );
+    frame_handle_list_type const frames = track_oracle_core::get_frames( ct );
 
     total_computed_boxes += scorable_track( ct ).frames_in_aoi();
 
@@ -91,7 +98,7 @@ track2track_phase2_hadwav
   for (size_t g = 0; g < t.size(); ++g)
   {
     track_handle_type const& gt = t[g];
-    frame_handle_list_type const frames = track_oracle::get_frames( gt );
+    frame_handle_list_type const frames = track_oracle_core::get_frames( gt );
 
     total_gt_boxes += scorable_track( gt ).frames_in_aoi();
 
@@ -175,9 +182,9 @@ track2track_phase2_hadwav
       if (this->verbose)
       {
         unsigned eid1 = scorable_track(i->first.first).external_id();
-        size_t nf1 = track_oracle::get_n_frames( i->first.first );
+        size_t nf1 = track_oracle_core::get_n_frames( i->first.first );
         unsigned eid2 = scorable_track(i->first.second).external_id();
-        size_t nf2 = track_oracle::get_n_frames( i->first.second );
+        size_t nf2 = track_oracle_core::get_n_frames( i->first.second );
         LOG_INFO( main_logger, "phase2:  true-to-computed association " << eid1
                  << "[ len " << nf1 << " ] "
                  << eid2
@@ -220,7 +227,7 @@ track2track_phase2_hadwav
           max_computed_track = tracks_on_target[j];
         }
       }
-      if ( max_computed_track.row == INVALID_ROW_HANDLE )
+      if ( max_computed_track.row == kwiver::track_oracle::INVALID_ROW_HANDLE )
       {
         LOG_ERROR( main_logger, "Logic error: c2t entry has no dominator?");
         exit(1);
@@ -268,7 +275,7 @@ track2track_phase2_hadwav
           max_target_track = targets_on_track[j];
         }
       }
-      if ( max_target_track.row == INVALID_ROW_HANDLE )
+      if ( max_target_track.row == kwiver::track_oracle::INVALID_ROW_HANDLE )
       {
         LOG_ERROR( main_logger, "Logic error: t2c entry has no dominator?");
         exit(1);
@@ -287,11 +294,11 @@ track2track_phase2_hadwav
   scorable_track_type trk;
   map< ts_type, bool > gt_frame_map, ct_frame_matched_map, ct_frame_unmatched_map, ct_frame_outside_aoi_map;
 
-  track_field< dt::utility::state_flags > state_flags;
+  track_field< kwiver::track_oracle::dt::utility::state_flags > state_flags;
 
   for (unsigned i = 0; i < t.size(); ++i )
   {
-    const frame_handle_list_type& frames = track_oracle::get_frames( t[i] );
+    const frame_handle_list_type& frames = track_oracle_core::get_frames( t[i] );
     for (unsigned j = 0; j < frames.size(); ++j )
     {
       unsigned match_state = trk[ frames[j] ].frame_has_been_matched();
@@ -307,7 +314,7 @@ track2track_phase2_hadwav
   for (unsigned i = 0; i < c.size(); ++i )
   {
     bool this_track_matched = false;
-    const frame_handle_list_type& frames = track_oracle::get_frames( c[i] );
+    const frame_handle_list_type& frames = track_oracle_core::get_frames( c[i] );
     for (unsigned j = 0; j < frames.size(); ++j )
     {
       ts_type this_ts = trk[ frames[j] ].timestamp_usecs();

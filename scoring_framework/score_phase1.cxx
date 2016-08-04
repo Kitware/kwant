@@ -16,9 +16,11 @@
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_intersection.h>
 
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/state_flags.h>
+#ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#endif
 #include <track_oracle/aries_interface/aries_interface.h>
 
 #include <scoring_framework/quickfilter_box.h>
@@ -42,6 +44,19 @@ using std::sqrt;
 using std::string;
 using std::vector;
 
+using kwiver::track_oracle::field_handle_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::element_descriptor;
+using kwiver::track_oracle::oracle_entry_handle_type;
+using kwiver::track_oracle::descriptor_overlap_type;
+using kwiver::track_oracle::descriptor_event_label_type;
+using kwiver::track_oracle::single_event_label_type;
+using kwiver::track_oracle::aries_interface;
 
 #undef P1_DEBUG
 //#define P1_DEBUG
@@ -74,7 +89,7 @@ track_list_time_bounds( const track_handle_list_type& t )
   bool first_time = true;
   for (unsigned i=0; i<t.size(); ++i)
   {
-    frame_handle_list_type frames = track_oracle::get_frames( t[i] );
+    frame_handle_list_type frames = track_oracle_core::get_frames( t[i] );
     for (unsigned j=0; j<frames.size(); ++j)
     {
       ts_type frame_ts = ts( frames[j] );
@@ -260,23 +275,23 @@ frame_handle_list_type
 sort_frames_by_field( track_handle_type track_id, const string& name )
 {
   string key = "sort_frames_by_"+name;
-  field_handle_type sorted_frames_field = track_oracle::lookup_by_name( key );
-  if ( sorted_frames_field == INVALID_FIELD_HANDLE )
+  field_handle_type sorted_frames_field = track_oracle_core::lookup_by_name( key );
+  if ( sorted_frames_field == kwiver::track_oracle::INVALID_FIELD_HANDLE )
   {
-    sorted_frames_field = track_oracle::create_element< frame_handle_list_type >(
+    sorted_frames_field = track_oracle_core::create_element< frame_handle_list_type >(
       element_descriptor(
         key,
         "sorted frames of "+name,
         typeid( static_cast< frame_handle_list_type* >(0) ).name(),
         element_descriptor::SYSTEM ));
   }
-  if ( ! track_oracle::field_has_row( track_id.row, sorted_frames_field ))
+  if ( ! track_oracle_core::field_has_row( track_id.row, sorted_frames_field ))
   {
-    frame_handle_list_type frames = track_oracle::get_frames( track_id );
+    frame_handle_list_type frames = track_oracle_core::get_frames( track_id );
     sort( frames.begin(), frames.end(), timestamp_compare );
-    track_oracle::get_field<frame_handle_list_type>( track_id.row, sorted_frames_field ) = frames;
+    track_oracle_core::get_field<frame_handle_list_type>( track_id.row, sorted_frames_field ) = frames;
   }
-  return track_oracle::get_field<frame_handle_list_type>( track_id.row, sorted_frames_field );
+  return track_oracle_core::get_field<frame_handle_list_type>( track_id.row, sorted_frames_field );
 }
 
 
@@ -488,6 +503,7 @@ track2track_score
   return ret;
 }
 
+#ifdef KWANT_ENABLE_MGRS
 track2track_frame_overlap_record
 track2track_score
 ::compute_radial_overlap( frame_handle_type f1, frame_handle_type f2, const phase1_parameters& params )
@@ -495,8 +511,8 @@ track2track_score
   static track_scorable_mgrs_type local_track_view;
 
   field_handle_type mgrs_field = local_track_view.mgrs.get_field_handle();
-  if ( (! track_oracle::field_has_row( f1.row, mgrs_field )) ||
-       (! track_oracle::field_has_row( f2.row, mgrs_field )) )
+  if ( (! track_oracle_core::field_has_row( f1.row, mgrs_field )) ||
+       (! track_oracle_core::field_has_row( f2.row, mgrs_field )) )
   {
     throw runtime_error( "radial overlap requested on frame with no mgrs" );
   }
@@ -568,7 +584,7 @@ track2track_score
 
   return ret;
 }
-
+#endif
 
 track2track_frame_overlap_record
 track2track_score
@@ -586,8 +602,8 @@ track2track_score
   field_handle_type bbox_field = local_track_view.bounding_box.get_field_handle();
 
 
-  if ( ( ! track_oracle::field_has_row( t1.row, bbox_field ) ) ||
-       ( ! track_oracle::field_has_row( t2.row, bbox_field )))
+  if ( ( ! track_oracle_core::field_has_row( t1.row, bbox_field ) ) ||
+       ( ! track_oracle_core::field_has_row( t2.row, bbox_field )))
   {
 #ifdef P1_DEBUG
     LOG_INFO( main_logger, "cso: no field/row " << t1 << " , " << bbox_field );
@@ -704,9 +720,9 @@ track2track_score
   frame_handle_list_type c_sorted_frames = sort_frames_by_field( c, "timestamp_usecs" );
 
 #ifdef P1_DEBUG
-  debug_dump_first_n_frames( "t-unsorted", track_oracle::get_frames(t) );
+  debug_dump_first_n_frames( "t-unsorted", track_oracle_core::get_frames(t) );
   debug_dump_first_n_frames( "t-sorted", t_sorted_frames );
-  debug_dump_first_n_frames( "c-unsorted", track_oracle::get_frames(c) );
+  debug_dump_first_n_frames( "c-unsorted", track_oracle_core::get_frames(c) );
   debug_dump_first_n_frames( "c-unsorted", c_sorted_frames );
 #endif
 
@@ -774,10 +790,22 @@ track2track_score
   size_t strong_overlap_count = 0;
   for (size_t i=0; i<aligned_frames.size(); ++i)
   {
+#ifdef KWANT_ENABLE_MGRS
     track2track_frame_overlap_record overlap =
       ( use_radial_overlap )
       ? this->compute_radial_overlap( aligned_frames[i].first, aligned_frames[i].second, params )
       : this->compute_spatial_overlap(  aligned_frames[i].first, aligned_frames[i].second, params );
+#else
+    track2track_frame_overlap_record overlap;
+    if (use_radial_overlap)
+    {
+      throw std::runtime_error( "Radial overlap used without MGRS support" );
+    }
+    else
+    {
+      overlap = this->compute_spatial_overlap(  aligned_frames[i].first, aligned_frames[i].second, params );
+    }
+#endif
 
     // aoi match must be checked regardless of overlap area
     // (but only if the AOI is defined.)
@@ -851,7 +879,7 @@ track2track_score
   this->overlap_frame_range.first = numeric_limits< ts_type >::max();
   this->overlap_frame_range.second = numeric_limits< ts_type >::min();
 
-  track_field< dt::utility::state_flags > track_flags;
+  track_field< kwiver::track_oracle::dt::utility::state_flags > track_flags;
   for (size_t i=0; i<overlaps.size(); ++i)
   {
     bool keep_this = params.pass_all_nonzero_overlaps || overlaps[i].first;
@@ -1052,7 +1080,7 @@ track2track_phase1
     {
       unsigned int this_y_axis = (current_y_axis_index++) * y_axis_spacing;
       y_axis_map[ gt_list[i].row ] = this_y_axis;
-      frame_handle_list_type frames = track_oracle::get_frames( gt_list[i] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( gt_list[i] );
 
       for (unsigned j=0; j<frames.size(); ++j)
       {
@@ -1087,7 +1115,7 @@ track2track_phase1
       // assign the dominance to whoever matches the most frames (but is over
       // half.)
 
-      frame_handle_list_type frames = track_oracle::get_frames( ct_list[i] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( ct_list[i] );
       vector< oracle_entry_handle_type > dominant_tracks;
       for (map<oracle_entry_handle_type, unsigned>::const_iterator
              j = matched_track_census.begin();
@@ -1148,7 +1176,7 @@ track2track_phase1
 
     for (unsigned i=0; i<ct_list.size(); ++i)
     {
-      frame_handle_list_type frames = track_oracle::get_frames( ct_list[i] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( ct_list[i] );
       unsigned default_y_axis = y_axis_map[ ct_list[i].row ];
       ofstream& os =
         has_dominant_gt_track[ ct_list[i].row ]
@@ -1260,8 +1288,8 @@ track2track_score
     ? activity_id( this->cached_comp_track.row )
     : aries_interface::activity_to_index( "NotScored" );
 
-  ret.n_frames_src = track_oracle::get_n_frames( this->cached_truth_track );
-  ret.n_frames_dst = track_oracle::get_n_frames( this->cached_comp_track );
+  ret.n_frames_src = track_oracle_core::get_n_frames( this->cached_truth_track );
+  ret.n_frames_dst = track_oracle_core::get_n_frames( this->cached_comp_track );
   ret.n_frames_overlap = this->frame_overlaps.size();
   if (ret.n_frames_overlap == 0)
   {
@@ -1334,7 +1362,7 @@ track2track_score
   }
 
 
-  unsigned n_frames_dst = track_oracle::get_n_frames( this->cached_comp_track );
+  unsigned n_frames_dst = track_oracle_core::get_n_frames( this->cached_comp_track );
   unsigned n_frames_overlap = this->frame_overlaps.size();
   if (n_frames_overlap == 0)
   {

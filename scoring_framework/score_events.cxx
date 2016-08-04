@@ -37,14 +37,16 @@ the activity index is used.
 #include <vul/vul_awk.h>
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 #include <track_oracle/track_kst/track_kst.h>
 #include <track_oracle/track_xgtf/track_xgtf.h>
 #include <track_oracle/track_kwxml/track_kwxml.h>
 #include <track_oracle/track_kw18/track_kw18.h>
+#if KWANT_ENABLE_KWE
 #include <track_oracle/track_filter_kwe/track_filter_kwe.h>
+#endif
 #include <track_oracle/file_format_schema.h>
 #include <track_oracle/file_format_manager.h>
 #include <track_oracle/utils/logging_map.h>
@@ -85,6 +87,20 @@ using std::string;
 using std::stringstream;
 using std::transform;
 using std::vector;
+
+using kwiver::track_oracle::aries_interface;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::oracle_entry_handle_type;
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::file_format_schema_type;
+using kwiver::track_oracle::file_format_enum;
+using kwiver::track_oracle::file_format_manager;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::track_kwxml_type;
+using kwiver::track_oracle::track_kst_type;
+using kwiver::track_oracle::aries_interface_exception;
 
 namespace { // anon
 
@@ -307,7 +323,7 @@ track_handle_list_type
 filter_on_track_style( const track_handle_list_type& input_tracks,
                        vul_arg<string>& track_style_arg )
 {
-  track_field< dt::tracking::track_style > track_style;
+  track_field< kwiver::track_oracle::dt::tracking::track_style > track_style;
   const string any_style = ":all:";
   track_handle_list_type ret;
 
@@ -382,8 +398,8 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
   wmap.set_output_prefix( "normalize_activity_tracks: " );
 
   // (1) from xgtf
-  track_field< dt::events::event_type > activity;
-  track_field< dt::events::event_probability > activity_probability;
+  track_field< kwiver::track_oracle::dt::events::event_type > activity;
+  track_field< kwiver::track_oracle::dt::events::event_probability > activity_probability;
 
   // (2) from kwxml
   track_field< vector<double> > descriptor_classifier( "descriptor_classifier" );
@@ -472,7 +488,7 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
         bool add_empty_classifier = false;
         if (fst.format.exists( input_tracks[i].row ))
         {
-          add_empty_classifier = (fst.format( input_tracks[i].row ) == TF_KWXML);
+          add_empty_classifier = (fst.format( input_tracks[i].row ) == kwiver::track_oracle::TF_KWXML);
         }
 
         if (add_empty_classifier)
@@ -555,7 +571,7 @@ relink_kwxml_on_source_ids( const track_handle_list_type& k_tracks, int activity
   map< k_track_key_type, track_handle_list_type > src2k_map;
   typedef map< k_track_key_type, track_handle_list_type >::const_iterator src2k_map_cit;
 
-  track_field< dt::events::source_track_ids > src_track_ids_field;
+  track_field< kwiver::track_oracle::dt::events::source_track_ids > src_track_ids_field;
   file_format_schema_type ts;
 
   unsigned max_external_id = 0;
@@ -605,7 +621,7 @@ relink_kwxml_on_source_ids( const track_handle_list_type& k_tracks, int activity
     for (unsigned j=0; j<src_k_tracks.size(); ++j)
     {
       track_handle_type this_k_track = src_k_tracks[j];
-      kwxml( new_track ).add_frames( track_oracle::get_frames( this_k_track ));
+      kwxml( new_track ).add_frames( track_oracle_core::get_frames( this_k_track ));
 
       if ( ! kwxml( this_k_track ).descriptor_classifier.exists() )
       {
@@ -645,7 +661,7 @@ relink_kwxml_on_source_ids( const track_handle_list_type& k_tracks, int activity
     ret.push_back( new_track );
 
     LOG_INFO( main_logger, "source track " << i->first.first << ":" << i->first.second << " contained " << src_k_tracks.size()
-             << " component tracks; now has " << track_oracle::get_n_frames( new_track ) << " frames");
+             << " component tracks; now has " << track_oracle_core::get_n_frames( new_track ) << " frames");
 
   }
 
@@ -682,8 +698,8 @@ bool compare_kst_track_handle(track_handle_type i, track_handle_type j)
 
     else // Tertiary sort on first-frame time-stamp
     {
-      frame_handle_list_type iframes = track_oracle::get_frames( i );
-      frame_handle_list_type jframes = track_oracle::get_frames( j );
+      frame_handle_list_type iframes = track_oracle_core::get_frames( i );
+      frame_handle_list_type jframes = track_oracle_core::get_frames( j );
       double i_ts = static_cast<double>(kst[ iframes[0] ].timestamp_usecs());
       double j_ts = static_cast<double>(kst[ jframes[0] ].timestamp_usecs());
 
@@ -693,6 +709,7 @@ bool compare_kst_track_handle(track_handle_type i, track_handle_type j)
 }
 
 
+#ifdef KWANT_ENABLE_MGRS
 void
 add_tracks_to_box( const track_handle_list_type& tracks,
                    vgl_box_2d<double>& box )
@@ -700,7 +717,7 @@ add_tracks_to_box( const track_handle_list_type& tracks,
   track_field< scorable_mgrs > mgrs( "mgrs_pos" );
   for (size_t i=0; i<tracks.size(); ++i)
   {
-    frame_handle_list_type frames = track_oracle::get_frames( tracks[i] );
+    frame_handle_list_type frames = track_oracle_core::get_frames( tracks[i] );
     for (size_t j=0; j<frames.size(); ++j)
     {
       pair< bool, scorable_mgrs > probe = mgrs.get( frames[j].row );
@@ -755,6 +772,7 @@ compute_normalization_factors(  const track_handle_list_type& truth_tracks,
   LOG_INFO( main_logger, "Normalization: divide by " << kmsq_sec << " for km^2 / sec" );
   return kmsq_sec;
 }
+#endif
 
 track_handle_list_type
 process_top_n_tracks( track_handle_list_type computed_tracks,
@@ -850,7 +868,7 @@ process_single_match_stat( ostream& os,
   const string track_tag = (is_gt) ? "ct" : "gt";
 
   track_field< unsigned > id( "external_id" );
-  track_field< dt::events::source_track_ids > source_track_ids;
+  track_field< kwiver::track_oracle::dt::events::source_track_ids > source_track_ids;
   if (! id.exists( h.row ))
   {
     LOG_ERROR( main_logger, "No ID for a handle? is_gt: " << is_gt );
@@ -1259,7 +1277,12 @@ int main( int argc, char *argv[] )
   // if the user specified radial_overlap, set input_arg's compute_mgrs_data flag
   if ( matching_args.radial_overlap() >= 0.0 )
   {
+#ifdef KWANT_ENABLE_MGRS
     input_args.compute_mgrs_data = true;
+#else
+    LOG_ERROR( main_logger, "Radial overlap requested but MGRS support not yet ported" );
+    return EXIT_FAILURE;
+#endif
   }
 
   //
@@ -1277,21 +1300,31 @@ int main( int argc, char *argv[] )
   // If the user specified KWE events, insert them now
   if (kwe_gt_arg.set())
   {
+#ifdef KWANT_ENABLE_KWE
     track_handle_list_type kwe_tracks;
     if ( ! track_filter_kwe_type::read( kwe_gt_arg(), truth_tracks, kwe_track_style_arg(), kwe_tracks ))
     {
       return EXIT_FAILURE;
     }
     truth_tracks.insert( truth_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
+#else
+    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
+    return EXIT_FAILURE;
+#endif
   }
   if (kwe_ct_arg.set())
   {
+#ifdef KWANT_ENABLE_KWE
     track_handle_list_type kwe_tracks;
     if ( ! track_filter_kwe_type::read( kwe_ct_arg(), computed_tracks, kwe_track_style_arg(), kwe_tracks ))
     {
       return EXIT_FAILURE;
     }
     computed_tracks.insert( computed_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
+#else
+    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
+    return EXIT_FAILURE;
+#endif
   }
 
 
@@ -1376,7 +1409,12 @@ int main( int argc, char *argv[] )
   double fa_norm = 1.0;
   if ( matching_args.radial_overlap() >= 0.0 )
   {
+#ifdef KWANT_ENABLE_MGRS
     fa_norm = compute_normalization_factors( truth_tracks, computed_tracks );
+#else
+    LOG_ERROR( main_logger, "Radial overlap requested but MGRS support not yet ported" );
+    return EXIT_FAILURE;
+#endif
   }
 
   phase1_parameters p1_params;
@@ -1449,7 +1487,7 @@ int main( int argc, char *argv[] )
     track_handle_list_type all_tracks;
     all_tracks.insert( all_tracks.end(), truth_tracks.begin(), truth_tracks.end() );
     all_tracks.insert( all_tracks.end(), computed_tracks.begin(), computed_tracks.end() );
-    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, TF_INVALID_TYPE );
+    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
     LOG_INFO( main_logger, "Write returned " << rc );
   }
 }

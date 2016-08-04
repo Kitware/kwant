@@ -64,6 +64,8 @@
 namespace kwiver {
 namespace kwant {
 
+namespace kwto = ::kwiver::track_oracle;
+
 //
 // spatio-temporal parameters for the detections
 //
@@ -108,12 +110,12 @@ public:
   {}
 
   bool make_tracks( const std::string& track_description_string,
-                    track_handle_list_type& output_tracks );
+                    kwto::track_handle_list_type& output_tracks );
 
 private:
   track_synthesizer_params params;
   box_pool bp;
-  track_handle_list_type tracks;
+  kwto::track_handle_list_type tracks;
 
   bool create_boxes( char c, unsigned frame_number, ts_type ts );
   void add_box_to_track( unsigned id, unsigned frame_number, ts_type ts, const vgl_box_2d<double>& box );

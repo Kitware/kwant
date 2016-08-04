@@ -22,6 +22,8 @@
 namespace kwiver {
 namespace kwant {
 
+namespace kwto = ::kwiver::track_oracle;
+
 struct track2track_phase1;
 
 struct SCORE_TRACKS_HADWAV_EXPORT track2track_scalars_hadwav
@@ -53,8 +55,8 @@ struct SCORE_TRACKS_HADWAV_EXPORT track2track_phase2_hadwav
 {
 public:
   std::map< track2track_type, track2track_scalars_hadwav> t2t;
-  std::map< track_handle_type, track_handle_list_type > c2t;  // key = computed ID; val = list of associated truth tracks
-  std::map< track_handle_type, track_handle_list_type > t2c;  // key = truth track ID; val = list of associated computed tracks
+  std::map< kwto::track_handle_type, kwto::track_handle_list_type > c2t;  // key = computed ID; val = list of associated truth tracks
+  std::map< kwto::track_handle_type, kwto::track_handle_list_type > t2c;  // key = truth track ID; val = list of associated computed tracks
   size_t n_true_tracks;
   size_t n_computed_tracks;
 
@@ -66,7 +68,9 @@ public:
   double detectionPFalseAlarm;
   bool verbose;
 
-  void compute( const track_handle_list_type& t, const track_handle_list_type& c, const track2track_phase1& p1 );
+  void compute( const kwto::track_handle_list_type& t,
+                const kwto::track_handle_list_type& c,
+                const track2track_phase1& p1 );
   void debug_dump( std::ostream& os );
 
   explicit track2track_phase2_hadwav( bool v = false ) :

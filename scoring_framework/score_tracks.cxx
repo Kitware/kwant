@@ -16,7 +16,7 @@
 
 #include <vgl/vgl_area.h>
 
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 
@@ -47,6 +47,16 @@ using std::pair;
 using std::runtime_error;
 using std::string;
 using std::vector;
+
+using kwiver::track_oracle::aries_interface;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::file_format_enum;
+using kwiver::track_oracle::file_format_manager;
 
 using namespace kwiver::kwant;
 
@@ -268,7 +278,7 @@ write_activity_overlay( ostream& os,
     // ground-truth tracks which DIDN'T show up in the overlap records.  Those frames
     // will not exist in in the frame_matches map; we'll explicitly record those as match=false.
 
-    frame_handle_list_type gt_frames = track_oracle::get_frames( gt );
+    frame_handle_list_type gt_frames = track_oracle_core::get_frames( gt );
     for (unsigned j=0; j<gt_frames.size(); ++j)
     {
       if ( frame_matches.find( gt_frames[j] ) == frame_matches.end() )
@@ -807,7 +817,7 @@ int main( int argc, char *argv[] )
     track_handle_list_type all_tracks;
     all_tracks.insert( all_tracks.end(), aoi_filtered_truth_tracks.begin(), aoi_filtered_truth_tracks.end() );
     all_tracks.insert( all_tracks.end(), aoi_filtered_computed_tracks.begin(), aoi_filtered_computed_tracks.end() );
-    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, TF_INVALID_TYPE );
+    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
     LOG_INFO( main_logger, "Write returned " << rc );
   }
 }

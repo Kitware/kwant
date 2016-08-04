@@ -22,6 +22,8 @@ namespace kwant {
 
 namespace timestamp_utilities {
 
+namespace kwto = ::kwiver::track_oracle;
+
 //
 // This object records the minimum and maxmimum values of timestamps
 // and frame numbers for arbitrary collections of tracks.
@@ -39,20 +41,20 @@ namespace timestamp_utilities {
 struct TIMESTAMP_UTILITIES_EXPORT track_timestamp_stats_type
 {
 private:
-  track_field< ts_type > timestamp_usecs;
-  track_field< unsigned > frame_number;
+  kwto::track_field< ts_type > timestamp_usecs;
+  kwto::track_field< unsigned > frame_number;
 
 public:
   track_timestamp_stats_type();
   track_timestamp_stats_type( const track_timestamp_stats_type& other );
-  explicit track_timestamp_stats_type( const track_handle_list_type& tracks );
-  explicit track_timestamp_stats_type( const track_handle_type& t );
-  explicit track_timestamp_stats_type( const frame_handle_list_type& f );
+  explicit track_timestamp_stats_type( const kwto::track_handle_list_type& tracks );
+  explicit track_timestamp_stats_type( const kwto::track_handle_type& t );
+  explicit track_timestamp_stats_type( const kwto::frame_handle_list_type& f );
   void combine_with_other( const track_timestamp_stats_type& other );
-  void set_from_tracks( const track_handle_list_type& tracks );
-  void set_from_track( const track_handle_type& t );
-  void set_from_frames( const frame_handle_list_type& frames );
-  void update_from_frame( const frame_handle_type& f );
+  void set_from_tracks( const kwto::track_handle_list_type& tracks );
+  void set_from_track( const kwto::track_handle_type& t );
+  void set_from_frames( const kwto::frame_handle_list_type& frames );
+  void update_from_frame( const kwto::frame_handle_type& f );
   void reset();
 
   bool has_frame_numbers;
@@ -95,13 +97,13 @@ public:
   void set( double fps, ts_type base_ts );
   ts_type fn_to_ts( unsigned fn ) const;
   ts_type get_base_ts() const;
-  void set_timestamps( const track_handle_list_type& tracks ) const;
-  void set_timestamps( const track_handle_type& track ) const;
-  void set_timestamps( const frame_handle_list_type& frames ) const;
+  void set_timestamps( const kwto::track_handle_list_type& tracks ) const;
+  void set_timestamps( const kwto::track_handle_type& track ) const;
+  void set_timestamps( const kwto::frame_handle_list_type& frames ) const;
 
 private:
-  mutable track_field< ts_type > timestamp_usecs;
-  mutable track_field< unsigned > frame_number;
+  mutable kwto::track_field< ts_type > timestamp_usecs;
+  mutable kwto::track_field< unsigned > frame_number;
   bool valid;
   double fps;
   ts_type base_ts; // usecs

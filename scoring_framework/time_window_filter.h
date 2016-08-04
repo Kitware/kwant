@@ -23,7 +23,7 @@ public:
 
   time_window_filter();
   bool set_from_string( const std::string& s );
-  bool track_passes_filter( const track_handle_type& t ) const;
+  bool track_passes_filter( const kwiver::track_oracle::track_handle_type& t ) const;
   bool is_valid() const;
   static std::string help_text();
 
@@ -38,7 +38,7 @@ private:
   unsigned long long max;
 };
 
-struct time_window_filter_factory
+struct SCORE_CORE_EXPORT time_window_filter_factory
 {
   static std::string help_text();
   static bool code_is_special( const std::string& code );

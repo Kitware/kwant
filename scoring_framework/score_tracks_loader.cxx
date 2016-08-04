@@ -29,7 +29,9 @@
 #include <track_oracle/track_vpd/file_format_vpd_track.h>
 #include <track_oracle/track_comms_xml/file_format_comms_xml.h>
 #include <track_oracle/file_format_manager.h>
+#ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#endif
 #include <track_oracle/file_format_schema.h>
 
 #include <scoring_framework/time_window_filter.h>
@@ -63,6 +65,22 @@ using std::setprecision;
 using std::string;
 using std::vector;
 
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::file_format_schema_type;
+using kwiver::track_oracle::file_format_manager;
+using kwiver::track_oracle::track_vpd_track_type;
+using kwiver::track_oracle::track_vpd_event_type;
+using kwiver::track_oracle::track_comms_xml_type;
+using kwiver::track_oracle::comms_xml_reader_opts;
+using kwiver::track_oracle::kwxml_reader_opts;
+using kwiver::track_oracle::xgtf_reader_opts;
+using kwiver::track_oracle::track_field;
+using kwiver::track_oracle::oracle_entry_handle_type;
+using kwiver::track_oracle::aries_interface;
 
 using namespace kwiver::kwant;
 using namespace kwiver::kwant::timestamp_utilities;
@@ -158,7 +176,7 @@ promote_frame_number_to_timestamp( const vector< track_record_type >& tr )
     frame_handle_list_type frames;
     for (size_t j=0; j<r_tracks.size() && frames.empty(); ++j)
     {
-      frames = track_oracle::get_frames( r_tracks[j] );
+      frames = track_oracle_core::get_frames( r_tracks[j] );
     }
     // couldn't find any frames... nothing to promote!
     if (frames.empty()) continue;
@@ -176,7 +194,7 @@ promote_frame_number_to_timestamp( const vector< track_record_type >& tr )
     size_t c=0, total_f=0;
     for (size_t j=0; j<r_tracks.size(); ++j)
     {
-      frames = track_oracle::get_frames( r_tracks[j] );
+      frames = track_oracle_core::get_frames( r_tracks[j] );
       for (size_t f=0; f<frames.size(); ++f)
       {
         ++total_f;
@@ -222,7 +240,7 @@ promote_object_id_to_external_id( const vector< track_record_type >& tr )
     if (r_tracks.empty()) continue;
 
     // only process TF_VPD_TRACK types
-    if ( ffs( r_tracks[0] ).format() != TF_VPD_TRACK ) continue;
+    if ( ffs( r_tracks[0] ).format() != kwiver::track_oracle::TF_VPD_TRACK ) continue;
 
     for (size_t j=0; j<r_tracks.size(); ++j)
     {
@@ -250,7 +268,7 @@ promote_vpd_event_to_virat_event( const vector< track_record_type >& tr )
     if (r_tracks.empty()) continue;
 
     // only process TF_VPD_TRACK types
-    if ( ffs( r_tracks[0] ).format() != TF_VPD_TRACK ) continue;
+    if ( ffs( r_tracks[0] ).format() != kwiver::track_oracle::TF_VPD_TRACK ) continue;
 
     for (size_t j=0; j<r_tracks.size(); ++j)
     {
@@ -395,6 +413,7 @@ input_source_type
   // all done!
 }
 
+#ifdef KWANT_ENABLE_MGRS
 //
 // MGRS data will be appended if:
 // (a) a track is APIX, regardless of whether or not the user asked for it,
@@ -422,7 +441,7 @@ set_mgrs_data( const vector< track_record_type >& tr_list,
     string fn = file_format_schema_type::source_id_to_filename( tfs( r0 ).source_file_id() );
 
     bool add_to_this_record = false;
-    if (tfs( r0 ).format() == TF_APIX)
+    if (tfs( r0 ).format() == kwiver::track_oracle::TF_APIX)
     {
       if ( ! user_requested_mgrs_conversion )
       {
@@ -446,6 +465,7 @@ set_mgrs_data( const vector< track_record_type >& tr_list,
     LOG_INFO( main_logger, "Added MGRS data to " << r_tracks.size() << " tracks from " << fn );
   }
 }
+#endif
 
 #ifdef SHAPELIB_ENABLED
 //
@@ -469,7 +489,7 @@ convert_apix_timestamps( vector< track_record_type >& tr_list,
     if (r_tracks.empty()) continue;
     const track_handle_type& r0 = r_tracks[0];
 
-    if ( tfs( r0 ).format() != TF_APIX ) continue;
+    if ( tfs( r0 ).format() != kwiver::track_oracle::TF_APIX ) continue;
 
     string fn = file_format_schema_type::source_id_to_filename( tfs( r0 ).source_file_id() );
 
@@ -487,7 +507,7 @@ convert_apix_timestamps( vector< track_record_type >& tr_list,
     }
     for (size_t j = 0; j<r_tracks.size(); ++j)
     {
-      frame_handle_list_type frames = track_oracle::get_frames( r_tracks[j] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( r_tracks[j] );
 
       for (size_t f = 0; f<frames.size(); ++f )
       {
@@ -530,7 +550,7 @@ set_virat_scenario_activities( const input_source_type& truth_src,
   if (computed_track_records[0].tracks().empty()) return;
   track_handle_type track0 = computed_track_records[0].tracks()[0];
   file_format_schema_type ffs;
-  if ( ffs( track0 ).format() != TF_COMMS_XML ) return;
+  if ( ffs( track0 ).format() != kwiver::track_oracle::TF_COMMS_XML ) return;
   if ( truth_src.qid2activity_map.empty() )
   {
     LOG_WARN( main_logger, string("\n")+
@@ -596,7 +616,7 @@ set_virat_scenario_activities( const input_source_type& truth_src,
         comms_copy( new_t ).probability() = comms( t ).probability();
         comms_copy( new_t ).query_id() = comms( t ).query_id();
 
-        frame_handle_list_type frames = track_oracle::get_frames( t );
+        frame_handle_list_type frames = track_oracle_core::get_frames( t );
         for (size_t f = 0; f<frames.size(); ++f)
         {
           const frame_handle_type& src_f = frames[f];
@@ -698,7 +718,7 @@ check_for_zero_area_boxes( const vector< track_record_type >& records )
     const track_handle_list_type& r_tracks = r.tracks();
     for (size_t j=0; j<r_tracks.size(); ++j)
     {
-      frame_handle_list_type frames = track_oracle::get_frames( r_tracks[j] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( r_tracks[j] );
       for (size_t k=0; k<frames.size(); ++k)
       {
         if (stt[ frames[k] ].bounding_box().area() <= 0)
@@ -735,7 +755,7 @@ check_for_increasing_frame_number_and_timestamps( const vector< track_record_typ
     const track_handle_list_type& r_tracks = r.tracks();
     for (size_t j=0; j<r_tracks.size(); ++j)
     {
-      frame_handle_list_type frames = track_oracle::get_frames( r_tracks[j] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( r_tracks[j] );
       if (frames.size() < 2) continue;
 
       unsigned last_frame_num = stt[ frames[0] ].timestamp_frame();
@@ -833,7 +853,7 @@ load_tracks_from_file( const input_source_type& src )
       track_handle_list_type filtered;
       for (size_t j=0; j<input_tracks.size(); ++j)
       {
-        size_t n = track_oracle::get_n_frames( input_tracks[j] );
+        size_t n = track_oracle_core::get_n_frames( input_tracks[j] );
         if (n >= src.min_track_length )
         {
           filtered.push_back( input_tracks[j] );
@@ -930,7 +950,7 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
       const track_handle_list_type& tl = tr_list[ tr ];
       for (unsigned j=0; j<tl.size(); ++j)
       {
-        frame_handle_list_type f = track_oracle::get_frames( tl[j] );
+        frame_handle_list_type f = track_oracle_core::get_frames( tl[j] );
         for (unsigned k=0; k<f.size(); ++k)
         {
           pair< bool, ts_type > ts_probe = trk.timestamp_usecs.get( f[k].row );
@@ -1058,21 +1078,21 @@ input_args_type
   //
   if (this->track_style_filter.set() )
   {
-    kwxml_reader_opts& kwxml_opts = dynamic_cast<kwxml_reader_opts&>( file_format_manager::default_options( TF_KWXML ) );
+    kwxml_reader_opts& kwxml_opts = dynamic_cast<kwxml_reader_opts&>( file_format_manager::default_options( kwiver::track_oracle::TF_KWXML ) );
     kwxml_opts.set_track_style_filter( this->track_style_filter() );
   }
 
 #ifdef SHAPELIB_ENABLED
   if ( ! this->apix_debug_fn().empty() )
   {
-    apix_reader_opts& apix_opts = dynamic_cast<apix_reader_opts&>( file_format_manager::default_options( TF_APIX ));
+    apix_reader_opts& apix_opts = dynamic_cast<apix_reader_opts&>( file_format_manager::default_options( kwiver::track_oracle::TF_APIX ));
     apix_opts.set_verbose( true );
   }
 #endif
 
-  xgtf_reader_opts& xgtf_opts = dynamic_cast<xgtf_reader_opts&>( file_format_manager::default_options( TF_XGTF ) );
+  xgtf_reader_opts& xgtf_opts = dynamic_cast<xgtf_reader_opts&>( file_format_manager::default_options( kwiver::track_oracle::TF_XGTF ) );
   xgtf_opts.set_promote_pvmoving( this->promote_pvmoving() );
-  comms_xml_reader_opts& comms_opts = dynamic_cast<comms_xml_reader_opts&>( file_format_manager::default_options( TF_COMMS_XML));
+  comms_xml_reader_opts& comms_opts = dynamic_cast<comms_xml_reader_opts&>( file_format_manager::default_options( kwiver::track_oracle::TF_COMMS_XML));
   comms_opts.set_comms_qid( this->qid() );
 
   vector< track_record_type > truth_track_records = load_tracks_from_file( truth_src );
@@ -1094,6 +1114,7 @@ input_args_type
   // activities to computed.
   set_virat_scenario_activities( truth_src, computed_track_records );
 
+#ifdef KWANT_ENABLE_MGRS
   // set MGRS data, always for APIX tracks, optionally for everything else
   // ...for formats such as CSV, the user can specify which columns contain the
   // latitude / longitude data; parse that here
@@ -1101,6 +1122,7 @@ input_args_type
   parse_mgrs_ll_fields( this->mgrs_lon_lat_fields(), lon_field, lat_field );
   set_mgrs_data( truth_track_records, this->compute_mgrs_data, lon_field, lat_field );
   set_mgrs_data( computed_track_records, this->compute_mgrs_data, lon_field, lat_field );
+#endif
 
   // special APIX processing: clear out old log if defined
   if ( ! this->apix_debug_fn().empty() )
@@ -1378,10 +1400,10 @@ input_args_type
   }
 
   // mark all the tracks as "loaded"
-  track_field< dt::utility::state_flags > state_flags;
+  track_field< kwiver::track_oracle::dt::utility::state_flags > state_flags;
   for (size_t i=0; i<truth_tracks.size(); ++i)
   {
-    const frame_handle_list_type& frames = track_oracle::get_frames( truth_tracks[i] );
+    const frame_handle_list_type& frames = track_oracle_core::get_frames( truth_tracks[i] );
     for (size_t j=0; j<frames.size(); ++j)
     {
       state_flags( frames[j].row ).set_flag( "ATTR_SCORING_SRC_IS_TRUTH" );
@@ -1390,7 +1412,7 @@ input_args_type
 
   for (size_t i=0; i<computed_tracks.size(); ++i)
   {
-    const frame_handle_list_type& frames = track_oracle::get_frames( computed_tracks[i] );
+    const frame_handle_list_type& frames = track_oracle_core::get_frames( computed_tracks[i] );
     for (size_t j=0; j<frames.size(); ++j)
     {
       state_flags( frames[j].row ).set_flag( "ATTR_SCORING_SRC_IS_COMPUTED" );

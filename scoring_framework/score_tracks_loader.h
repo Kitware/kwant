@@ -25,7 +25,7 @@
 
 #include <vul/vul_arg.h>
 
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/track_base.h>
 #include <track_oracle/track_field.h>
 
@@ -140,7 +140,8 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
   {}
 
 
-  bool process( track_handle_list_type& computed_tracks, track_handle_list_type& truth_tracks );
+  bool process( kwiver::track_oracle::track_handle_list_type& computed_tracks,
+                kwiver::track_oracle::track_handle_list_type& truth_tracks );
 
 };
 

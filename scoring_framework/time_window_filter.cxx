@@ -12,7 +12,7 @@
 
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/track_oracle.h>
+#include <track_oracle/track_oracle_core.h>
 #include <track_oracle/track_field.h>
 
 #include <vital/logger/logger.h>
@@ -24,6 +24,13 @@ using std::ostringstream;
 using std::runtime_error;
 using std::string;
 using std::swap;
+
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::oracle_entry_handle_type;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::track_field;
+
 
 namespace { // anon
 
@@ -142,7 +149,7 @@ time_window_filter
   track_field< unsigned long long > ts_usecs( "timestamp_usecs" );
   track_field< unsigned > ts_frame( "frame_number" );
 
-  frame_handle_list_type frames = track_oracle::get_frames( t );
+  frame_handle_list_type frames = track_oracle_core::get_frames( t );
   for (size_t i=0; i<frames.size(); ++i)
   {
     const oracle_entry_handle_type& row = frames[i].row;

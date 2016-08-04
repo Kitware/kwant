@@ -33,20 +33,22 @@
 namespace kwiver {
 namespace kwant {
 
+namespace kwto = ::kwiver::track_oracle;
+
 //
 // the track2track_score contains the results of compairing a single
 // pair of tracks.
 //
 
-frame_handle_list_type
-sort_frames_by_field( track_handle_type track_id, const std::string& name);
+kwto::frame_handle_list_type
+sort_frames_by_field( kwto::track_handle_type track_id, const std::string& name);
 
 
 struct SCORE_CORE_EXPORT track2track_frame_overlap_record
 {
 public:
-  frame_handle_type truth_frame;
-  frame_handle_type computed_frame;
+  kwto::frame_handle_type truth_frame;
+  kwto::frame_handle_type computed_frame;
   unsigned int fL_frame_num; // frame number of first overlapping frame
   unsigned int fR_frame_num; // frame number of second overlapping frame
   double truth_area;    // area of ground-truth bounding box
@@ -82,35 +84,47 @@ public:
 
   // fill in the values given truth track t and computed track c
   // returns false if tracks are not in the AOI
-  bool compute( track_handle_type t, track_handle_type c, phase1_parameters const& params );
+  bool compute( kwto::track_handle_type t,
+                kwto::track_handle_type c,
+                const phase1_parameters& params );
 
   // line up the two frame lists with a tolerance of match_window
   // and return a list of aligned frame handles
-  std::vector< std::pair< frame_handle_type, frame_handle_type > >
-  align_frames( const frame_handle_list_type& f1,
-                const frame_handle_list_type& f2,
+  std::vector< std::pair< kwto::frame_handle_type, kwto::frame_handle_type > >
+  align_frames( const kwto::frame_handle_list_type& f1,
+                const kwto::frame_handle_list_type& f2,
                 double match_window );
 
   // given two frames, return their spatial overlap
-  track2track_frame_overlap_record compute_spatial_overlap( frame_handle_type f1, frame_handle_type f2,
-                                                            phase1_parameters const& params );
+  track2track_frame_overlap_record compute_spatial_overlap( kwto::frame_handle_type f1,
+                                                            kwto::frame_handle_type f2,
+                                                            const phase1_parameters& params );
 
+#ifdef KWANT_ENABLE_MGRS
   // given two frames, return their radial overlap (throw if param not set)
-  track2track_frame_overlap_record compute_radial_overlap( frame_handle_type f1, frame_handle_type f2,
-                                                           phase1_parameters const& params );
+  track2track_frame_overlap_record compute_radial_overlap( kwto::frame_handle_type f1,
+                                                           kwto::frame_handle_type f2,
+                                                           const phase1_parameters& params );
 
-  bool within_window( const frame_handle_list_type& f1, const frame_handle_list_type& f2,
-                      unsigned f1_ptr, unsigned f2_ptr, double match_window );
+#endif
 
-  descriptor_overlap_type create_overlap_descriptor() const;
-  void add_self_to_event_label_descriptor( descriptor_event_label_type& delt ) const;
+  bool within_window( const kwto::frame_handle_list_type& f1,
+                      const kwto::frame_handle_list_type& f2,
+                      unsigned f1_ptr,
+                      unsigned f2_ptr,
+                      double match_window );
+
+  kwto::descriptor_overlap_type create_overlap_descriptor() const;
+  void add_self_to_event_label_descriptor( kwto::descriptor_event_label_type& delt ) const;
 
 private:
   // cached for the descriptor
-  track_handle_type cached_truth_track, cached_comp_track;
+  kwto::track_handle_type cached_truth_track, cached_comp_track;
 
-  bool move_a_up_to_b( unsigned& index, const frame_handle_list_type& lagging_list,
-                       unsigned fixed_index, const frame_handle_list_type& fixed_list,
+  bool move_a_up_to_b( unsigned& index,
+                       const kwto::frame_handle_list_type& lagging_list,
+                       unsigned fixed_index,
+                       const kwto::frame_handle_list_type& fixed_list,
                        double match_window );
 };
 
@@ -122,17 +136,17 @@ public:
 
   track2track_phase1()
   {}
-  explicit track2track_phase1(phase1_parameters const& new_params):
+  explicit track2track_phase1( const phase1_parameters& new_params):
         params(new_params)
   {}
 
-  void compute_all( const track_handle_list_type& t,
-                    const track_handle_list_type& c );
+  void compute_all( const kwto::track_handle_list_type& t,
+                    const kwto::track_handle_list_type& c );
 
-  bool compute_single( track_handle_type t, track_handle_type c);
+  bool compute_single( kwto::track_handle_type t, kwto::track_handle_type c);
 
-  void debug_dump( const track_handle_list_type& gt_list,
-                   const track_handle_list_type& ct_list,
+  void debug_dump( const kwto::track_handle_list_type& gt_list,
+                   const kwto::track_handle_list_type& ct_list,
                    const std::string& fn_prefix,
                    ts_type ts_offset ) const;
 

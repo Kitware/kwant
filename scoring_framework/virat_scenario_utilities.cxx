@@ -35,7 +35,7 @@ namespace virat_scenario_utilities {
 bool
 fn_is_virat_scenario( const string& fn )
 {
-  vector< string > tokens = xml_tokenizer::first_n_tokens( fn, 5 );
+  vector< string > tokens = track_oracle::xml_tokenizer::first_n_tokens( fn, 5 );
   // an XML document is a scenario if we see the "<VIRATScenario" string.
   for (size_t i=0; i<tokens.size(); ++i)
   {
@@ -167,7 +167,7 @@ bool process( const string& fn,
       vector< size_t > activity_list;
       for (size_t i=0; i<parsed_activities.size(); ++i)
       {
-        activity_list.push_back( aries_interface::activity_to_index( parsed_activities[i] ));
+        activity_list.push_back( track_oracle::aries_interface::activity_to_index( parsed_activities[i] ));
       }
 
       pair< map< string, vector< size_t > >::iterator, bool > r =

@@ -32,7 +32,15 @@ using std::pair;
 using std::runtime_error;
 using std::string;
 
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::track_oracle_core;
+using kwiver::track_oracle::oracle_entry_handle_type;
+
 namespace kwiver {
+
 namespace kwant {
 
 namespace timestamp_utilities {
@@ -148,7 +156,7 @@ void
 track_timestamp_stats_type
 ::set_from_track( const track_handle_type& t )
 {
-  this->set_from_frames( track_oracle::get_frames( t ));
+  this->set_from_frames( track_oracle_core::get_frames( t ));
 }
 
 void
@@ -292,7 +300,7 @@ void
 timestamp_generator
 ::set_timestamps( const track_handle_type& track ) const
 {
-  this->set_timestamps( track_oracle::get_frames( track ));
+  this->set_timestamps( track_oracle_core::get_frames( track ));
 }
 
 void

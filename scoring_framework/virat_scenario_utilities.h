@@ -23,7 +23,7 @@ namespace virat_scenario_utilities
 // See if the file contains a virat scenario with a quick
 // parse of the tokens, rather than a full-on tinyXML load
 
-bool fn_is_virat_scenario( const std::string& fn );
+bool SCORE_CORE_EXPORT fn_is_virat_scenario( const std::string& fn );
 
 
 // Assuming that fn is a virat scenario, parse it and return two
@@ -32,10 +32,10 @@ bool fn_is_virat_scenario( const std::string& fn );
 // - the groundtruth filename / base timestamp map (for loading and aligning
 //   groundtruth tracks
 
-bool process( const std::string& fn,
-              std::map< std::string, std::vector< size_t > >& qid2activity_map,
-              timestamp_utilities::timestamp_generator_map_type& xgtf_map,
-              double fps );
+bool SCORE_CORE_EXPORT process( const std::string& fn,
+                                std::map< std::string, std::vector< size_t > >& qid2activity_map,
+                                timestamp_utilities::timestamp_generator_map_type& xgtf_map,
+                                double fps );
 
 } // virat_scenario_utilities
 

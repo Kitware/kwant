@@ -18,7 +18,10 @@
 #include <vul/vul_reg_exp.h>
 #include <vul/vul_sprintf.h>
 
+#ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#endif
+
 #include <scoring_framework/matching_args_type.h>
 
 #include <vital/logger/logger.h>
@@ -33,11 +36,19 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 
+using kwiver::track_oracle::field_handle_type;
+using kwiver::track_oracle::frame_handle_type;
+using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::track_handle_type;
+using kwiver::track_oracle::track_handle_list_type;
+using kwiver::track_oracle::track_oracle_core;
+
 namespace // anon
 {
 
 using namespace ::kwiver::kwant;
 
+#ifdef KWANT_ENABLE_MGRS
 bool
 create_geo_poly( const vector< scorable_mgrs >& corners,
                  vector< mgrs_aoi >& aoi_list )
@@ -110,7 +121,8 @@ create_geo_poly( const vector< scorable_mgrs >& corners,
 
   return true;
 }
-
+#endif
+  
 } // anon
 
 namespace kwiver {
@@ -213,6 +225,7 @@ phase1_parameters
     this->setAOI( aoi, /* inclusive = */ true );
   } // ...if pixel AOI
 
+#ifdef KWANT_ENABLE_MGRS
   else if ( geo_4_corner_aoi_re.find( aoi_string ))
   {
     vector< scorable_mgrs > corners;
@@ -254,7 +267,7 @@ phase1_parameters
 
     return create_geo_poly( corners, this->mgrs_aoi_list );
   } // .. if geo 2-corner AOI
-
+#endif
   else
   {
     LOG_ERROR( main_logger, "AOI string '" << aoi_string << "' failed to parse as either pixel or geo AOI" );
@@ -302,7 +315,7 @@ phase1_parameters
 
   // default to false because this method is called only if an AOI is defined
   bool frame_in_aoi = false;
-  if ( track_oracle::field_has_row( fh.row, bbox_field ))
+  if ( track_oracle_core::field_has_row( fh.row, bbox_field ))
   {
     vgl_box_2d<double> box = track[ fh ].bounding_box();
     if (this->expand_bbox)
@@ -326,6 +339,9 @@ bool
 phase1_parameters
 ::frame_within_geo_aoi( const frame_handle_type& fh ) const
 {
+#ifndef KWANT_ENABLE_MGRS
+  throw std::runtime_error( "MGRS method called before MGRS code ported over" );
+#else
   static scorable_track_type dbg;
   static track_scorable_mgrs_type track;
   field_handle_type mgrs_field = track.mgrs.get_field_handle();
@@ -362,6 +378,7 @@ phase1_parameters
 
   }
   return frame_in_aoi;
+#endif
 }
 
 
@@ -385,13 +402,13 @@ phase1_parameters
     if ((aoi_status == NO_AOI_USED) && ( ! this->frame_window.is_set ) )
     {
       keep_track = true;
-      frames_in_aoi += track_oracle::get_n_frames( in[i] );
+      frames_in_aoi += track_oracle_core::get_n_frames( in[i] );
     }
     else
     {
       // otherwise, must examine each frame to see if it's in the AOI or frame window
 
-      frame_handle_list_type frames = track_oracle::get_frames( in[i] );
+      frame_handle_list_type frames = track_oracle_core::get_frames( in[i] );
       for (unsigned j=0; j<frames.size(); ++j)
       {
         const frame_handle_type& f = frames[j];
