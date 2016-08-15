@@ -6,7 +6,7 @@ The scoring code essentially consists of two executables,
 of these (or both); their functionality is planned to be merged into
 the baseline executables.
 
-All the code uses [track_oracle](../README.markdown) in an attempt to
+All the code uses [track_oracle](https://github.com/Kitware/kwiver/blob/master/track_oracle/README.markdown) in an attempt to
 be agnostic to the source file format.
 
 The options for [score_tracks](README.scoretracks.markdown) and
