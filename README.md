@@ -5,6 +5,8 @@ Kitware Analytics Toolkit
 KWANT is an open source C++ toolkit for computing scores and other
 metrics for object tracking systems.
 
-At the moment, this repository only contains the track_oracle file
-abstraction framework.
+For more details, see
+[this rudimentary documentation](scoring_framework/README.markdown).
 
+Pending support for e.g. GeographicLib in kwiver, this release only
+supports pixel-coordinate AOIs.
