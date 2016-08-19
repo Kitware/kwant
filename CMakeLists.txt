@@ -49,8 +49,6 @@ list(INSERT CMAKE_MODULE_PATH 0
 OPTION(KWANT_BUILD_SHARED         "Build KWANT components shared or not" TRUE )
 set(BUILD_SHARED_LIBS ${KWANT_BUILD_SHARED})
 
-include(CMakeDependentOption)
-
 include_directories( ${kwant_SOURCE_DIR} )
 include_directories( ${kwant_BINARY_DIR} )
 
@@ -59,4 +57,4 @@ include( kwiver-utils )
 include( kwiver-flags ) # use same compile flags as kwiver
 
 add_subdirectory( scoring_framework )
-
+add_subdirectory( processes )
