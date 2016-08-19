@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 
-project( kwant )
+project( KWANT )
 
 include(CMakeDependentOption)
+###
+# KWANT version
+set(KWANT_VERSION_MAJOR 0)
+set(KWANT_VERSION_MINOR 1)
+set(KWANT_VERSION_PATCH 0)
+set(KWANT_VERSION "${KWANT_VERSION_MAJOR}.${KWANT_VERSION_MINOR}.${KWANT_VERSION_PATCH}")
 
 #Set CMP0022 to NEW so we error if someone writes older style cmake code
 #See http://www.cmake.org/cmake/help/v2.8.12/cmake.html#policy:CMP0022
