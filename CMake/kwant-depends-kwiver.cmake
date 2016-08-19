@@ -4,3 +4,4 @@ if( NOT( ${KWIVER_LIBRARIES} MATCHES track_oracle))
 endif()
 
 include_directories( SYSTEM ${KWIVER_INCLUDE_DIRS} )
+link_directories( ${KWIVER_LIBRARY_DIR} )
