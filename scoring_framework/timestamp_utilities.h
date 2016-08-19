@@ -67,7 +67,7 @@ public:
 
 };
 
-std::ostream& TIMESTAMP_UTILITIES_EXPORT operator<<( std::ostream& os, const track_timestamp_stats_type& tts );
+TIMESTAMP_UTILITIES_EXPORT std::ostream& operator<<( std::ostream& os, const track_timestamp_stats_type& tts );
 
 //
 // A timestamp_generator writes (or re-writes) the timestamps for a
