@@ -4,5 +4,5 @@
 #include( kwant-depends-GeographicLib )
 include( kwant-depends-kwiver )
 include( kwant-depends-fletch )
-include( kwant-depends-Boost )
+include( kwant-depends-boost )
 include( kwant-depends-VXL )
