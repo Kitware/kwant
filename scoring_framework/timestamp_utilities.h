@@ -65,9 +65,35 @@ public:
   std::pair<ts_type, ts_type> minmax_ts;
   std::pair<size_t, size_t> ts_fn_count;
 
+  friend std::ostream& operator<<( std::ostream& os, const track_timestamp_stats_type& tts );
 };
 
-std::ostream& TIMESTAMP_UTILITIES_EXPORT operator<<( std::ostream& os, const track_timestamp_stats_type& tts );
+inline std::ostream& operator<<( std::ostream& os, const track_timestamp_stats_type& tts )
+{
+  os << "Has fn/ts? " << tts.has_frame_numbers << " " << tts.has_timestamps
+     << " ; all have fn/ts? " << tts.all_have_frame_numbers << " " << tts.all_have_timestamps
+     << " ;";
+  os << " #ts/fn: " << tts.ts_fn_count.first << " : "
+     << tts.ts_fn_count.second << " ; ";
+  os << " fn range ";
+  if (tts.has_frame_numbers)
+  {
+    os << tts.minmax_fn.first << " : " << tts.minmax_fn.second << " ";
+  }
+  else
+  {
+    os << " na ";
+  }
+  if (tts.has_timestamps)
+  {
+    os << tts.minmax_ts.first << " : " << tts.minmax_ts.second;
+  }
+  else
+  {
+    os << " na";
+  }
+  return os;
+}
 
 //
 // A timestamp_generator writes (or re-writes) the timestamps for a

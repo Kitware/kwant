@@ -218,35 +218,6 @@ track_timestamp_stats_type
   }
 }
 
-ostream&
-operator<<( ostream& os,
-            const track_timestamp_stats_type& tts )
-{
-  os << "Has fn/ts? " << tts.has_frame_numbers << " " << tts.has_timestamps
-     << " ; all have fn/ts? " << tts.all_have_frame_numbers << " " << tts.all_have_timestamps
-     << " ;";
-  os << " #ts/fn: " << tts.ts_fn_count.first << " : "
-     << tts.ts_fn_count.second << " ; ";
-  os << " fn range ";
-  if (tts.has_frame_numbers)
-  {
-    os << tts.minmax_fn.first << " : " << tts.minmax_fn.second << " ";
-  }
-  else
-  {
-    os << " na ";
-  }
-  if (tts.has_timestamps)
-  {
-    os << tts.minmax_ts.first << " : " << tts.minmax_ts.second;
-  }
-  else
-  {
-    os << " na";
-  }
-  return os;
-}
-
 
 timestamp_generator
 ::timestamp_generator()
