@@ -183,7 +183,7 @@ if (fletch_ENABLED_libjson)
                          ${json_lib} )
 endif()
 
-add_executable( score_events score_events.cxx )
+kwiver_add_executable( score_events score_events.cxx )
 target_link_libraries( score_events
                        logging_map
                        data_terms
