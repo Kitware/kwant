@@ -1,8 +1,33 @@
 cmake_minimum_required(VERSION 3.0)
 
-project( kwant )
+project( KWANT )
 
 include(CMakeDependentOption)
+###
+# KWANT version
+set(KWANT_VERSION_MAJOR 0)
+set(KWANT_VERSION_MINOR 1)
+set(KWANT_VERSION_PATCH 0)
+set(KWANT_VERSION "${KWANT_VERSION_MAJOR}.${KWANT_VERSION_MINOR}.${KWANT_VERSION_PATCH}")
+
+###
+# Look for and use Fletch to find dependencies
+#
+set( fletch_DIR "" CACHE PATH "Path to FLETCH packages" )
+if ( IS_DIRECTORY ${fletch_DIR} )
+  find_package( fletch NO_MODULE )
+  # Search for libraries in the fletch install root
+  list(APPEND CMAKE_PREFIX_PATH "${fletch_ROOT}")
+endif()
+
+###
+# project specific directories
+#
+set(kwant_CMAKE_DIR            "${CMAKE_SOURCE_DIR}/CMake")
+
+# root directories
+set(kwant_SOURCE_DIR           "${CMAKE_SOURCE_DIR}")
+set(kwant_BINARY_DIR           "${CMAKE_BINARY_DIR}")
 
 #Set CMP0022 to NEW so we error if someone writes older style cmake code
 #See http://www.cmake.org/cmake/help/v2.8.12/cmake.html#policy:CMP0022
@@ -32,18 +57,13 @@ endif()
 ###
 # Add the CMake directory for CMake modules
 #
-list(INSERT CMAKE_MODULE_PATH 0
-  "${kwant_SOURCE_DIR}/CMake"
-  )
+list(INSERT CMAKE_MODULE_PATH 0  "${kwant_SOURCE_DIR}/CMake"  )
 
 ###
 # Options and setup
 #
-
 OPTION(KWANT_BUILD_SHARED         "Build KWANT components shared or not" TRUE )
 set(BUILD_SHARED_LIBS ${KWANT_BUILD_SHARED})
-
-include(CMakeDependentOption)
 
 include_directories( ${kwant_SOURCE_DIR} )
 include_directories( ${kwant_BINARY_DIR} )
@@ -53,4 +73,3 @@ include( kwiver-utils )
 include( kwiver-flags ) # use same compile flags as kwiver
 
 add_subdirectory( scoring_framework )
-
