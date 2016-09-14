@@ -70,12 +70,6 @@ kwiver_install_headers(
   SUBDIR        scoring_framework
 )
 
-kwiver_install_headers(
-  ${CMAKE_CURRENT_BINARY_DIR}/score_tracks_export.h
-  SUBDIR        scoring_framework
-  NOPATH
-)
-
 kwiver_add_library( score_core
   ${score_core_public_headers}
   ${score_core_sources}
