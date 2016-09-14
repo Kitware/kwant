@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 
 project( KWANT )
 
-
 include(CMakeDependentOption)
 ###
 # KWANT version
@@ -66,8 +65,6 @@ list(INSERT CMAKE_MODULE_PATH 0  "${kwant_SOURCE_DIR}/CMake"  )
 OPTION(KWANT_BUILD_SHARED         "Build KWANT components shared or not" TRUE )
 set(BUILD_SHARED_LIBS ${KWANT_BUILD_SHARED})
 
-OPTION(KWANT_ENABLE_PROCESSES    "Build KWANT processes for kwiver pipelining" FALSE )
-
 include_directories( ${kwant_SOURCE_DIR} )
 include_directories( ${kwant_BINARY_DIR} )
 
@@ -76,9 +73,3 @@ include( kwiver-utils )
 include( kwiver-flags ) # use same compile flags as kwiver
 
 add_subdirectory( scoring_framework )
-
-if (KWANT_ENABLE_PROCESSES)
- # add_subdirectory( processes )
-endif()
-
-#add_subdirectory( tools )
