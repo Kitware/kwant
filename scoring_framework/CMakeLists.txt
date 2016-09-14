@@ -118,7 +118,6 @@ target_link_libraries( score_tracks_loader
   PUBLIC               score_core
                        vul
   PRIVATE              track_oracle_file_formats
-                       timestamp_utilities
 )
 
 ########################################
