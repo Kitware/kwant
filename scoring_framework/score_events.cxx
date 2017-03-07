@@ -1167,7 +1167,7 @@ int main( int argc, char *argv[] )
   vul_arg< string > task_arg( "--do", "tasks to do: 'roc', 'pr', 'pr,roc'", "roc" );
   vul_arg< bool > convert_prob_to_relevancy_arg( "--p2r", "copy probability score to relevancy to score on probability" );
   vul_arg< bool > link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" );
-  vul_arg< int > max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", 50 );
+  vul_arg< int > max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", -1 );
   vul_arg< bool > gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false );
   vul_arg< bool > ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false );
   vul_arg< string > track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" );
@@ -1653,22 +1653,48 @@ compute_roc( const track2track_phase1& p1,
   string roc_dump_str("");
 
   // Record which truth tracks each computed track matches
-  map< track_handle_type, track_handle_list_type > computed_to_truth_match_list;
+  typedef map<track_handle_type, track_handle_list_type> c2t_match_type;
+  typedef map<track_handle_type, track_handle_list_type>::iterator c2t_match_it;
+  typedef map<track_handle_type, track_handle_list_type>::const_iterator c2t_match_cit;
+
+  c2t_match_type computed_to_truth_match_list;
   for ( size_t i=0; i < computed_tracks.size(); ++i )
   {
-    const track_handle_type& c = computed_tracks[i];
-    track_handle_list_type matches;
-    for ( size_t j=0; j < truth_tracks.size(); ++j )
+    computed_to_truth_match_list[ computed_tracks[i] ] = track_handle_list_type();
+  }
+
+  // precompute the ROC probes
+  map< track2track_type, track2track_score >::const_iterator c2t_probe;
+  for (c2t_probe = p1.t2t.begin(); c2t_probe != p1.t2t.end(); ++c2t_probe )
+  {
+    const track_handle_type& t = c2t_probe->first.first;
+    const track_handle_type& c = c2t_probe->first.second;
+    c2t_match_it match_probe = computed_to_truth_match_list.find( c );
+    if (match_probe == computed_to_truth_match_list.end() )
     {
-      const track_handle_type& t = truth_tracks[j];
-      track2track_type key( t, c );
-      map< track2track_type, track2track_score >::const_iterator probe = p1.t2t.find( key );
-      if ( probe != p1.t2t.end() ) matches.push_back( t );
+      // shouldn't happen
+      LOG_ERROR( main_logger, "ROC fallthrough?" );
     }
-    computed_to_truth_match_list[ c ] = matches;
+    else
+    {
+      match_probe->second.push_back( t );
+    }
   }
 
   track_field< double > relevancy( "relevancy" );
+  vector< c2t_match_cit > matches_cache;
+  vector< double > relevancy_cache;
+  for (size_t i=0; i<computed_tracks.size(); ++i)
+  {
+    c2t_match_cit probe = computed_to_truth_match_list.find( computed_tracks[i] );
+    if (probe == computed_to_truth_match_list.end() )
+    {
+      throw runtime_error( "Lost computed track handle building cache when computing ROC?" );
+    }
+    matches_cache.push_back( probe );
+    relevancy_cache.push_back( relevancy( computed_tracks[i].row ));
+  }
+
   for ( map<double, bool>::const_iterator roc_it = roc_threshold.begin();
         roc_it != roc_threshold.end();
         ++roc_it )
@@ -1680,8 +1706,6 @@ compute_roc( const track2track_phase1& p1,
     unsigned tp=0, fp=0, fn=0, tn=0;
     for (unsigned i=0; i < computed_tracks.size(); ++i)
     {
-      track_handle_type c = computed_tracks[i];
-
       // Computed track c has two attributes:
       // - R (relevance): true if its relevancy >= threshold
       // - M (match): true if it matches a true track
@@ -1696,15 +1720,10 @@ compute_roc( const track2track_phase1& p1,
       // truth track.
 
       // establish R: does this track have a relevancy over the threshold?
-      bool r_flag = ( relevancy( c.row ) >= threshold );
+      bool r_flag = ( relevancy_cache[i] >= threshold );
 
       // establish M: did we match a true track?
-      map< track_handle_type, track_handle_list_type >::const_iterator probe
-        = computed_to_truth_match_list.find( c );
-      if ( probe == computed_to_truth_match_list.end() )
-      {
-        throw runtime_error( "Lost computed track handle in computed_to_truth_match_list map?" );
-      }
+      c2t_match_cit probe = matches_cache[i];
 
       const track_handle_list_type& matches = probe->second;
       bool m_flag = ( ! matches.empty());
