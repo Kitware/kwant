@@ -381,10 +381,14 @@ filter_on_track_style( const track_handle_list_type& input_tracks,
 // 1.0 as relevancy for ground-truth or the appropriate p/v/o value as
 // relevancy for computed.
 //
+// If the input is prefiltered, we assume it has relevancy externally
+// set as well. (If we're ground-truth, we'll set it to 1.0.)
+//
 
 track_handle_list_type
 normalize_activity_tracks( const track_handle_list_type& input_tracks,
                            bool input_is_gt,
+                           bool input_is_prefiltered,
                            bool probability_to_relevancy,
                            int activity_index,
                            const pvo_request_type& pvo_req )
@@ -412,6 +416,24 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
   for (size_t i=0; i<input_tracks.size(); ++i)
   {
     const oracle_entry_handle_type& row = input_tracks[i].row;
+
+    // quick exit if prefiltered set and we have relevancy (
+    if (input_is_prefiltered)
+    {
+      ret.push_back( input_tracks[i] );
+      if (input_is_gt)
+      {
+        relevancy( row ) = 1.0;
+      }
+      else
+      {
+        if (! relevancy.exists(row ))
+        {
+          wmap.add_msg( "Prefiltered computed track has no relevancy" );
+        }
+      }
+      continue;
+    }
 
     // Must have one of (1) or (2) or (3)
     int flag = NONE;
@@ -1147,6 +1169,7 @@ int main( int argc, char *argv[] )
   vul_arg< bool > link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" );
   vul_arg< int > max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", 50 );
   vul_arg< bool > gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false );
+  vul_arg< bool > ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false );
   vul_arg< string > track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" );
   vul_arg< string > dump_filtered_gt_arg( "--dump-filtered-gt", "write final filtered ground-truth tracks as kwxml" );
   vul_arg< string > dump_filtered_ct_arg( "--dump-filtered-ct", "write final filtered computed tracks as kwxml" );
@@ -1222,7 +1245,8 @@ int main( int argc, char *argv[] )
   }
 
   int activity_index = 0;
-  if ( ! pvo_req.valid )
+
+  if (( ! pvo_req.valid ) && (! gt_prefiltered_arg() ))
   {
     // make sure we have a valid activity
     vector<int> activity_indices;
@@ -1345,6 +1369,7 @@ int main( int argc, char *argv[] )
   // all truth tracks must be able to support normalization
   track_handle_list_type norm_gt = normalize_activity_tracks( truth_tracks,
                                                               /* input_is_gt = */ true,
+                                                              gt_prefiltered_arg(),
                                                               convert_prob_to_relevancy_arg(),
                                                               activity_index,
                                                               pvo_req );
@@ -1353,6 +1378,11 @@ int main( int argc, char *argv[] )
 
 
   // Second: filter the computed tracks
+  if (ct_prefiltered_arg() )
+  {
+    LOG_INFO( main_logger, computed_tracks.size() << " computed tracks prefiltered for activity" );
+  }
+  else
   {
     track_handle_list_type filtered_tracks = filter_on_track_style( computed_tracks, track_style_arg );
     LOG_INFO( main_logger, "Computed track style filtering: " << computed_tracks.size() << " before; "
@@ -1363,6 +1393,7 @@ int main( int argc, char *argv[] )
   // all computed tracks must be able to support normalization
   track_handle_list_type norm_comp = normalize_activity_tracks( computed_tracks,
                                                                 /* input_is_gt = */ false,
+                                                                ct_prefiltered_arg(),
                                                                 convert_prob_to_relevancy_arg(),
                                                                 activity_index,
                                                                 pvo_req );
