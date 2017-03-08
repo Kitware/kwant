@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2011-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -21,6 +21,7 @@
 #include <scoring_framework/score_core.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 #include <track_oracle/track_kwxml/file_format_kwxml.h>
+#include <track_oracle/track_kw18/file_format_kw18.h>
 #ifdef SHAPELIB_ENABLED
 #include <track_oracle/track_apix/file_format_apix.h>
 #endif
@@ -1105,7 +1106,24 @@ input_args_type
 
   xgtf_opts.reset();
   comms_opts.reset();
+
+  // if kw19 hack options are set, use them when reading computed tracks
+  if (kw19_hack())
+  {
+    kwiver::track_oracle::kw18_reader_opts& kw18_opts =
+      dynamic_cast< kwiver::track_oracle::kw18_reader_opts& >(
+        file_format_manager::default_options( kwiver::track_oracle::TF_KW18 ));
+    kw18_opts.set_kw19_hack( true );
+  }
+
   vector< track_record_type > computed_track_records = load_tracks_from_file( computed_src );
+
+  // if kw19, reset reader
+  if (kw19_hack())
+  {
+    file_format_manager::default_options( kwiver::track_oracle::TF_KW18 );
+  }
+
   // However, the computed tracks can be empty if, for example, the tracker missed everything.
 
   // Special VIRAT processing:

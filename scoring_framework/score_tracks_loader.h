@@ -109,6 +109,10 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
   // pair of strings, e.g. "longitude:latitude" or "world_y:world_x"
   vul_arg< std::string > mgrs_lon_lat_fields;
 
+  // If set, assume kw18 will have a 19th column read into the relevancy slot
+  // for each frame. (Computed tracks only.)
+  vul_arg< bool > kw19_hack;
+
   // this flag is not set directly by an input_args command line variable,
   // but instead is set by the main program via other variables (such as
   // e.g. --radial-overlap).  When set, process() tries to compute MGRS geolocation
@@ -136,6 +140,7 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
       track_length_filter("--track-length-filter", "Only keep (truth:computed) tracks with at least this many states (default: all tracks)", "0:0" ),
       time_window(        "--time-window", "Only select tracks within a time window; 'help' for more details" ),
       mgrs_lon_lat_fields("--mgrs-ll-fields", "For e.g. CSV files, pull longitude / latitude from these fields", "world_x:world_y" ),
+      kw19_hack( "--kw19-hack", "If set, read confidence / probability / etc. from 19th column (computed only)" ),
       compute_mgrs_data( false )
   {}
 
