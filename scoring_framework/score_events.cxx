@@ -37,18 +37,18 @@ the activity index is used.
 #include <vul/vul_awk.h>
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/track_oracle_core.h>
-#include <track_oracle/track_base.h>
-#include <track_oracle/track_field.h>
-#include <track_oracle/track_kst/track_kst.h>
-#include <track_oracle/track_xgtf/track_xgtf.h>
-#include <track_oracle/track_kwxml/track_kwxml.h>
-#include <track_oracle/track_kw18/track_kw18.h>
+#include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/core/track_base.h>
+#include <track_oracle/core/track_field.h>
+#include <track_oracle/file_formats/track_kst/track_kst.h>
+#include <track_oracle/file_formats/track_xgtf/track_xgtf.h>
+#include <track_oracle/file_formats/track_kwxml/track_kwxml.h>
+#include <track_oracle/file_formats/track_kw18/track_kw18.h>
 #if KWANT_ENABLE_KWE
-#include <track_oracle/track_filter_kwe/track_filter_kwe.h>
+#include <track_oracle/file_formats/track_filter_kwe/track_filter_kwe.h>
 #endif
-#include <track_oracle/file_format_schema.h>
-#include <track_oracle/file_format_manager.h>
+#include <track_oracle/file_formats/file_format_schema.h>
+#include <track_oracle/file_formats/file_format_manager.h>
 #include <track_oracle/utils/logging_map.h>
 #include <track_oracle/data_terms/data_terms.h>
 #include <track_oracle/aries_interface/aries_interface.h>

@@ -12,7 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include <track_oracle/scoring_framework/score_phase2_hadwav.h>
+#include <scoring_framework/score_phase2_hadwav.h>
 #include <vul/vul_awk.h>
 #include <boost/lexical_cast.hpp>
 

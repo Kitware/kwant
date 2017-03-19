@@ -16,11 +16,11 @@
 
 #include <vgl/vgl_area.h>
 
-#include <track_oracle/track_oracle_core.h>
-#include <track_oracle/track_base.h>
-#include <track_oracle/track_field.h>
+#include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/core/track_base.h>
+#include <track_oracle/core/track_field.h>
 
-#include <track_oracle/file_format_manager.h>
+#include <track_oracle/file_formats/file_format_manager.h>
 
 #include <track_oracle/aries_interface/aries_interface.h>
 

@@ -14,8 +14,8 @@
 #include <string>
 #include <map>
 #include <iostream>
-#include <track_oracle/track_oracle.h>
-#include <track_oracle/scoring_framework/score_phase2_hadwav.h>
+#include <track_oracle/core/track_oracle.h>
+#include <scoring_framework/score_phase2_hadwav.h>
 
 #include <vgl/vgl_box_2d.h>
 

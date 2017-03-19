@@ -6,7 +6,7 @@
 
 #include "score_tracks_hadwav.h"
 
-#include <track_oracle/state_flags.h>
+#include <track_oracle/core/state_flags.h>
 
 #include <vital/logger/logger.h>
 static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );

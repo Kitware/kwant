@@ -5,9 +5,9 @@
  */
 
 #include "score_phase1_perseas.txx"
-#include <track_oracle/scoring_framework/event_phase1_parameters.h>
-#include <track_oracle/scoring_framework/score_phase1.h>
-#include <track_oracle/scoring_framework/perseas_phase_1_match_score.h>
+#include <scoring_framework/event_phase1_parameters.h>
+#include <scoring_framework/score_phase1.h>
+#include <scoring_framework/perseas_phase_1_match_score.h>
 
 namespace vidtk
 {

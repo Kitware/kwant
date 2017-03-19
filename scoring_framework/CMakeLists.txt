@@ -84,6 +84,7 @@ target_link_libraries( score_core
                        vgl
                        data_terms
   PRIVATE              track_oracle_tokenizers
+                       vibrant_descriptors
                        vital_logger
                        ${Boost_DATE_TIME_LIBRARY}
                        ${TinyXML_LIBRARY}

@@ -13,9 +13,9 @@
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_intersection.h>
 
-#include <track_oracle/track_base.h>
+#include <track_oracle/core/track_base.h>
 #ifdef KWANT_ENABLE_MGRS
-#include <track_oracle/track_scorable_mgrs/scorable_mgrs.h>
+#include <track_oracle/file_formats/track_scorable_mgrs/scorable_mgrs.h>
 #endif
 
 namespace kwiver {
