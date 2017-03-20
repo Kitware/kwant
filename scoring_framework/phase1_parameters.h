@@ -13,10 +13,10 @@
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_polygon.h>
 
-#include <track_oracle/track_oracle_core.h>
+#include <track_oracle/core/track_oracle_core.h>
 #include <scoring_framework/score_core.h>
 #ifdef KWANT_ENABLE_MGRS
-#include <track_oracle/track_scorable_mgrs/scorable_mgrs.h>
+#include <track_oracle/file_formats/track_scorable_mgrs/scorable_mgrs.h>
 #endif
 
 namespace kwiver {

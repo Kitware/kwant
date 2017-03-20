@@ -14,7 +14,7 @@
 
 #include <ostream>
 #include <utility>
-#include <track_oracle/track_oracle_api_types.h>
+#include <track_oracle/core/track_oracle_api_types.h>
 #include <scoring_framework/score_core.h>
 
 namespace kwiver {

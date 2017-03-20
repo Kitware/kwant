@@ -7,8 +7,8 @@
 #ifndef INCL_ACTIVITY_PHASE1_PARAMETERS_H
 #define INCL_ACTIVITY_PHASE1_PARAMETERS_H
 
-#include <track_oracle/track_oracle.h>
-#include <track_oracle/scoring_framework/score_core.h>
+#include <track_oracle/core/track_oracle.h>
+#include <scoring_framework/score_core.h>
 #include <vgl/vgl_box_2d.h>
 
 namespace vidtk

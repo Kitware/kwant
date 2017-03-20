@@ -16,10 +16,10 @@
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_intersection.h>
 
-#include <track_oracle/track_oracle_core.h>
-#include <track_oracle/state_flags.h>
+#include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/core/state_flags.h>
 #ifdef KWANT_ENABLE_MGRS
-#include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
 #endif
 #include <track_oracle/aries_interface/aries_interface.h>
 

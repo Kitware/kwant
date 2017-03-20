@@ -14,7 +14,7 @@
 #include <vul/vul_sprintf.h>
 #include <vul/vul_reg_exp.h>
 
-#include <track_oracle/track_field.h>
+#include <track_oracle/core/track_field.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 

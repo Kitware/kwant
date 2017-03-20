@@ -12,9 +12,9 @@
 
 #include <utility>
 #include <vgl/vgl_box_2d.h>
-#include <track_oracle/track_oracle_core.h>
-#include <track_oracle/track_base.h>
-#include <track_oracle/track_field.h>
+#include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/core/track_base.h>
+#include <track_oracle/core/track_field.h>
 
 // The central scoring framework assumption is: Everything you need to
 // know in order to score two sets of tracks can be localized to two

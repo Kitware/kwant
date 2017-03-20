@@ -16,7 +16,7 @@
 #include <map>
 #include <algorithm>
 #include <utility>
-#include <track_oracle/scoring_framework/score_core.h>
+#include <scoring_framework/score_core.h>
 
 namespace vidtk
 {

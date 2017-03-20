@@ -11,7 +11,7 @@
 #include <scoring_framework/score_core_export.h>
 
 #include <string>
-#include <track_oracle/track_oracle_api_types.h>
+#include <track_oracle/core/track_oracle_api_types.h>
 #include <scoring_framework/timestamp_utilities.h>
 
 namespace kwiver {
