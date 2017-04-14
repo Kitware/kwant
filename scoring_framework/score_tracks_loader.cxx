@@ -20,25 +20,25 @@
 
 #include <scoring_framework/score_core.h>
 #include <track_oracle/aries_interface/aries_interface.h>
-#include <track_oracle/track_kwxml/file_format_kwxml.h>
-#include <track_oracle/track_kw18/file_format_kw18.h>
+#include <track_oracle/file_formats/track_kwxml/file_format_kwxml.h>
+#include <track_oracle/file_formats/track_kw18/file_format_kw18.h>
 #ifdef SHAPELIB_ENABLED
-#include <track_oracle/track_apix/file_format_apix.h>
+#include <track_oracle/file_formats/track_apix/file_format_apix.h>
 #endif
-#include <track_oracle/track_xgtf/file_format_xgtf.h>
-#include <track_oracle/track_vpd/track_vpd_event.h>
-#include <track_oracle/track_vpd/file_format_vpd_track.h>
-#include <track_oracle/track_comms_xml/file_format_comms_xml.h>
-#include <track_oracle/file_format_manager.h>
+#include <track_oracle/file_formats/track_xgtf/file_format_xgtf.h>
+#include <track_oracle/file_formats/track_vpd/track_vpd_event.h>
+#include <track_oracle/file_formats/track_vpd/file_format_vpd_track.h>
+#include <track_oracle/file_formats/track_comms_xml/file_format_comms_xml.h>
+#include <track_oracle/file_formats/file_format_manager.h>
 #ifdef KWANT_ENABLE_MGRS
-#include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
 #endif
-#include <track_oracle/file_format_schema.h>
+#include <track_oracle/file_formats/file_format_schema.h>
 
 #include <scoring_framework/time_window_filter.h>
 #include <scoring_framework/timestamp_utilities.h>
 #include <scoring_framework/virat_scenario_utilities.h>
-#include <track_oracle/state_flags.h>
+#include <track_oracle/core/state_flags.h>
 
 #include <tinyxml.h>
 

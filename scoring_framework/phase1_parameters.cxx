@@ -19,7 +19,7 @@
 #include <vul/vul_sprintf.h>
 
 #ifdef KWANT_ENABLE_MGRS
-#include <track_oracle/track_scorable_mgrs/track_scorable_mgrs.h>
+#include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
 #endif
 
 #include <scoring_framework/matching_args_type.h>

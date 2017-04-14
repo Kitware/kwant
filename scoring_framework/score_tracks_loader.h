@@ -25,9 +25,9 @@
 
 #include <vul/vul_arg.h>
 
-#include <track_oracle/track_oracle_core.h>
-#include <track_oracle/track_base.h>
-#include <track_oracle/track_field.h>
+#include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/core/track_base.h>
+#include <track_oracle/core/track_field.h>
 
 namespace kwiver {
 namespace kwant {

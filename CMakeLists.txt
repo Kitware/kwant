@@ -50,10 +50,6 @@ if( NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY )
   set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${kwant_BINARY_DIR}/bin )
 endif()
 
-if( WIN32 )
-  set(Boost_USE_STATIC_LIBS True)
-endif()
-
 ###
 # Add the CMake directory for CMake modules
 #

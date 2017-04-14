@@ -10,10 +10,10 @@
 
 #include <testlib/testlib_test.h>
 
-#include <track_oracle/track_kw18/track_kw18.h>
-#include <track_oracle/track_kw18/track_kw18_reader.h>
+#include <track_oracle/file_formats/track_kw18/track_kw18.h>
+#include <track_oracle/file_formats/track_kw18/track_kw18_reader.h>
 
-#include <track_oracle/scoring_framework/score_phase1.h>
+#include <scoring_framework/score_phase1.h>
 
 
 using std::istringstream;
