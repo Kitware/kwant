@@ -162,7 +162,7 @@ struct input_source_type
 
 
 void
-promote_frame_number_to_timestamp( const vector< track_record_type >& tr )
+promote_frame_number_to_timestamp( vector< track_record_type >& tr )
 {
   scorable_track_type stt;
 
@@ -170,7 +170,7 @@ promote_frame_number_to_timestamp( const vector< track_record_type >& tr )
   {
     // need to find a frame to examine; assume that what holds for
     // one frame will hold for all
-    const track_record_type& r = tr[i];
+    track_record_type& r = tr[i];
     const track_handle_list_type& r_tracks = r.tracks();
     if (r_tracks.empty()) continue;
 
@@ -209,7 +209,8 @@ promote_frame_number_to_timestamp( const vector< track_record_type >& tr )
     }
     LOG_INFO( main_logger, "frame-number-to-timestamp for " << r.src_fn() << ": promoted "
               << c << " of " << total_f << " frames" );
-
+		// reset the all-have-timestamps flag
+		r.recompute_stats();
   } // ... for each element in the track record
 }
 
