@@ -83,6 +83,7 @@ target_link_libraries( score_core
                        vul
                        vgl
                        data_terms
+                       scoring_aries_interface
   PRIVATE              track_oracle_tokenizers
                        vibrant_descriptors
                        vital_logger
@@ -119,6 +120,12 @@ target_link_libraries( score_tracks_loader
   PUBLIC               score_core
                        vul
   PRIVATE              track_oracle_file_formats
+                       track_oracle_format_base
+                       track_kw18
+                       track_xgtf
+                       track_kwxml
+                       track_comms_xml
+                       vital_logger
 )
 
 ########################################
@@ -170,6 +177,7 @@ if (fletch_ENABLED_libjson)
 
   kwiver_add_executable( score_tracks score_tracks.cxx)
   target_link_libraries( score_tracks
+                         vital_logger
                          score_tracks_loader
                          score_tracks_hadwav
                          track_oracle
@@ -180,11 +188,16 @@ endif()
 
 kwiver_add_executable( score_events score_events.cxx )
 target_link_libraries( score_events
+                       vital_logger
                        logging_map
                        data_terms
                        score_tracks_loader
+                       scoring_aries_interface
                        timestamp_utilities track_oracle
-                       track_oracle_file_formats vul
+                       track_oracle_format_base
+                       track_oracle_file_formats
+                       vibrant_descriptors
+                       vul
                        ${Boost_SYSTEM_LIBRARY} )
 
 ########################################
