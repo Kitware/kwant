@@ -65,6 +65,8 @@ include_directories( ${kwant_SOURCE_DIR} )
 include_directories( ${kwant_BINARY_DIR} )
 
 include( kwant-depends )
+
+include( kwiver-cmake-future )
 include( kwiver-utils )
 include( kwiver-flags ) # use same compile flags as kwiver
 
