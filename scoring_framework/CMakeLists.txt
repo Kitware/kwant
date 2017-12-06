@@ -119,13 +119,15 @@ kwiver_add_library( score_tracks_loader
 target_link_libraries( score_tracks_loader
   PUBLIC               score_core
                        vul
-  PRIVATE              track_oracle_file_formats
+                       track_oracle_file_formats
                        track_oracle_format_base
                        track_kw18
                        track_xgtf
                        track_kwxml
+                       track_vpd
+                       track_kst
                        track_comms_xml
-                       vital_logger
+  PRIVATE              vital_logger
 )
 
 ########################################
