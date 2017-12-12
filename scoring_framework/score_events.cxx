@@ -107,6 +107,8 @@ namespace { // anon
 
 using namespace kwiver::kwant;
 
+enum class activity_style { INVALID, VIRAT, VIRAT_AND_EXIT, PVO, PREFILTERED, KPF };
+
 struct pvo_request_type
 {
   bool valid;
@@ -118,6 +120,47 @@ struct pvo_request_type
   bool set( const string& arg );
   track_handle_list_type process( const track_handle_list_type& tracks, bool is_gt ) const;
 };
+
+struct activity_selector_type
+{
+  activity_style style;
+  int activity_index;    // for VIRAT style
+  string activity_name;  // for KPF style
+  pvo_request_type pvo_req; // for PVO style
+
+  activity_selector_type()
+    : style( activity_style::INVALID ), activity_index(0), activity_name("invalid")
+  {}
+};
+
+ostream& operator<<( ostream& os, const activity_selector_type& a )
+{
+  switch (a.style)
+  {
+  case activity_style::INVALID:
+    os << "invalid";
+    break;
+  case activity_style::VIRAT:
+    os << "VIRAT: index " << a.activity_index;
+    break;
+  case activity_style::VIRAT_AND_EXIT:
+    os << "VIRAT (listing activities and exit)";
+    break;
+  case activity_style::PVO:
+    os << "PVO (index " << a.pvo_req.pvo_index << ")";
+    break;
+  case activity_style::PREFILTERED:
+    os << "prefiltered";
+    break;
+  case activity_style::KPF:
+    os << "KPF (" << a.activity_name << ")";
+    break;
+  default:
+    os << "UNKNOWN?";
+    break;
+  }
+  return os;
+}
 
 bool
 pvo_request_type
@@ -394,12 +437,11 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
                            bool input_is_gt,
                            bool input_is_prefiltered,
                            bool probability_to_relevancy,
-                           int activity_index,
-                           const pvo_request_type& pvo_req )
+                           const activity_selector_type& what_act )
 {
-  if ( pvo_req.valid )
+  if ( what_act.pvo_req.valid )
   {
-    return pvo_req.process( input_tracks, input_is_gt );
+    return what_act.pvo_req.process( input_tracks, input_is_gt );
   }
 
   kwiver::logging_map_type wmap( main_logger, KWIVER_LOGGER_SITE );
@@ -452,57 +494,84 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
 
     case HAS_XGTF:
       {
-        wmap.add_msg( "track activity style XGTF" );
-        if ( activity( row ) == activity_index )
+        if (what_act.style == activity_style::VIRAT)
         {
-          double p = activity_probability( row );
-          if ((input_is_gt) && (p != 1.0))
+          wmap.add_msg( "track activity style XGTF" );
+          if (activity( row ) == what_act.activity_index )
           {
-            LOG_WARN( main_logger, "XGTF-style probability for activity " << activity_index << " is " << p << "?" );
+            double p = activity_probability( row );
+            if ((input_is_gt) && (p != 1.0))
+            {
+              LOG_WARN( main_logger, "XGTF-style probability for activity " << what_act.activity_index << " is " << p << "?" );
+            }
+            relevancy( row ) = p;
+            keep_this_track = true;
           }
-          relevancy( row ) = p;
-          keep_this_track = true;
+        }
+        else
+        {
+          ostringstream oss;
+          oss << "XGTF input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
         }
       }
       break;
 
     case HAS_KWXML:
       {
-        wmap.add_msg( "track activity style kwxml" );
-        vector< double > probs = descriptor_classifier( row );
-        double p = probs [ activity_index ];
-        if (input_is_gt)
+        if (what_act.style == activity_style::VIRAT)
         {
-          // If we're claiming this is ground truth, only keep tracks of the
-          // desired style whose probability is 1.0
-          keep_this_track = ( p == 1.0 );
+          wmap.add_msg( "track activity style kwxml" );
+          vector< double > probs = descriptor_classifier( row );
+          double p = probs [ what_act.activity_index ];
+          if (input_is_gt)
+          {
+            // If we're claiming this is ground truth, only keep tracks of the
+            // desired style whose probability is 1.0
+            keep_this_track = ( p == 1.0 );
+          }
+          else
+          {
+            // If it's not ground truth, always keep
+            keep_this_track = true;
+          }
+          if (keep_this_track)
+          {
+            relevancy( row ) = p;
+          }
         }
         else
         {
-          // If it's not ground truth, always keep
-          keep_this_track = true;
-        }
-        if (keep_this_track)
-        {
-          relevancy( row ) = p;
+          ostringstream oss;
+          oss << "KWXML input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
         }
       }
       break;
 
     case HAS_KST:
       {
-        wmap.add_msg( "track activity style kst" );
-        if (probability_to_relevancy)
+        if (what_act.style == activity_style::VIRAT)
         {
-          vector< double > probs = descriptor_classifier( row );
-          double p = probs [ activity_index ];
-          if ((input_is_gt) && (p != 1.0))
+          wmap.add_msg( "track activity style kst" );
+          if (probability_to_relevancy)
           {
-            LOG_WARN( main_logger, "KWXML-style probability for activity " << activity_index << " is " << p << "?" );
+            vector< double > probs = descriptor_classifier( row );
+            double p = probs [ what_act.activity_index ];
+            if ((input_is_gt) && (p != 1.0))
+            {
+              LOG_WARN( main_logger, "KWXML-style probability for activity " << what_act.activity_index << " is " << p << "?" );
+            }
+            relevancy( row ) = p;
           }
-          relevancy( row ) = p;
+          keep_this_track = true;
         }
-        keep_this_track = true;
+        else
+        {
+          ostringstream oss;
+          oss <<  "KST input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
+        }
       }
       break;
 
@@ -1159,32 +1228,286 @@ process_full_match_stats( const track2track_phase1& activity_p1,
 
 }
 
+struct score_events_args_type
+{
+  vul_arg<bool> verbose_flag;
+  vul_arg<bool> disable_sanity_checks_arg;
+  vul_arg<string> activity_names_arg;
+  vul_arg<unsigned> top_n_arg;
+  vul_arg<bool> ct_in_rank_arg;
+  vul_arg< string > t2t_dump_fn_arg;
+  vul_arg< bool > disable_t2t_dump_cmd_file;
+  vul_arg< string > task_arg;
+  vul_arg< bool > convert_prob_to_relevancy_arg;
+  vul_arg< bool > link_tracks_arg;
+  vul_arg< int > max_n_roc_points_arg;
+  vul_arg< bool > gt_prefiltered_arg;
+  vul_arg< bool > ct_prefiltered_arg;
+  vul_arg< string > track_style_arg;
+  vul_arg< string > dump_filtered_gt_arg;
+  vul_arg< string > dump_filtered_ct_arg;
+  vul_arg< string > pvo_filename_arg;
+  vul_arg< bool > display_git_hash_only_arg;
+  vul_arg< string > kwe_gt_arg;
+  vul_arg< string > kwe_ct_arg;
+  vul_arg< string > kwe_track_style_arg;
+  vul_arg< string > activity_match_arg;
+  vul_arg< string > track_dump_fn_arg;
+
+  vul_arg< string > kpf_activity_arg;
+  vul_arg< string > kpf_object_arg;
+  vul_arg< string > kpf_object_fn_arg;
+  vul_arg< int > kpf_activity_domain_arg;
+  vul_arg< string > kpf_activity_fn_arg;
+
+  score_events_args_type():
+    verbose_flag( "-v", "dump more debugging information", false ),
+    disable_sanity_checks_arg( "--disable-sanity-checks", "Check for basic track overlaps before scoring", false ),
+    activity_names_arg( "--a", "comma-separated activities described by computed results (leave blank for list)" ),
+    top_n_arg( "--top-n", "The top n events to use from the computed file. (unsigned) ('0' refers to using all events)", 0),
+    ct_in_rank_arg( "--ct-in-rank", "Flag notifying that the computed tracks were already sorted by rank when written, so they will be in rank order when read in", false ),
+    t2t_dump_fn_arg( "--t2t-dump-file", "dump track-to-track details here" ),
+    disable_t2t_dump_cmd_file( "--t2t-disable-cmd-file", "set to disable default creation of 'plot-{t2t-dump-file}-cmd.txt'" ),
+    task_arg( "--do", "tasks to do: 'roc', 'pr', 'pr,roc'", "roc" ),
+    convert_prob_to_relevancy_arg( "--p2r", "copy probability score to relevancy to score on probability" ),
+    link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" ),
+    max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", -1 ),
+    gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false ),
+    ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false ),
+    track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" ),
+    dump_filtered_gt_arg( "--dump-filtered-gt", "write final filtered ground-truth tracks as kwxml" ),
+    dump_filtered_ct_arg( "--dump-filtered-ct", "write final filtered computed tracks as kwxml" ),
+    pvo_filename_arg( "--pvo", "filename:{p,v,o} - read pvo values from file; use p,v, or o values; no activity required", "" ),
+    display_git_hash_only_arg( "--git-hash", "Display git hash and exit", false),
+    kwe_gt_arg( "--kwe-gt", "load KWE of gt events" ),
+    kwe_ct_arg( "--kwe-ct", "load KWE of ct events" ),
+    kwe_track_style_arg( "--kwe-track-style", "Set track style of events from KWE to this", "" ),
+    activity_match_arg( "--activity-matches", "write activity match status here (increases run time) "),
+    track_dump_fn_arg( "--write-tracks", "Write annotated input tracks to this file (either .kwcsv or .kwiver)" ),
+    kpf_activity_arg( "--kpf-activity", "Score this KPF activity" ),
+    kpf_object_arg( "--kpf-object", "Score this KPF object type (requires detection mode)" ),
+    kpf_object_fn_arg( "--kpf-gt-object-fn", "Assign ground-truth objects types from this YAML file" ),
+    kpf_activity_domain_arg( "--kpf-activity-domain", "Load KPF activities from this domain", 2 ),
+    kpf_activity_fn_arg( "--kpf-activity-fn", "Load KPF activities from this file" )
+  {}
+
+  // not const because many vul_arg methods aren't marked const
+  bool sanity_check( input_args_type& input_args,
+                     matching_args_type& matching_args );
+
+  activity_selector_type deduce_activity() const;
+
+  void process_track_dumps( const track_handle_list_type& truth_tracks,
+                            const track_handle_list_type& computed_tracks ) const;
+
+};
+
+bool
+score_events_args_type
+::sanity_check( input_args_type& input_args,
+                matching_args_type& matching_args )
+{
+
+  // scoring KPF object detections requires detection mode
+  if ( this->kpf_object_arg.set() && ( ! input_args.detection_mode() ))
+  {
+    LOG_ERROR( main_logger, "Scoring KPF objects requires --detection-mode" );
+    return false;
+  }
+
+  // cannot use detection mode and match-frames-lower-bound
+  if ( input_args.detection_mode() && matching_args.min_frames_arg.set() && (matching_args.min_frames_arg() != "1"))
+  {
+    LOG_ERROR( main_logger, "Cannot use --detection-mode with --match-frames-lower-bound set to anything other than 1" );
+    return false;
+  }
+
+  // if the user requested annotated track output, make sure the format is unambiguous
+  if ( this->track_dump_fn_arg.set() )
+  {
+    vector< file_format_enum > fmts = file_format_manager::globs_match( track_dump_fn_arg() );
+    if ( fmts.size() != 1 )
+    {
+      LOG_ERROR( main_logger, "Track output filename matches " << fmts.size() << " formats; use either .kwcsv or .kwiver" );
+      return false;
+    }
+  }
+
+  if ( ( ! matching_args.sanity_check()) || ( ! matching_args.parse_min_frames_arg() ))
+  {
+    return false;
+  }
+
+  if ( this->activity_match_arg.set() && this->top_n_arg.set() )
+  {
+    // Setting top-n filters the set of tracks the ROC is computed
+    // over; this would lead to misleading activity matching
+    // statistics in the full activity match file. For example: if you
+    // only compute a ROC on the top-10, and #11 is a hit, how would you
+    // reconcile that in the stats file?
+
+    LOG_ERROR( main_logger, "Currently cannot simultaneously set '" << this->activity_match_arg.option() << "' and '"
+               << this->top_n_arg.option() << "'" );
+    return false;
+  }
+
+  if ( this->activity_match_arg.set() &&
+       ( ! ( this->kwe_gt_arg.set() && this->kwe_ct_arg.set() )))
+  {
+    // Computing the match status matrix requires a rational method to derive
+    // the underlying moving-object track from the activity track.  For this first
+    // pass, we only support the KWE hack.  Moving forward, we could also support
+    // kwxml by extracting the trackObjectKitware tracks.
+
+    LOG_ERROR( main_logger, "Currently can only compute activity match status with events via KWE; exiting" );
+    return false;
+  }
+
+  // validate top-n arg before bothering to load tracks
+  if ( this->top_n_arg.set() && ( this->top_n_arg() == 0))
+  {
+    LOG_INFO( main_logger, this->top_n_arg.option() << " cannot explicitly be set to 0; exiting");
+    return false;
+  }
+
+  return true;
+
+}
+
+activity_selector_type
+score_events_args_type
+::deduce_activity() const
+{
+  //
+  // There are too many ways to indicate which activity we're scoring:
+  //
+  // 1) An old-style VIRAT activity via '--a'
+  // 2) A PVO specifier.
+  // 3) Asserting that all tracks are the (unspecified) activity via
+  //    gt-prefiltered.
+  // 4) Naming a KPF activity.
+  //
+
+  activity_selector_type ret;
+
+  //
+  // First check for PVO. If set() fails, it's an error. If it succeeds
+  // and pvo_req is valid, then we're PVO; set and return. Otherwise,
+  // continue deducing.
+  //
+
+  if ( ! ret.pvo_req.set( this->pvo_filename_arg() ))
+  {
+    return ret;
+  }
+  if ( ret.pvo_req.valid )
+  {
+    ret.style = activity_style::PVO;
+    return ret;
+  }
+
+  //
+  // If we're prefiltered, set the style and return.
+  //
+
+  if ( this->gt_prefiltered_arg() )
+  {
+    ret.style = activity_style::PREFILTERED;
+    return ret;
+  }
+
+  //
+  // KPF checking will go here
+  //
+
+  //
+  // See if we can find a VIRAT activity
+  //
+
+  vector<int> activity_indices;
+  bool dump_activity_list = true;
+  if ( this->activity_names_arg.set() )
+  {
+    vector<string> activity_names;
+
+    boost::split(activity_names, activity_names_arg(), boost::is_any_of(","), boost::token_compress_on);
+
+    try
+    {
+      transform( activity_names.begin(),
+                 activity_names.end(),
+                 back_inserter( activity_indices ),
+                 aries_interface::activity_to_index );
+      dump_activity_list = false;
+    }
+    catch ( aries_interface_exception& e )
+    {
+      LOG_INFO( main_logger, "At least one of '" << activity_names_arg()
+                << "' is not a valid activity name: " << e.what() );
+    }
+
+    if ( ! activity_indices.empty() )
+    {
+      ret.activity_index = activity_indices[0];
+      ret.style = activity_style::VIRAT;
+    }
+  }
+  if ( dump_activity_list )
+  {
+    ret.style = activity_style::VIRAT_AND_EXIT;
+    const map< size_t, string >& i2a_map = aries_interface::index_to_activity_map();
+    map<size_t, string>::const_iterator probe;
+    for (probe = i2a_map.begin(); probe != i2a_map.end(); ++probe )
+    {
+      LOG_INFO( main_logger, probe->second << "");
+    }
+  }
+
+  return ret;
+
+}
+
+void
+score_events_args_type
+::process_track_dumps( const track_handle_list_type& truth_tracks,
+                       const track_handle_list_type& computed_tracks ) const
+{
+  //
+  // if requested, write out the final filtered tracks
+  //
+
+  if ( this->dump_filtered_gt_arg.set() )
+  {
+    bool rc = file_format_manager::write( this->dump_filtered_gt_arg(), truth_tracks );
+    if (rc)
+    {
+      LOG_INFO( main_logger, "Wrote " << truth_tracks.size() << " filtered truth tracks to " << this->dump_filtered_gt_arg() );
+    }
+    else
+    {
+      LOG_WARN( main_logger, "Couldn't write filtered truth tracks to " << this->dump_filtered_gt_arg() );
+    }
+  }
+
+  if ( this->dump_filtered_ct_arg.set() )
+  {
+    bool rc = file_format_manager::write( this->dump_filtered_ct_arg(), computed_tracks );
+    if (rc)
+    {
+      LOG_INFO( main_logger, "Wrote " << computed_tracks.size() << " filtered computed tracks to " << this->dump_filtered_ct_arg() );
+    }
+    else
+    {
+      LOG_WARN( main_logger, "Couldn't write filtered computed tracks to " << this->dump_filtered_ct_arg() );
+    }
+  }
+}
+
+
 int main( int argc, char *argv[] )
 {
-  vul_arg<bool> verbose_flag( "-v", "dump more debugging information", false );
-  vul_arg<bool> disable_sanity_checks_arg( "--disable-sanity-checks", "Check for basic track overlaps before scoring", false );
-  vul_arg<string> activity_names_arg( "--a", "comma-separated activities described by computed results (leave blank for list)" );
-  vul_arg<unsigned> top_n_arg( "--top-n", "The top n events to use from the computed file. (unsigned) ('0' refers to using all events)", 0);
-  vul_arg<bool> ct_in_rank_arg( "--ct-in-rank", "Flag notifying that the computed tracks were already sorted by rank when written, so they will be in rank order when read in", false );
-  vul_arg< string > t2t_dump_fn_arg( "--t2t-dump-file", "dump track-to-track details here" );
-  vul_arg< bool > disable_t2t_dump_cmd_file( "--t2t-disable-cmd-file", "set to disable default creation of 'plot-{t2t-dump-file}-cmd.txt'" );
-  vul_arg< string > task_arg( "--do", "tasks to do: 'roc', 'pr', 'pr,roc'", "roc" );
-  vul_arg< bool > convert_prob_to_relevancy_arg( "--p2r", "copy probability score to relevancy to score on probability" );
-  vul_arg< bool > link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" );
-  vul_arg< int > max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", -1 );
-  vul_arg< bool > gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false );
-  vul_arg< bool > ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false );
-  vul_arg< string > track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" );
-  vul_arg< string > dump_filtered_gt_arg( "--dump-filtered-gt", "write final filtered ground-truth tracks as kwxml" );
-  vul_arg< string > dump_filtered_ct_arg( "--dump-filtered-ct", "write final filtered computed tracks as kwxml" );
-  vul_arg< string > pvo_filename_arg( "--pvo", "filename:{p,v,o} - read pvo values from file; use p,v, or o values; no activity required", "" );
-  vul_arg< bool > display_git_hash_only_arg( "--git-hash", "Display git hash and exit", false);
-  vul_arg< string > kwe_gt_arg( "--kwe-gt", "load KWE of gt events" );
-  vul_arg< string > kwe_ct_arg( "--kwe-ct", "load KWE of ct events" );
-  vul_arg< string > kwe_track_style_arg( "--kwe-track-style", "Set track style of events from KWE to this", "" );
-  vul_arg< string > activity_match_arg( "--activity-matches", "write activity match status here (increases run time) ");
-  vul_arg< string > track_dump_fn_arg( "--write-tracks", "Write annotated input tracks to this file (either .kwcsv or .kwiver)" );
 
+  score_events_args_type scoring_args;
   input_args_type input_args;
   output_args_type output_args;
   matching_args_type matching_args;
@@ -1196,114 +1519,27 @@ int main( int argc, char *argv[] )
 
   //  LOG_INFO( main_logger, "GIT-HASH: " << VIDTK_GIT_VERSION );
   LOG_INFO( main_logger, "GIT-HASH: output not supported yet" );
-  if (display_git_hash_only_arg())
+  if (scoring_args.display_git_hash_only_arg())
   {
     return EXIT_SUCCESS;
   }
 
-  // cannot use detection mode and match-frames-lower-bound
-  if (input_args.detection_mode() && matching_args.min_frames_arg.set() && (matching_args.min_frames_arg() != "1"))
-  {
-    LOG_ERROR( main_logger, "Cannot use --detection-mode with --match-frames-lower-bound set to anything other than 1" );
-    return EXIT_FAILURE;
-  }
-
-  // if the user requested annotated track output, make sure the format is unambiguous
-  if ( track_dump_fn_arg.set() )
-  {
-    vector< file_format_enum > fmts = file_format_manager::globs_match( track_dump_fn_arg() );
-    if ( fmts.size() != 1 )
-    {
-      LOG_ERROR( main_logger, "Track output filename matches " << fmts.size() << " formats; use either .kwcsv or .kwiver" );
-      return EXIT_FAILURE;
-    }
-  }
-
-  if ( ( ! matching_args.sanity_check()) || ( ! matching_args.parse_min_frames_arg() ))
+  if ( ! scoring_args.sanity_check( input_args, matching_args ) )
   {
     return EXIT_FAILURE;
   }
 
-  if ( activity_match_arg.set() && top_n_arg.set() )
-  {
-    // Setting top-n filters the set of tracks the ROC is computed
-    // over; this would lead to misleading activity matching
-    // statistics in the full activity match file. For example: if you
-    // only compute a ROC on the top-10, and #11 is a hit, how would you
-    // reconcile that in the stats file?
+  activity_selector_type what_act = scoring_args.deduce_activity();
+  LOG_INFO( main_logger, "Activity deduction: " << what_act );
 
-    LOG_ERROR( main_logger, "Currently cannot simultaneously set '" << activity_match_arg.option() << "' and '"
-               << top_n_arg.option() << "'" );
+  if ( what_act.style == activity_style::INVALID )
+  {
+    LOG_ERROR( main_logger, "Couldn't deduce an activity type; exiting" );
     return EXIT_FAILURE;
   }
-
-  if ( activity_match_arg.set() &&
-       ( ! ( kwe_gt_arg.set() && kwe_ct_arg.set() )))
+  if ( what_act.style == activity_style::VIRAT_AND_EXIT )
   {
-    // Computing the match status matrix requires a rational method to derive
-    // the underlying moving-object track from the activity track.  For this first
-    // pass, we only support the KWE hack.  Moving forward, we could also support
-    // kwxml by extracting the trackObjectKitware tracks.
-
-    LOG_ERROR( main_logger, "Currently can only compute activity match status with events via KWE; exiting" );
-    return EXIT_FAILURE;
-  }
-
-  pvo_request_type pvo_req;
-  if (! pvo_req.set( pvo_filename_arg() ))
-  {
-    return EXIT_FAILURE;
-  }
-
-  int activity_index = 0;
-
-  if (( ! pvo_req.valid ) && (! gt_prefiltered_arg() ))
-  {
-    // make sure we have a valid activity
-    vector<int> activity_indices;
-    bool dump_activity_list = true;
-    if ( activity_names_arg.set() )
-    {
-      vector<string> activity_names;
-
-      boost::split(activity_names, activity_names_arg(), boost::is_any_of(","), boost::token_compress_on);
-
-      try
-      {
-        transform( activity_names.begin(),
-                       activity_names.end(),
-                       back_inserter( activity_indices ),
-                       aries_interface::activity_to_index );
-        dump_activity_list = false;
-      }
-      catch ( aries_interface_exception& e )
-      {
-        LOG_INFO( main_logger, "At least one of '" << activity_names_arg()
-                  << "' is not a valid activity name: " << e.what() );
-      }
-
-      if ( ! activity_indices.empty() )
-      {
-        activity_index = activity_indices[0];
-      }
-    }
-    if ( dump_activity_list )
-    {
-      const map< size_t, string >& i2a_map = aries_interface::index_to_activity_map();
-      map<size_t, string>::const_iterator probe;
-      for (probe = i2a_map.begin(); probe != i2a_map.end(); ++probe )
-      {
-        LOG_INFO( main_logger, probe->second << "");
-      }
-      return activity_names_arg.set() ? EXIT_FAILURE : EXIT_SUCCESS;
-    }
-  }
-
-  // validate top-n arg before bothering to load tracks
-  if (top_n_arg.set() && (top_n_arg() == 0))
-  {
-    LOG_INFO( main_logger, top_n_arg.option() << " cannot explicitly be set to 0; exiting");
-    return EXIT_FAILURE;
+    return EXIT_SUCCESS;
   }
 
   // This is a good point to emit the command line for logging
@@ -1333,11 +1569,11 @@ int main( int argc, char *argv[] )
   track_handle_list_type unfiltered_computed_tracks = computed_tracks;
 
   // If the user specified KWE events, insert them now
-  if (kwe_gt_arg.set())
+  if ( scoring_args.kwe_gt_arg.set() )
   {
 #ifdef KWANT_ENABLE_KWE
     track_handle_list_type kwe_tracks;
-    if ( ! track_filter_kwe_type::read( kwe_gt_arg(), truth_tracks, kwe_track_style_arg(), kwe_tracks ))
+    if ( ! track_filter_kwe_type::read( scoring_args.kwe_gt_arg(), truth_tracks, scoring_args.kwe_track_style_arg(), kwe_tracks ))
     {
       return EXIT_FAILURE;
     }
@@ -1347,11 +1583,11 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
 #endif
   }
-  if (kwe_ct_arg.set())
+  if ( scoring_args.kwe_ct_arg.set() )
   {
 #ifdef KWANT_ENABLE_KWE
     track_handle_list_type kwe_tracks;
-    if ( ! track_filter_kwe_type::read( kwe_ct_arg(), computed_tracks, kwe_track_style_arg(), kwe_tracks ))
+    if ( ! track_filter_kwe_type::read( scoring_args.kwe_ct_arg(), computed_tracks, scoring_args.kwe_track_style_arg(), kwe_tracks ))
     {
       return EXIT_FAILURE;
     }
@@ -1362,40 +1598,39 @@ int main( int argc, char *argv[] )
 #endif
   }
 
-
   // First: throw out all ground-truth tracks not matching activity_name_arg()
   // (since they'd be misses anyway.)
 
-  if (gt_prefiltered_arg() )
+  if ( scoring_args.gt_prefiltered_arg() )
   {
     LOG_INFO( main_logger, truth_tracks.size() << " truth tracks prefiltered for activity");
   }
   else
   {
-    track_handle_list_type filtered_tracks = filter_on_track_style( truth_tracks, track_style_arg );
+    track_handle_list_type filtered_tracks = filter_on_track_style( truth_tracks, scoring_args.track_style_arg );
     LOG_INFO( main_logger, "Truth track style filtering: " << truth_tracks.size() << " before; "
               << filtered_tracks.size() << " after" );
     truth_tracks = filtered_tracks;
   }
+
   // all truth tracks must be able to support normalization
   track_handle_list_type norm_gt = normalize_activity_tracks( truth_tracks,
                                                               /* input_is_gt = */ true,
-                                                              gt_prefiltered_arg(),
-                                                              convert_prob_to_relevancy_arg(),
-                                                              activity_index,
-                                                              pvo_req );
+                                                              scoring_args.gt_prefiltered_arg(),
+                                                              scoring_args.convert_prob_to_relevancy_arg(),
+                                                              what_act );
   LOG_INFO( main_logger, "Truth track activity normalization: " << truth_tracks.size() << " before; "
             << norm_gt.size() << " after" );
 
 
   // Second: filter the computed tracks
-  if (ct_prefiltered_arg() )
+  if ( scoring_args.ct_prefiltered_arg() )
   {
     LOG_INFO( main_logger, computed_tracks.size() << " computed tracks prefiltered for activity" );
   }
   else
   {
-    track_handle_list_type filtered_tracks = filter_on_track_style( computed_tracks, track_style_arg );
+    track_handle_list_type filtered_tracks = filter_on_track_style( computed_tracks, scoring_args.track_style_arg );
     LOG_INFO( main_logger, "Computed track style filtering: " << computed_tracks.size() << " before; "
               << filtered_tracks.size() << " after" );
     computed_tracks = filtered_tracks;
@@ -1404,45 +1639,16 @@ int main( int argc, char *argv[] )
   // all computed tracks must be able to support normalization
   track_handle_list_type norm_comp = normalize_activity_tracks( computed_tracks,
                                                                 /* input_is_gt = */ false,
-                                                                ct_prefiltered_arg(),
-                                                                convert_prob_to_relevancy_arg(),
-                                                                activity_index,
-                                                                pvo_req );
+                                                                scoring_args.ct_prefiltered_arg(),
+                                                                scoring_args.convert_prob_to_relevancy_arg(),
+                                                                what_act );
   LOG_INFO( main_logger, "computed track activity normalization: " << computed_tracks.size() << " before; "
             << norm_comp.size() << " after" );
 
   truth_tracks = norm_gt;
   computed_tracks = norm_comp;
 
-  //
-  // if requested, write out the final filtered tracks
-  //
-
-  if ( dump_filtered_gt_arg.set() )
-  {
-    bool rc = file_format_manager::write( dump_filtered_gt_arg(), truth_tracks );
-    if (rc)
-    {
-      LOG_INFO( main_logger, "Wrote " << truth_tracks.size() << " filtered truth tracks to " << dump_filtered_gt_arg() );
-    }
-    else
-    {
-      LOG_WARN( main_logger, "Couldn't write filtered truth tracks to " << dump_filtered_gt_arg() );
-    }
-  }
-
-  if ( dump_filtered_ct_arg.set() )
-  {
-    bool rc = file_format_manager::write( dump_filtered_ct_arg(), computed_tracks );
-    if (rc)
-    {
-      LOG_INFO( main_logger, "Wrote " << computed_tracks.size() << " filtered computed tracks to " << dump_filtered_ct_arg() );
-    }
-    else
-    {
-      LOG_WARN( main_logger, "Couldn't write filtered computed tracks to " << dump_filtered_ct_arg() );
-    }
-  }
+  scoring_args.process_track_dumps( truth_tracks, computed_tracks );
 
   //
   // need to consolidate normalization
@@ -1482,18 +1688,23 @@ int main( int argc, char *argv[] )
 
 
   phase1_parameters p1_params;
-  p1_params.perform_sanity_checks = ( ! disable_sanity_checks_arg() );
+  p1_params.perform_sanity_checks = ( ! scoring_args.disable_sanity_checks_arg() );
   if ( ! p1_params.processMatchingArgs( matching_args ))
   {
     return EXIT_FAILURE;
   }
 
-  if ( link_tracks_arg() )
+  if ( scoring_args.link_tracks_arg() )
   {
+    if ( what_act.style != activity_style::VIRAT )
+    {
+      LOG_ERROR( main_logger, "kwxml linking requested but only available for VIRAT activities; selected " << what_act );
+      return EXIT_FAILURE;
+    }
     LOG_INFO( main_logger, "relinking kwxml...");
     int activity_index_to_relevancy =
-      convert_prob_to_relevancy_arg()
-      ? activity_index
+      scoring_args.convert_prob_to_relevancy_arg()
+      ? what_act.activity_index
       : -1;
     track_handle_list_type linked_tracks = relink_kwxml_on_source_ids( computed_tracks, activity_index_to_relevancy );
     LOG_INFO( main_logger, computed_tracks.size() << " tracks in; " << linked_tracks.size() << " out");
@@ -1504,8 +1715,8 @@ int main( int argc, char *argv[] )
   // if requested, filter out the top N tracks
 
   track_handle_list_type scored_computed_tracks =
-    top_n_arg.set()
-    ? process_top_n_tracks( computed_tracks, top_n_arg(), ct_in_rank_arg() )
+    scoring_args.top_n_arg.set()
+    ? process_top_n_tracks( computed_tracks, scoring_args.top_n_arg(), scoring_args.ct_in_rank_arg() )
     : computed_tracks;
 
   // compute the association matrix.  Note that activity tracks are not
@@ -1533,21 +1744,21 @@ int main( int argc, char *argv[] )
   }
 
 
-  if ( task_arg().find( "roc" ) != string::npos )
+  if ( scoring_args.task_arg().find( "roc" ) != string::npos )
   {
     // if requested, write the time-axis track overlap debug plots
-    if ( t2t_dump_fn_arg.set() )
+    if ( scoring_args.t2t_dump_fn_arg.set() )
     {
-      process_p1_debug_dump( p1, truth_tracks, computed_tracks, t2t_dump_fn_arg(), disable_t2t_dump_cmd_file() );
+      process_p1_debug_dump( p1, truth_tracks, computed_tracks, scoring_args.t2t_dump_fn_arg(), scoring_args.disable_t2t_dump_cmd_file() );
     }
 
     // compute the actual ROC, on only the activity tracks
 
-    compute_roc( p1, truth_tracks, computed_tracks, fa_norm, max_n_roc_points_arg(), output_args );
+    compute_roc( p1, truth_tracks, computed_tracks, fa_norm, scoring_args.max_n_roc_points_arg(), output_args );
 
 
     // if requested, process full match stats
-    bool full_match_stats_requested = activity_match_arg.set();
+    bool full_match_stats_requested = scoring_args.activity_match_arg.set();
 
     if (full_match_stats_requested)
     {
@@ -1557,23 +1768,29 @@ int main( int argc, char *argv[] )
                                 computed_tracks,
                                 unfiltered_truth_tracks,
                                 unfiltered_computed_tracks,
-                                activity_match_arg() );
+                                scoring_args.activity_match_arg() );
     }
   }
 
-  if ( task_arg().find( "pr" ) != string::npos )
+  if ( scoring_args.task_arg().find( "pr" ) != string::npos )
   {
     compute_pr( p1, truth_tracks, computed_tracks, output_args );
   }
 
-  if ( track_dump_fn_arg.set() )
+  if ( scoring_args.track_dump_fn_arg.set() )
   {
     track_handle_list_type all_tracks;
     all_tracks.insert( all_tracks.end(), truth_tracks.begin(), truth_tracks.end() );
     all_tracks.insert( all_tracks.end(), computed_tracks.begin(), computed_tracks.end() );
-    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
+    bool rc = file_format_manager::write( scoring_args.track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
     LOG_INFO( main_logger, "Write returned " << rc );
   }
+
+  //
+  // all done!
+  //
+
+  return EXIT_SUCCESS;
 }
 
 
