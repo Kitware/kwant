@@ -113,6 +113,10 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
   // for each frame. (Computed tracks only.)
   vul_arg< bool > kw19_hack;
 
+  // When scoring detections, we don't have a separate detection-only
+  // data structure; just break them up into single-frame tracks.
+  vul_arg< bool > detection_mode;
+
   // this flag is not set directly by an input_args command line variable,
   // but instead is set by the main program via other variables (such as
   // e.g. --radial-overlap).  When set, process() tries to compute MGRS geolocation
@@ -140,7 +144,8 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
       track_length_filter("--track-length-filter", "Only keep (truth:computed) tracks with at least this many states (default: all tracks)", "0:0" ),
       time_window(        "--time-window", "Only select tracks within a time window; 'help' for more details" ),
       mgrs_lon_lat_fields("--mgrs-ll-fields", "For e.g. CSV files, pull longitude / latitude from these fields", "world_x:world_y" ),
-      kw19_hack( "--kw19-hack", "If set, read confidence / probability / etc. from 19th column (computed only)" ),
+      kw19_hack(          "--kw19-hack", "If set, read confidence / probability / etc. from 19th column (computed only)" ),
+      detection_mode(     "--detection-mode", "Convert truth and computed tracks to single-frame tracks to score as detections" ),
       compute_mgrs_data( false )
   {}
 

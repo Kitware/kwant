@@ -143,6 +143,9 @@ public:
   void compute_all( const kwto::track_handle_list_type& t,
                     const kwto::track_handle_list_type& c );
 
+  void compute_all_detection_mode( const kwto::track_handle_list_type& t,
+                                   const kwto::track_handle_list_type& c );
+
   bool compute_single( kwto::track_handle_type t, kwto::track_handle_type c);
 
   void debug_dump( const kwto::track_handle_list_type& gt_list,
