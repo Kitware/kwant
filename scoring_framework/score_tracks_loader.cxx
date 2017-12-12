@@ -82,6 +82,7 @@ using kwiver::track_oracle::xgtf_reader_opts;
 using kwiver::track_oracle::track_field;
 using kwiver::track_oracle::oracle_entry_handle_type;
 using kwiver::track_oracle::aries_interface;
+using kwiver::track_oracle::track_base_impl;
 
 using namespace kwiver::kwant;
 using namespace kwiver::kwant::timestamp_utilities;
@@ -999,6 +1000,45 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
   return true;
 }
 
+track_handle_list_type
+decompose_track_into_frames( const track_handle_type& t )
+{
+  // break the track into single-frame tracks for scoring detections.
+  // Note that ALL non-system fields are cloned; a track with ID 314
+  // and 20 frames will result in 20 additional one-frame tracks, all with
+  // ID 314.
+
+  track_base_impl tbi;
+
+  track_handle_list_type ret;
+
+  frame_handle_list_type frames = track_oracle_core::get_frames( t );
+  if (frames.size() == 1)
+  {
+    ret.push_back( t );
+  }
+  else
+  {
+    for (size_t i=0; i<frames.size(); ++i)
+    {
+      track_handle_type new_t = tbi.create();
+      bool all_okay = track_oracle_core::clone_nonsystem_fields( t, new_t );
+      if (all_okay)
+      {
+        frame_handle_type new_f = tbi.create_frame();
+        all_okay = track_oracle_core::clone_nonsystem_fields( frames[i], new_f );
+        if (all_okay)
+        {
+          ret.push_back( new_t );
+        }
+      }
+    }
+  }
+
+  return ret;
+}
+
+
 
 bool
 input_args_type
@@ -1341,6 +1381,40 @@ input_args_type
   //
   // end hairy logic
   //
+
+
+  // if detection mode is set, break up the tracks into single frame tracks.
+  if (this->detection_mode())
+  {
+    for (size_t i=0; i<truth_track_records.size(); ++i)
+    {
+      track_record_type& r = truth_track_records[i];
+      track_handle_list_type tlist = r.tracks();
+      track_handle_list_type n;
+      for (size_t j=0; j<tlist.size(); ++j)
+      {
+        track_handle_list_type d = decompose_track_into_frames( tlist[j] );
+        n.insert( n.end(), d.begin(), d.end() );
+      }
+      LOG_INFO(main_logger, "Detection mode: truth tracks " << r.src_fn() << " from " << tlist.size() <<
+                " tracks to " << n.size() << " detections" );
+      r.set_tracks( n );
+    }
+    for (size_t i=0; i<computed_track_records.size(); ++i)
+    {
+      track_record_type& r = computed_track_records[i];
+      track_handle_list_type tlist = r.tracks();
+      track_handle_list_type n;
+      for (size_t j=0; j<tlist.size(); ++j)
+      {
+        track_handle_list_type d = decompose_track_into_frames( tlist[j] );
+        n.insert( n.end(), d.begin(), d.end() );
+      }
+      LOG_INFO(main_logger, "Detection mode: computed tracks " << r.src_fn() << " from " << tlist.size() <<
+                " tracks to " << n.size() << " detections" );
+      r.set_tracks( n );
+    }
+  }
 
   // if time window filtering has been requested, perform it here
   if (this->time_window.set())

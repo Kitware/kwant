@@ -36,6 +36,7 @@ the activity index is used.
 #include <vul/vul_sprintf.h>
 #include <vul/vul_awk.h>
 #include <vul/vul_reg_exp.h>
+#include <vul/vul_timer.h>
 
 #include <track_oracle/core/track_oracle_core.h>
 #include <track_oracle/core/track_base.h>
@@ -237,6 +238,8 @@ struct output_args_type
   vul_arg< string > roc_dump_fn;
   vul_arg< string > pr_dump_fn;
   vul_arg< string > thresholds_arg;
+  vul_arg< bool > console_dump_arg;
+
 
   output_args_type()
     : track_stats_fn(  "--track-stats", "write track purity / continuity to file" ),
@@ -245,7 +248,8 @@ struct output_args_type
       ts_dump_fn( "--ts-dump", "write ground-truth frame -> timestamps to file" ),
       roc_dump_fn( "--roc-dump", "write the roc chart information to file" ),
       pr_dump_fn( "--pr-dump", "write the P/R curve information to file (if not set, dump to cout" ),
-      thresholds_arg( "--thresholds", "Manually specified thresholds to score on (min[:max[:step]])" )
+      thresholds_arg( "--thresholds", "Manually specified thresholds to score on (min[:max[:step]])" ),
+      console_dump_arg( "--console", "Write ROC lines to the console" )
   {}
 };
 
@@ -258,7 +262,7 @@ compute_roc( const track2track_phase1& p1,
              output_args_type& output_args );
 
 void
-compute_pr( const phase1_parameters& p1_params,
+compute_pr( const track2track_phase1& p1,
             track_handle_list_type truth_tracks,
             track_handle_list_type computed_tracks,
             output_args_type& output_args );
@@ -1197,6 +1201,13 @@ int main( int argc, char *argv[] )
     return EXIT_SUCCESS;
   }
 
+  // cannot use detection mode and match-frames-lower-bound
+  if (input_args.detection_mode() && matching_args.min_frames_arg.set() && (matching_args.min_frames_arg() != "1"))
+  {
+    LOG_ERROR( main_logger, "Cannot use --detection-mode with --match-frames-lower-bound set to anything other than 1" );
+    return EXIT_FAILURE;
+  }
+
   // if the user requested annotated track output, make sure the format is unambiguous
   if ( track_dump_fn_arg.set() )
   {
@@ -1447,6 +1458,28 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
 #endif
   }
+  else if (input_args.detection_mode() )
+  {
+    track_field<kwiver::track_oracle::dt::tracking::timestamp_usecs> ts;
+    std::set< kwiver::track_oracle::dt::tracking::timestamp_usecs::Type > ts_set;
+    track_handle_list_type all_tracks( truth_tracks );
+    all_tracks.insert( all_tracks.end(), computed_tracks.begin(), computed_tracks.end() );
+    for (size_t i=0; i<all_tracks.size(); ++i)
+    {
+      frame_handle_list_type f = track_oracle_core::get_frames( all_tracks[i] );
+      for (size_t j=0; j<f.size(); ++j)
+      {
+        ts_set.insert( ts( f[j].row ));
+      }
+    }
+    fa_norm = static_cast<double>( ts_set.size() );
+    LOG_INFO( main_logger, "FA normalization: detection mode; factor: " << fa_norm << " frames" );
+  }
+  else
+  {
+    LOG_INFO( main_logger, "FA normalization: none; factor: " << fa_norm );
+  }
+
 
   phase1_parameters p1_params;
   p1_params.perform_sanity_checks = ( ! disable_sanity_checks_arg() );
@@ -1467,30 +1500,50 @@ int main( int argc, char *argv[] )
     computed_tracks = linked_tracks;
   }
 
+  // everybody needs a phase1 object
+  // if requested, filter out the top N tracks
+
+  track_handle_list_type scored_computed_tracks =
+    top_n_arg.set()
+    ? process_top_n_tracks( computed_tracks, top_n_arg(), ct_in_rank_arg() )
+    : computed_tracks;
+
+  // compute the association matrix.  Note that activity tracks are not
+  // typically subsets of the full track set.
+
+  track2track_phase1 p1( p1_params );
+  {
+    track_handle_list_type filtered_truth, filtered_computed;
+    p1_params.filter_track_list_on_aoi( truth_tracks, filtered_truth );
+    p1_params.filter_track_list_on_aoi( scored_computed_tracks, filtered_computed );
+    LOG_INFO( main_logger, "p1: AOI kept "
+              << filtered_truth.size() << " of " << truth_tracks.size() << " truth tracks; "
+              << filtered_computed.size() << " of " << scored_computed_tracks.size() << " computed tracks");
+    truth_tracks = filtered_truth;
+    scored_computed_tracks = filtered_computed;
+  }
+
+  if (input_args.detection_mode())
+  {
+    p1.compute_all_detection_mode( truth_tracks, scored_computed_tracks );
+  }
+  else
+  {
+    p1.compute_all( truth_tracks, scored_computed_tracks );
+  }
+
 
   if ( task_arg().find( "roc" ) != string::npos )
   {
-    // if requested, filter out the top N tracks
-
-    track_handle_list_type roc_computed_tracks =
-      top_n_arg.set()
-      ? process_top_n_tracks( computed_tracks, top_n_arg(), ct_in_rank_arg() )
-      : computed_tracks;
-
-    // compute the association matrix.  Note that activity tracks are not
-    // typically subsets of the full track set.
-
-    track2track_phase1 p1( p1_params );
-    p1.compute_all( truth_tracks, roc_computed_tracks );
     // if requested, write the time-axis track overlap debug plots
     if ( t2t_dump_fn_arg.set() )
     {
-      process_p1_debug_dump( p1, truth_tracks, roc_computed_tracks, t2t_dump_fn_arg(), disable_t2t_dump_cmd_file() );
+      process_p1_debug_dump( p1, truth_tracks, computed_tracks, t2t_dump_fn_arg(), disable_t2t_dump_cmd_file() );
     }
 
     // compute the actual ROC, on only the activity tracks
 
-    compute_roc( p1, truth_tracks, roc_computed_tracks, fa_norm, max_n_roc_points_arg(), output_args );
+    compute_roc( p1, truth_tracks, computed_tracks, fa_norm, max_n_roc_points_arg(), output_args );
 
 
     // if requested, process full match stats
@@ -1501,7 +1554,7 @@ int main( int argc, char *argv[] )
       process_full_match_stats( p1,
                                 p1_params,
                                 truth_tracks,
-                                roc_computed_tracks,
+                                computed_tracks,
                                 unfiltered_truth_tracks,
                                 unfiltered_computed_tracks,
                                 activity_match_arg() );
@@ -1510,7 +1563,7 @@ int main( int argc, char *argv[] )
 
   if ( task_arg().find( "pr" ) != string::npos )
   {
-    compute_pr( p1_params, truth_tracks, computed_tracks, output_args );
+    compute_pr( p1, truth_tracks, computed_tracks, output_args );
   }
 
   if ( track_dump_fn_arg.set() )
@@ -1625,7 +1678,6 @@ generate_roc_thresholds( const track_handle_list_type& computed_tracks,
 
   return roc_threshold;
 }
-
 void
 compute_roc( const track2track_phase1& p1,
              const track_handle_list_type& truth_tracks,
@@ -1650,30 +1702,23 @@ compute_roc( const track2track_phase1& p1,
                              output_args );
 
   // iterate over thresholds, printing out ROC stats
-  string roc_dump_str("");
-
   // Record which truth tracks each computed track matches
-  typedef map<track_handle_type, track_handle_list_type> c2t_match_type;
-  typedef map<track_handle_type, track_handle_list_type>::iterator c2t_match_it;
-  typedef map<track_handle_type, track_handle_list_type>::const_iterator c2t_match_cit;
-
-  c2t_match_type computed_to_truth_match_list;
-  for ( size_t i=0; i < computed_tracks.size(); ++i )
+  map< track_handle_type, track_handle_list_type > computed_to_truth_match_list;
+  for (size_t i=0; i<computed_tracks.size(); ++i)
   {
-    computed_to_truth_match_list[ computed_tracks[i] ] = track_handle_list_type();
+    track_handle_list_type matches;
+    computed_to_truth_match_list[ computed_tracks[i] ] = matches;
   }
 
-  // precompute the ROC probes
   map< track2track_type, track2track_score >::const_iterator c2t_probe;
   for (c2t_probe = p1.t2t.begin(); c2t_probe != p1.t2t.end(); ++c2t_probe )
   {
     const track_handle_type& t = c2t_probe->first.first;
     const track_handle_type& c = c2t_probe->first.second;
-    c2t_match_it match_probe = computed_to_truth_match_list.find( c );
+    map< track_handle_type, track_handle_list_type >::iterator match_probe = computed_to_truth_match_list.find( c );
     if (match_probe == computed_to_truth_match_list.end() )
     {
-      // shouldn't happen
-      LOG_ERROR( main_logger, "ROC fallthrough?" );
+      LOG_DEBUG( main_logger, "ROC fallthrough" );
     }
     else
     {
@@ -1681,15 +1726,17 @@ compute_roc( const track2track_phase1& p1,
     }
   }
 
+  ostringstream roc_dump_str;
   track_field< double > relevancy( "relevancy" );
-  vector< c2t_match_cit > matches_cache;
+  vector< map<track_handle_type, track_handle_list_type>::const_iterator > matches_cache;
   vector< double > relevancy_cache;
   for (size_t i=0; i<computed_tracks.size(); ++i)
   {
-    c2t_match_cit probe = computed_to_truth_match_list.find( computed_tracks[i] );
-    if (probe == computed_to_truth_match_list.end() )
+    map< track_handle_type, track_handle_list_type >::const_iterator probe
+      = computed_to_truth_match_list.find( computed_tracks[i] );
+    if ( probe == computed_to_truth_match_list.end() )
     {
-      throw runtime_error( "Lost computed track handle building cache when computing ROC?" );
+      throw runtime_error( "Lost computed track handle in computed_to_truth_match_list map?" );
     }
     matches_cache.push_back( probe );
     relevancy_cache.push_back( relevancy( computed_tracks[i].row ));
@@ -1701,12 +1748,13 @@ compute_roc( const track2track_phase1& p1,
   {
     double threshold = roc_it->first;
 
-    map< track_handle_type, bool> true_matches;
+    map< oracle_entry_handle_type, bool> true_matches;
 
     unsigned tp=0, fp=0, fn=0, tn=0;
     for (unsigned i=0; i < computed_tracks.size(); ++i)
     {
-      // Computed track c has two attributes:
+
+      // Computed track[i] has two attributes:
       // - R (relevance): true if its relevancy >= threshold
       // - M (match): true if it matches a true track
       //
@@ -1723,7 +1771,8 @@ compute_roc( const track2track_phase1& p1,
       bool r_flag = ( relevancy_cache[i] >= threshold );
 
       // establish M: did we match a true track?
-      c2t_match_cit probe = matches_cache[i];
+      map< track_handle_type, track_handle_list_type >::const_iterator probe
+        = matches_cache[ i ];
 
       const track_handle_list_type& matches = probe->second;
       bool m_flag = ( ! matches.empty());
@@ -1731,7 +1780,7 @@ compute_roc( const track2track_phase1& p1,
       {
         for (size_t j=0; j<matches.size(); ++j)
         {
-          true_matches[ matches[j] ] = true;
+          true_matches[ matches[j].row ] = true;
         }
       }
 
@@ -1748,33 +1797,42 @@ compute_roc( const track2track_phase1& p1,
       truth_tracks.empty()
       ? 0.0
       : 1.0 * nMatches / truth_tracks.size();
-
-    roc_dump_str += vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u; fa-norm = %e\n",
+    roc_dump_str << vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u ; fa-norm = %e\n",
                                 threshold, pd, fp, nMatches, tp, fp, tn, fn, (tp+fn), (tp+fp), truth_tracks.size(), fp/fa_norm );
+
+    if (roc_it == roc_threshold.begin())
+    {
+      LOG_INFO( main_logger, "ROC: first line: " << roc_dump_str.str() );
+    }
   } // ... for each roc threshold
 
-  LOG_INFO( main_logger, "ROC:\n" << roc_dump_str );
+  if ( ! output_args.console_dump_arg())
+  {
+    LOG_INFO( main_logger, "ROC: output not written to console (use --console to dump)" );
+  }
+  else
+  {
+    LOG_INFO( main_logger, "ROC:\n" << roc_dump_str.str() );
+  }
   if (output_args.roc_dump_fn.set())
   {
     LOG_INFO( main_logger, "[score_events] Dumping roc data to '" << output_args.roc_dump_fn().c_str() << "'" );
 
     fstream dump_stream(output_args.roc_dump_fn().c_str(),
                             fstream::out);
-    dump_stream << roc_dump_str;
+    dump_stream << roc_dump_str.str();
     dump_stream.flush();
     dump_stream.close();
   }
 }
 
+
 void
-compute_pr( const phase1_parameters& p1_params,
+compute_pr( const track2track_phase1& p1,
             track_handle_list_type truth_tracks,
             track_handle_list_type computed_tracks,
             output_args_type& output_args )
 {
-  track2track_phase1 p1(p1_params);
-  p1.compute_all( truth_tracks, computed_tracks );
-
   // always sort computed tracks
   sort( computed_tracks.begin(), computed_tracks.end(), compare_kst_track_handle);
 
@@ -1820,26 +1878,59 @@ compute_pr( const phase1_parameters& p1_params,
     }
   }
 
+  typedef vector< track2track_type > matches_t;
+  map< oracle_entry_handle_type, matches_t* > matches_map;
+  vul_timer timer;
+
+  LOG_INFO( main_logger, "PR: matches map setup...") ;
+  for (map< track2track_type, track2track_score >::const_iterator i = p1.t2t.begin();
+       i != p1.t2t.end();
+       ++i)
+  {
+    if (timer.real() > 5 * 1000)
+    {
+      LOG_INFO( main_logger, "PR: matches map " << matches_map.size() << " of " << computed_tracks.size() );
+      timer.mark();
+    }
+    oracle_entry_handle_type key = i->first.second.row;
+    if (matches_map.find( key ) == matches_map.end() )
+    {
+      matches_map[ key ] = new matches_t;
+    }
+    matches_map[key]->push_back( i->first );
+  }
+  LOG_INFO( main_logger, "PR: Matches map complete; contains " << matches_map.size() << " entries");
+  timer.mark();
+
+
+  matches_t empty_matches;
   for (unsigned i=0; i<computed_tracks.size(); ++i)
   {
+    if (timer.real() > 5 * 1000)
+    {
+      LOG_INFO( main_logger, "pr curve: " << i << " of " << computed_tracks.size() << "..." );
+      timer.mark();
+    }
+
     track_handle_type c = computed_tracks[i];
     double r = kst_schema( c ).relevancy();
 
-    bool matched_truth_track = false;
-    for (unsigned j=0; j < truth_tracks.size(); ++j)
-    {
-      track_handle_type t = truth_tracks[j];
+    map< oracle_entry_handle_type, matches_t* >::const_iterator probe = matches_map.find( c.row );
+    const matches_t& matches =
+      probe == matches_map.end()
+      ? empty_matches
+      : *probe->second;
 
-      track2track_type key(t,c);
-      map< track2track_type, track2track_score >::const_iterator probe = p1.t2t.find( key );
-      if ( probe != p1.t2t.end() )
+    bool matched_truth_track = false;
+    for (unsigned j=0; j < matches.size(); ++j)
+    {
+      track_handle_type t = matches[j].first;
+
+      matched_truth_track = true;
+      if ( ! truth_track_hit_map[ t ] )
       {
-        matched_truth_track = true;
-        if ( ! truth_track_hit_map[ t ] )
-        {
-          truth_track_hit_map[ t ] = true;
-          ++td;
-        }
+        truth_track_hit_map[ t ] = true;
+        ++td;
       }
     } // ...for all truth tracks
 
@@ -1853,11 +1944,20 @@ compute_pr( const phase1_parameters& p1_params,
       ? 0
       : 1.0 * td / nTrue;
     (*pr_os) << "PR-curve: " << i << " relevancy= " << r << " tp= " << tp << " fp= " << fp << " prec= " << prec << " td= " << td << " nTrue= " << nTrue << "  recall= " << recall << "\n";
+
     if (r > last_r)
     {
       LOG_INFO( main_logger, "Inverted relevancy!  last was " << last_r << " ; this was " << r << "");
     }
     last_r = r;
+
+  }
+
+  for (map< oracle_entry_handle_type, matches_t* >::const_iterator probe = matches_map.begin();
+       probe != matches_map.end();
+       ++probe)
+  {
+    delete probe->second;
   }
 
   LOG_INFO( main_logger, "Sample plot command:\nplot \"running-pr.dat\" using 16:10 w lp, \"\" using 16:10 every 10::10 with points ls 3 ps 3  t \"every 10th\"");
