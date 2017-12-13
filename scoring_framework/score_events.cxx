@@ -126,6 +126,8 @@ struct activity_selector_type
   activity_style style;
   int activity_index;    // for VIRAT style
   string activity_name;  // for KPF style
+  int activity_domain;   // for KPF style
+  string activity_conf_kv_key; // for KPF style
   pvo_request_type pvo_req; // for PVO style
 
   activity_selector_type()
@@ -153,7 +155,7 @@ ostream& operator<<( ostream& os, const activity_selector_type& a )
     os << "prefiltered";
     break;
   case activity_style::KPF:
-    os << "KPF (" << a.activity_name << ")";
+    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via " << a.activity_conf_kv_key;
     break;
   default:
     os << "UNKNOWN?";
@@ -1255,9 +1257,10 @@ struct score_events_args_type
   vul_arg< string > track_dump_fn_arg;
 
   vul_arg< string > kpf_activity_arg;
+  vul_arg< int > kpf_activity_domain_arg;
+  vul_arg< string > kpf_activity_conf_kv_key_arg;
   vul_arg< string > kpf_object_arg;
   vul_arg< string > kpf_object_fn_arg;
-  vul_arg< int > kpf_activity_domain_arg;
   vul_arg< string > kpf_activity_fn_arg;
 
   score_events_args_type():
@@ -1285,9 +1288,10 @@ struct score_events_args_type
     activity_match_arg( "--activity-matches", "write activity match status here (increases run time) "),
     track_dump_fn_arg( "--write-tracks", "Write annotated input tracks to this file (either .kwcsv or .kwiver)" ),
     kpf_activity_arg( "--kpf-activity", "Score this KPF activity" ),
+    kpf_activity_domain_arg( "--kpf-activity-domain", "Load KPF activities from this domain", 2 ),
+    kpf_activity_conf_kv_key_arg( "--kpf-activity-conf-kv-key", "KPF activity confidence is associated with this KPF key", "conf" ),
     kpf_object_arg( "--kpf-object", "Score this KPF object type (requires detection mode)" ),
     kpf_object_fn_arg( "--kpf-gt-object-fn", "Assign ground-truth objects types from this YAML file" ),
-    kpf_activity_domain_arg( "--kpf-activity-domain", "Load KPF activities from this domain", 2 ),
     kpf_activity_fn_arg( "--kpf-activity-fn", "Load KPF activities from this file" )
   {}
 
@@ -1419,6 +1423,14 @@ score_events_args_type
   //
   // KPF checking will go here
   //
+
+  if ( this->kpf_activity_arg.set() )
+  {
+    ret.style = activity_style::KPF;
+    ret.activity_name = this->kpf_activity_arg();
+    ret.activity_domain = this->kpf_activity_domain_arg();
+    ret.activity_conf_kv_key = this->kpf_activity_conf_kv_key_arg();
+  }
 
   //
   // See if we can find a VIRAT activity
