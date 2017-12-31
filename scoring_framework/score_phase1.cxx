@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -166,6 +166,7 @@ test_if_overlap_passes_filters( const track2track_frame_overlap_record& overlap,
   bool use_min_pcent_gt = (params.min_pcent_overlap_gt_ct.first >= 0.0);
   bool use_min_pcent_ct = (params.min_pcent_overlap_gt_ct.second >= 0.0);
 
+  bool use_iou = (params.iou != -1.0 );
 
   if ( use_min_pcent_gt || use_min_pcent_ct )
   {
@@ -201,6 +202,15 @@ test_if_overlap_passes_filters( const track2track_frame_overlap_record& overlap,
                  local_track_view.timestamp_usecs( overlap.computed_frame.row) );
 
     }
+  }
+  else if (use_iou)
+  {
+    double i = overlap.overlap_area;
+    double u = overlap.truth_area + overlap.computed_area - i;
+    spatial_overlap_exists =
+      (u > 0)
+      ? i/u >= params.iou
+      : false;
   }
   else
   {
