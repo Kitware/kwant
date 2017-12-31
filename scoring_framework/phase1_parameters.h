@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -81,6 +81,9 @@ struct SCORE_CORE_EXPORT phase1_parameters
  // percentage of (gt, ct) boxes which must be overlapped for it to be a hit; <0 for don't care
   std::pair<double, double> min_pcent_overlap_gt_ct;
 
+  // intersection-over-union; not compatible with min_pcent_overlap_gt_ct
+  double iou;
+
   // if true, dump statistics
   bool debug_min_pcent_overlap_gt_ct;
 
@@ -110,6 +113,7 @@ struct SCORE_CORE_EXPORT phase1_parameters
       min_bound_matching_area(0.0),
       min_frames_policy( std::make_pair( true, 0.0 )),
       min_pcent_overlap_gt_ct( std::make_pair(-1.0, -1.0) ),
+      iou ( -1.0 ),
       debug_min_pcent_overlap_gt_ct( false ),
       radial_overlap( -1.0 ),
       pass_all_nonzero_overlaps( false )
@@ -124,6 +128,7 @@ struct SCORE_CORE_EXPORT phase1_parameters
       min_bound_matching_area(0.0),
       min_frames_policy( std::make_pair( true, 0.0 )),
       min_pcent_overlap_gt_ct( std::make_pair(-1.0, -1.0) ),
+      iou( -1.0 ),
       debug_min_pcent_overlap_gt_ct( false ),
       radial_overlap( -1.0 ),
       pass_all_nonzero_overlaps( false )

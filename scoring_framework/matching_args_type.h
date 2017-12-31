@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -30,6 +30,7 @@ struct SCORE_CORE_EXPORT matching_args_type
   vul_arg<double> min_bound_area;
   vul_arg<std::string> min_frames_arg;
   vul_arg<std::string> min_pcent_gt_ct;
+  vul_arg<double> iou;
   vul_arg<double> radial_overlap;
   vul_arg<bool> pass_nonzero_overlaps;
   std::pair< bool, double > min_frames_policy;  // first: true if absolute, false if percentage
@@ -40,6 +41,7 @@ struct SCORE_CORE_EXPORT matching_args_type
     min_bound_area( "--match-overlap-lower-bound", "frame overlap must be > this to match", 0.0 ),
     min_frames_arg( "--match-frames-lower-bound", "if != 0, at least this many frames must overlap for track to match; 'p' for %age of gt", "0" ),
     min_pcent_gt_ct( "--min-pcent-gt-ct", "%age of gt/ct box which must be overlapped; set to 'help' for more info; overrides match-overlap-lower-bound" ),
+    iou( "--iou", "intersection-over-union: ratio of overlap to union of bounding boxes; overrides match-overlap-lower-bound; test is >=" ),
     radial_overlap( "--radial-overlap", "-1.0 to disable; otherwise, distance in meters between detections to match", -1.0 ),
     pass_nonzero_overlaps( "--pass-nonzero-overlaps", "if set, ALL frames with nonzero overlaps will be used for stats" ),
     min_frames_policy( std::make_pair( false, 0.0 ))
