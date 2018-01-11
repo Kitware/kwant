@@ -5,6 +5,9 @@ KWANT is an open source C++ toolkit for computing scores and other metrics for o
 
 Pending support for e.g. GeographicLib in kwiver, this release only supports pixel-coordinate AOIs.
 
+For more information on how KWANT achieves this goal,
+and how to use KWANT visit our `documentation site <http://kwant.readthedocs.io/en/latest/>`_
+
 Directory Structure and Provided Functionality
 ==============================================
 
