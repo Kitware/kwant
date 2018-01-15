@@ -4,6 +4,8 @@ if (KWANT_ENABLE_MGRS)
   message( FATAL_ERROR "Building the MGRS code is blocked until lat/lon <-> MGRS capabilities are available" )
 endif()
 
+find_package( yaml-cpp REQUIRED )
+
 #find_package( GeographicLib REQUIRED )
 #include_directories ( ${GeographicLib_INCLUDE_DIR} )
 
@@ -200,6 +202,12 @@ target_link_libraries( score_events
                        track_oracle_file_formats
                        vibrant_descriptors
                        vul
+                       track_filter_kpf_activity
+                       kwiver_algo_kpf
+                       kpf_yaml
+                       kwiversys
+                       kpf_utils
+                       ${YAML_CPP_LIBRARIES}
                        ${Boost_SYSTEM_LIBRARY} )
 
 ########################################
