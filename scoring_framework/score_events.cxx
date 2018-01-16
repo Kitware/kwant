@@ -272,33 +272,22 @@ pair< bool, double >
 kpf_cset_extractor_type
 ::get( oracle_entry_handle_type row )
 {
-  LOG_DEBUG( main_logger, "A" );
-  if ( ! this->valid_flag ) {   LOG_DEBUG( main_logger, "b" );
-    return make_pair( false, 0.0 ); }
+  if ( ! this->valid_flag ) return make_pair( false, 0.0 );
 
   // get the per-row size_t -> double map
   const auto& m = track_oracle_core::get< map< size_t, double > >( row, this->f );
-  if ( ! m.first ) {  LOG_DEBUG( main_logger, "c: " << row << ", " << this->f );
-    return make_pair( false, 0.0 ); }
+  if ( ! m.first ) return make_pair( false, 0.0 );
 
   // if the target index is false (i.e. it's a string we NEVER saw...)
   if (! this->target_index.first )
   {
     // ... return (true, 0.0) if zero-if-absent flag is set, (false, 0.0) otherwise
-    LOG_DEBUG( main_logger, "d" );
-
     return make_pair( this->zero_flag, 0.0 );
   }
 
   // lookup the index in the map, return value if found,
   // otherwise return value conditioned on the zero-if-absent-flag
-  LOG_DEBUG( main_logger, "cset extraction: looking for " << this->target_index.second );
   auto p = m.second.find( this->target_index.second );
-  LOG_DEBUG( main_logger, "Result: " << (p != m.second.end() ));
-  for (const auto dbg: m.second )
-  {
-    LOG_DEBUG( main_logger, "cset contents: " << dbg.first << " : " << dbg.second );
-  }
   return
     p != m.second.end()
     ? make_pair( true, p->second )
@@ -2088,34 +2077,20 @@ score_events_args_type
   kwiver::logging_map_type wmsgs( main_logger, KWIVER_LOGGER_SITE );
 
   kwiver::track_oracle::track_field< kwiver::track_oracle::dt::tracking::external_id > id;
-  map< unsigned, track_handle_type > track_id_cache;
-  for (auto t: tracks )
-  {
-    auto probe = id.get( t.row );
-    if ( ! probe.first )
-    {
-      LOG_ERROR( main_logger, "Trying to set a KPF object type on a track without a track ID?" );
-      return false;
-    }
-    auto insert_probe = track_id_cache.insert( make_pair( probe.second, t ));
-    if (! insert_probe.second)
-    {
-      LOG_ERROR( main_logger, "Track list has duplicate track id " << probe.second );
-      return false;
-    }
-  }
+  kwiver::track_oracle::track_field< kwiver::track_oracle::dt::tracking::frame_number > frame_number;
 
-  size_t c = 0;
+  size_t track_c = 0;
+  size_t det_c = 0;
   while (reader.next())
   {
     namespace KPFC = ::kwiver::vital::kpf::canonical;
 
-    auto track_id_probe = reader.transfer_packet_from_buffer(
+    auto kpf_track_id_probe = reader.transfer_packet_from_buffer(
       KPF::packet_header_t( KPF::packet_style::ID, KPFC::id_t::TRACK_ID ));
     auto cset_probe = reader.transfer_packet_from_buffer(
       KPF::packet_header_t( KPF::packet_style::CSET, what_act.activity_domain ));
 
-    if (! track_id_probe.first )
+    if (! kpf_track_id_probe.first )
     {
       wmsgs.add_msg( "Couldn't find ID1 packet" );
       continue;
@@ -2128,23 +2103,29 @@ score_events_args_type
       continue;
     }
 
-    int types_track_id = track_id_probe.second.id.d;
-    auto track_probe = track_id_cache.find( types_track_id );
-    if (track_probe == track_id_cache.end())
+    // loop over all the tracks-- there may be duplicate instances of a track ID due to detection mode
+    for (auto t: tracks )
     {
-      LOG_ERROR( main_logger, "No entry for track ID " << types_track_id );
-      return false;
+      auto id_probe = id.get( t.row );
+      if ( ! id_probe.first )
+      {
+        LOG_ERROR( main_logger, "Track without a track ID?" );
+        return false;
+      }
+      if ( id_probe.second != kpf_track_id_probe.second.id.d )
+      {
+        continue;
+      }
+      for (auto f: track_oracle_core::get_frames( t ))
+      {
+        kwiver::track_oracle::kpf_utils::add_to_row( wmsgs, f.row, cset_probe.second );
+        ++det_c;
+      }
+      ++track_c;
     }
-
-    for (auto f: track_oracle_core::get_frames( track_probe->second ))
-    {
-      kwiver::track_oracle::kpf_utils::add_to_row( wmsgs, f.row, cset_probe.second );
-    }
-    ++c;
-
     reader.flush();
   }
-  LOG_INFO( main_logger, "Loaded " << c << " entries from " << types_fn );
+  LOG_INFO( main_logger, "Set " << track_c << " objects / " << det_c << " detections from " << types_fn );
   if ( ! wmsgs.empty() )
   {
     LOG_INFO( main_logger, "Messages begin ");
