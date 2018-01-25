@@ -11,14 +11,9 @@ set(KWANT_VERSION_PATCH 0)
 set(KWANT_VERSION "${KWANT_VERSION_MAJOR}.${KWANT_VERSION_MINOR}.${KWANT_VERSION_PATCH}")
 
 ###
-# Look for and use Fletch to find dependencies
+# Ask for kwiver build directory
 #
-set( fletch_DIR "" CACHE PATH "Path to FLETCH packages" )
-if ( IS_DIRECTORY ${fletch_DIR} )
-  find_package( fletch NO_MODULE )
-  # Search for libraries in the fletch install root
-  list(APPEND CMAKE_PREFIX_PATH "${fletch_ROOT}")
-endif()
+set( kwiver_DIR "" CACHE PATH "Path to KWIVER packages" )
 
 ###
 # project specific directories
@@ -65,7 +60,5 @@ include_directories( ${kwant_SOURCE_DIR} )
 include_directories( ${kwant_BINARY_DIR} )
 
 include( kwant-depends )
-include( kwiver-utils )
-include( kwiver-flags ) # use same compile flags as kwiver
 
 add_subdirectory( scoring_framework )

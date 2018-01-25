@@ -2,10 +2,10 @@ OPTION(KWANT_ENABLE_MGRS  "Enable track_oracle's lat/lon <-> MGRS capabilities (
 
 if (KWANT_ENABLE_MGRS)
   message( FATAL_ERROR "Building the MGRS code is blocked until lat/lon <-> MGRS capabilities are available" )
+  #find_package( GeographicLib REQUIRED )
+  #include_directories ( ${GeographicLib_INCLUDE_DIR} )
+  #add_definitions(-DKWANT_ENABLE_MGRS)
 endif()
-
-#find_package( GeographicLib REQUIRED )
-#include_directories ( ${GeographicLib_INCLUDE_DIR} )
 
 ########################################
 # timestamp utilities
