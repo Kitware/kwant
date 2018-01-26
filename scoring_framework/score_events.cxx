@@ -470,6 +470,7 @@ struct output_args_type
   vul_arg< string > matches_dump_fn;
   vul_arg< string > ts_dump_fn;
   vul_arg< string > roc_dump_fn;
+  vul_arg< string > roc_csv_dump_fn;
   vul_arg< string > pr_dump_fn;
   vul_arg< string > thresholds_arg;
   vul_arg< bool > console_dump_arg;
@@ -481,6 +482,7 @@ struct output_args_type
       matches_dump_fn( "--matches", "write track match info to file" ),
       ts_dump_fn( "--ts-dump", "write ground-truth frame -> timestamps to file" ),
       roc_dump_fn( "--roc-dump", "write the roc chart information to file" ),
+      roc_csv_dump_fn( "--roc-csv-dump", "write the roc chart information to file (CSV format)" ),
       pr_dump_fn( "--pr-dump", "write the P/R curve information to file (if not set, dump to cout" ),
       thresholds_arg( "--thresholds", "Manually specified thresholds to score on (min[:max[:step]])" ),
       console_dump_arg( "--console", "Write ROC lines to the console" )
@@ -2585,6 +2587,9 @@ compute_roc( const track2track_phase1& p1,
   }
 
   ostringstream roc_dump_str;
+  ostringstream roc_csv_dump_str;
+  roc_csv_dump_str << "threshold, PD, FA, nMatches, TP, FP, TN, FN, matched, relevant, nTrueTracks, faNorm\n";
+
   track_field< double > relevancy( "relevancy" );
   vector< map<track_handle_type, track_handle_list_type>::const_iterator > matches_cache;
   vector< double > relevancy_cache;
@@ -2657,6 +2662,9 @@ compute_roc( const track2track_phase1& p1,
       : 1.0 * nMatches / truth_tracks.size();
     roc_dump_str << vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u ; fa-norm = %e\n",
                                 threshold, pd, fp, nMatches, tp, fp, tn, fn, (tp+fn), (tp+fp), truth_tracks.size(), fp/fa_norm );
+    roc_csv_dump_str << threshold << ", " << pd << ", " << fp << ", " << nMatches << ", " << tp << ", " << fp << ", "
+                     << tn << ", " << fn << ", " << (tp+fn) << ",  " << (tp+fp) << ", " << truth_tracks.size() << ", "
+                     << (fp / fa_norm) << "\n";
 
     if (roc_it == roc_threshold.begin())
     {
@@ -2681,6 +2689,19 @@ compute_roc( const track2track_phase1& p1,
     dump_stream << roc_dump_str.str();
     dump_stream.flush();
     dump_stream.close();
+  }
+  if (output_args.roc_csv_dump_fn.set())
+  {
+    ofstream ofs( output_args.roc_csv_dump_fn().c_str() );
+    if ( ! ofs )
+    {
+      LOG_ERROR( main_logger, "Couldn't write to '" << output_args.roc_csv_dump_fn() << "'" );
+    }
+    else
+    {
+      LOG_INFO( main_logger, "[score_events] Writing ROC CSV to '" << output_args.roc_csv_dump_fn() << "'" );
+      ofs << roc_csv_dump_str.str();
+    }
   }
 }
 
