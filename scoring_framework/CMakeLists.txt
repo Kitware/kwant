@@ -200,6 +200,12 @@ target_link_libraries( score_events
                        track_oracle_file_formats
                        vibrant_descriptors
                        vul
+                       track_filter_kpf_activity
+                       kwiver_algo_kpf
+                       kpf_yaml
+                       kwiversys
+                       kpf_utils
+                       ${YAML_CPP_LIBRARIES}
                        ${Boost_SYSTEM_LIBRARY} )
 
 ########################################
