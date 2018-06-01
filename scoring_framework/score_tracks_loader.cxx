@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2011-2017 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2011-2018 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -15,6 +15,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include <vgl/vgl_area.h>
 #include <vul/vul_file.h>
 #include <vul/vul_reg_exp.h>
 
@@ -724,7 +725,7 @@ check_for_zero_area_boxes( const vector< track_record_type >& records )
       frame_handle_list_type frames = track_oracle_core::get_frames( r_tracks[j] );
       for (size_t k=0; k<frames.size(); ++k)
       {
-        if (stt[ frames[k] ].bounding_box().area() <= 0)
+        if (vgl_area( stt[ frames[k] ].bounding_box() ) <= 0)
         {
           if (warn_count < 5 )
           {

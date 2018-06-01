@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2018 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include <vgl/vgl_area.h>
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_intersection.h>
 
@@ -655,9 +656,9 @@ track2track_score
   {
     // it's pretty annoying but some of the code (e.g. score_phase2_aipr.cxx:60)
     // seems to rely on these being set ONLY if there is overlap
-    ret.truth_area = b1.area();
-    ret.computed_area = b2.area();
-    ret.overlap_area = bi.area();
+    ret.truth_area = vgl_area(b1);
+    ret.computed_area = vgl_area(b2);
+    ret.overlap_area = vgl_area(bi);
 
     double dx = b1.centroid_x() - b2.centroid_x();
     double d_center_y = b1.centroid_y() - b2.centroid_y();
