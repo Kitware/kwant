@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2018 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -447,7 +447,7 @@ compute_normalization_factor( const phase1_parameters& p1_params,
     if (compute_norm)
     {
       double g = normalization_args.gsd(); // meters-per-pixel
-      double data_spatial_footprint = p1_params.b_aoi.area() * g * g; // m^2
+      double data_spatial_footprint = vgl_area(p1_params.b_aoi) * g * g; // m^2
       norm = data_spatial_footprint * normalization_args.norm_data_time(); // (m^2)*s
     }
   }
