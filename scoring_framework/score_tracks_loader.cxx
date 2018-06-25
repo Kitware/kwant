@@ -18,6 +18,8 @@
 #include <vul/vul_file.h>
 #include <vul/vul_reg_exp.h>
 
+#include <vgl/vgl_area.h>
+
 #include <scoring_framework/score_core.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 #include <track_oracle/file_formats/track_kwxml/file_format_kwxml.h>
@@ -724,7 +726,7 @@ check_for_zero_area_boxes( const vector< track_record_type >& records )
       frame_handle_list_type frames = track_oracle_core::get_frames( r_tracks[j] );
       for (size_t k=0; k<frames.size(); ++k)
       {
-        if (stt[ frames[k] ].bounding_box().area() <= 0)
+        if ( vgl_area( stt[ frames[k] ].bounding_box() ) <= 0)
         {
           if (warn_count < 5 )
           {

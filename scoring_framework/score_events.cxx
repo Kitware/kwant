@@ -38,6 +38,8 @@ the activity index is used.
 #include <vul/vul_reg_exp.h>
 #include <vul/vul_timer.h>
 
+#include <vgl/vgl_area.h>
+
 #include <arrows/kpf/yaml/kpf_reader.h>
 #include <arrows/kpf/yaml/kpf_yaml_parser.h>
 #include <arrows/kpf/yaml/kpf_packet_header.h>
@@ -1110,14 +1112,14 @@ compute_normalization_factors(  const track_handle_list_type& truth_tracks,
   vgl_box_2d<double> ne_box;  // northing / easting box; assume the zones all match
   add_tracks_to_box( truth_tracks, ne_box );
   add_tracks_to_box( computed_tracks, ne_box );
-  LOG_INFO( main_logger, "Normalization: MGRS all-tracks AOI is " << ne_box.area() << " m^2" );
+  LOG_INFO( main_logger, "Normalization: MGRS all-tracks AOI is " << vgl_area( ne_box ) << " m^2" );
 
   timestamp_utilities::track_timestamp_stats_type tst_t( truth_tracks ), tst_c( computed_tracks );
   tst_t.combine_with_other( tst_c );
   double time_window_secs = (tst_t.minmax_ts.second - tst_t.minmax_ts.first) / 1.0e6;
   LOG_INFO( main_logger, "Normalization: all-tracks time window is " << time_window_secs << " seconds" );
 
-  double kmsq_in_box = ne_box.area() / 1.0e6;
+  double kmsq_in_box = vgl_area( ne_box ) / 1.0e6;
 
   // e.g. if area == 3 and time_window_secs = 120, then to get to FA / (km^2 per s),
   // divide FA count by (3 * 120)
