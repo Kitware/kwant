@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <vgl_area.h>
+
 #ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
 #endif
@@ -386,7 +388,7 @@ quickfilter_box_type
     vgl_box_2d<double> overlap = vgl_intersection( t1_box, t2_box );
     if (dbg) LOG_DEBUG( main_logger, "mgrs_box_intersect: boxes:\n" << t1_box << "\n" << t2_box << "\n" << overlap );
 
-    return (overlap.is_empty()) ? 0.0 : overlap.area();
+    return (overlap.is_empty()) ? 0.0 : vgl_area( overlap );
   }
 
   // if we get this far, we found no overlapping zones; the caller will
@@ -428,7 +430,7 @@ quickfilter_box_type
     return -1.0;
   }
 
-  return vgl_intersection( box_1, box_2 ).area();
+  return vgl_area( vgl_intersection( box_1, box_2 ));
 }
 
 double
