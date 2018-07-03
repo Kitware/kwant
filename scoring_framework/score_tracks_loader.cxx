@@ -1400,6 +1400,7 @@ input_args_type
                 " tracks to " << n.size() << " detections" );
       r.set_tracks( n );
     }
+    track_field< double > relevancy( "relevancy" );
     for (size_t i=0; i<computed_track_records.size(); ++i)
     {
       track_record_type& r = computed_track_records[i];
@@ -1408,6 +1409,27 @@ input_args_type
       for (size_t j=0; j<tlist.size(); ++j)
       {
         track_handle_list_type d = decompose_track_into_frames( tlist[j] );
+
+        // if kw19 hack is set, then the relevancy is set on the frames, not the tracks.
+        // copy up to tracks.
+
+        if (kw19_hack())
+        {
+          for (const auto& t: d)
+          {
+            auto frame_list = track_oracle_core::get_frames( t );
+            // should only be one
+            for (const auto& f: frame_list )
+            {
+              if (relevancy.exists( f.row ))
+              {
+                auto r = relevancy( f.row );
+                relevancy( t.row ) = r;
+              }
+            }
+          }
+        }
+
         n.insert( n.end(), d.begin(), d.end() );
       }
       LOG_INFO(main_logger, "Detection mode: computed tracks " << r.src_fn() << " from " << tlist.size() <<
