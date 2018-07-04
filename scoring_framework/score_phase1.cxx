@@ -642,9 +642,9 @@ track2track_score
   {
     // it's pretty annoying but some of the code (e.g. score_phase2_aipr.cxx:60)
     // seems to rely on these being set ONLY if there is overlap
-    ret.truth_area = b1.area();
-    ret.computed_area = b2.area();
-    ret.overlap_area = bi.area();
+    ret.truth_area = b1.volume();
+    ret.computed_area = b2.volume();
+    ret.overlap_area = bi.volume();
 
     double dx = b1.centroid_x() - b2.centroid_x();
     double d_center_y = b1.centroid_y() - b2.centroid_y();
