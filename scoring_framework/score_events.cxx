@@ -123,7 +123,7 @@ namespace { // anon
 
 using namespace kwiver::kwant;
 
-enum class activity_style { INVALID, VIRAT, VIRAT_AND_EXIT, PVO, PREFILTERED, KPF_ACTIVITY, KPF_OBJECT };
+enum class activity_style { INVALID, VIRAT, VIRAT_AND_EXIT, PVO, PREFILTERED, KPF_ACTIVITY, KPF_OBJECT, KPF_ADHOC };
 
 struct pvo_request_type
 {
@@ -142,6 +142,7 @@ struct activity_selector_type
   activity_style style;
   int activity_index;    // for VIRAT style
   string activity_name;  // for KPF style
+  string kpf_adhoc_field; // for KPF adhoc
   int activity_domain;   // for KPF style
   packet_header_t kpf_conf_src; // for KPF style
   pvo_request_type pvo_req; // for PVO style
@@ -232,13 +233,62 @@ private:
 };
 
 //
+// obtains the value via a track_field directly holding a cset
+//
+class kpf_adhoc_extractor_type: public relevancy_extractor_type
+{
+public:
+  kpf_adhoc_extractor_type( const string& field_name, const string& t, bool zero_if_absent );
+  virtual bool valid() const { return this->valid_flag; }
+  virtual pair< bool, double > get( oracle_entry_handle_type row );
+private:
+  field_handle_type f; // field for the field_name
+  string target;       // string we're looking for
+  bool zero_flag;      // if true, return <true, 0.0> if the string isn't there
+  bool valid_flag;
+};
+
+//
+// kpf_adhoc implementation
+//
+
+kpf_adhoc_extractor_type
+::kpf_adhoc_extractor_type( const string& field_name,
+                            const string& t,
+                            bool zero_if_absent )
+  : target( t ), zero_flag( zero_if_absent ), valid_flag( false )
+{
+  // lookup the field for the cset; return if not found
+  this->f = track_oracle_core::lookup_by_name( field_name );
+  if ( this->f == kwiver::track_oracle::INVALID_FIELD_HANDLE) return;
+
+  this->valid_flag = true;
+}
+
+pair< bool, double >
+kpf_adhoc_extractor_type
+::get( oracle_entry_handle_type row )
+{
+  if ( ! this->valid_flag ) return make_pair( false, 0.0 );
+
+  const auto& m = track_oracle_core::get< kwiver::track_oracle::kpf_cset_type >( row, this->f );
+  if ( ! m.first ) return make_pair( false, 0.0 );
+
+  const auto& p = m.second.find( this->target );
+  return
+    p != m.second.end()
+    ? make_pair( true, p->second )
+    : make_pair( this->zero_flag, 0.0 );
+}
+
+//
 // kpf_cset implementation
 //
 
 kpf_cset_extractor_type
 ::kpf_cset_extractor_type( const string& kpf_header_string,
-                        const string& target,
-                        bool zero_if_absent)
+                           const string& target,
+                           bool zero_if_absent)
   : zero_flag( zero_if_absent ), valid_flag( false )
 {
   // lookup the field for per-row index->double table, return if not found
@@ -343,11 +393,13 @@ ostream& operator<<( ostream& os, const activity_selector_type& a )
     os << "prefiltered";
     break;
   case activity_style::KPF_ACTIVITY:
-    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via activity ";
+    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via activity";
     break;
   case activity_style::KPF_OBJECT:
-    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via object ";
+    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via object";
     break;
+  case activity_style::KPF_ADHOC:
+    os << "KPF adhoc: " << a.activity_name << " via field " << a.kpf_adhoc_field;
   default:
     os << "UNKNOWN?";
     break;
@@ -698,7 +750,7 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
       }
       if (match_count == track_oracle_core::get_n_frames( i ))
       {
-        LOG_DEBUG( main_logger, "all frames match; setting track to " << last_r );
+        //        LOG_DEBUG( main_logger, "all frames match; setting track to " << last_r );
         relevancy( i.row ) = last_r;
         ret.push_back( i );
       }
@@ -717,7 +769,61 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
     return ret;
   }
 
+  //
+  // KPF adhoc
+  //
 
+  if (what_act.style == activity_style::KPF_ADHOC)
+  {
+    // for ground-truth, absence means exclude
+    // for computed, absence means assume 0.0
+    bool zero_if_absent = (! input_is_gt );
+
+    relevancy_extractor_type* r =
+      new kpf_adhoc_extractor_type( what_act.kpf_adhoc_field, what_act.activity_name, zero_if_absent );
+
+    LOG_INFO( main_logger, "KPF adhoc extractor for " << what_act.activity_name << " from " << what_act.kpf_adhoc_field << ": valid? " << r->valid() );
+    if (! r->valid())
+    {
+      delete r;
+      return ret;
+    }
+
+    for (const auto& i: input_tracks )
+    {
+      size_t match_count = 0;
+      double last_r = 0.0;
+      for (const auto& f: track_oracle_core::get_frames( i ))
+      {
+        auto p = r->get( f.row );
+        if (input_is_prefiltered || p.first )
+        {
+          relevancy( f.row ) = p.second;
+          last_r = p.second;
+          ++match_count;
+        }
+      }
+      if (match_count == track_oracle_core::get_n_frames( i ))
+      {
+        //        LOG_DEBUG( main_logger, "all frames match; setting track to " << last_r );
+        relevancy( i.row ) = last_r;
+        ret.push_back( i );
+      }
+      else if (match_count > 0)
+      {
+        LOG_WARN( main_logger, "Inconsistent detection flags for multi-detection track: matched "
+                  << match_count << " detections out of " << track_oracle_core::get_n_frames( i )
+                  << "; not counting as match" );
+      }
+      else if (match_count == 0)
+      {
+        // do nothing; it's just a straight miss
+      }
+    }
+
+    delete r;
+    return ret;
+  }
 
   for (size_t i=0; i<input_tracks.size(); ++i)
   {
@@ -1492,11 +1598,12 @@ struct score_events_args_type
 {
   struct kpf_context_t
   {
-    enum class style_t {INVALID, OBJECT, ACTIVITY};
+    enum class style_t {INVALID, OBJECT, ACTIVITY, ADHOC};
 
-    style_t style;             // scoring for objects or activity?
+    style_t style;             // scoring for objects, activity, or an adhoc cset field
+    string adhoc_field;        // if adhoc, cset field name
     string artifact;           // object or activity name
-    int domain;                // the KPF domain we're scoring
+    int domain;                // the KPF domain we're scoring, or -1
     packet_header_t conf_src;  // KPF packet in computed data containing the confidence
     kpf_context_t(): style(style_t::INVALID) {}
   };
@@ -1602,43 +1709,49 @@ score_events_args_type
 
   // expecting three colon-separated fields: string, string, integer
   kwiversys::RegularExpression re( "^([^:]+):([^:]+):([0-9]+)$" );
+  // ...or two fields: fieldname, artifact
+  kwiversys::RegularExpression re_adhoc( "^([^:]+):([^:]+)$" );
 
-  if ( ! re.find( this->kpf_target_arg() ))
+  if ( re.find( this->kpf_target_arg() ))
   {
-    LOG_ERROR( main_logger, "Couldn't parse kpf target from '"
-               << this->kpf_target_arg() << "'" );
-    return false;
-  }
 
-  kpf_context_t& c = this->kpf_context;
-  // first field must be either 'object' or 'activity'
-  if ( re.match(1) == "object" )
-  {
-    c.style = kpf_context_t::style_t::OBJECT;
-  }
-  else if ( re.match(1) == "activity" )
-  {
-    c.style = kpf_context_t::style_t::ACTIVITY;
-  }
-  else
-  {
-    LOG_ERROR( main_logger, "KPF target parse error: first field '"
-               << re.match(1) << "' must be either 'object' or 'activity'");
-    return false;
-  }
+    kpf_context_t& c = this->kpf_context;
+    // first field must be either 'object' or 'activity'
+    if ( re.match(1) == "object" )
+    {
+      c.style = kpf_context_t::style_t::OBJECT;
+    }
+    else if ( re.match(1) == "activity" )
+    {
+      c.style = kpf_context_t::style_t::ACTIVITY;
+    }
+    else
+    {
+      LOG_ERROR( main_logger, "KPF target parse error: first field '"
+                 << re.match(1) << "' must be either 'object' or 'activity'");
+      return false;
+    }
 
-  // just accept the second and third fields
-  c.artifact = re.match(2);
-  c.domain = std::stoi( re.match(3) );
+    // just accept the second and third fields
+    c.artifact = re.match(2);
+    c.domain = std::stoi( re.match(3) );
 
-  // need to know where the computed confidence comes from
-  c.conf_src = kwiver::vital::kpf::packet_header_parser( this->kpf_conf_src_arg() );
-  if ( c.conf_src.style == kwiver::vital::kpf::packet_style::INVALID )
+    // need to know where the computed confidence comes from
+    c.conf_src = kwiver::vital::kpf::packet_header_parser( this->kpf_conf_src_arg() );
+    if ( c.conf_src.style == kwiver::vital::kpf::packet_style::INVALID )
+    {
+      LOG_ERROR( main_logger, "KPF confidence source error: couldn't parse '"
+                 << this->kpf_conf_src_arg() << "' as a KPF packet header" );
+      c.style = kpf_context_t::style_t::INVALID;
+      return false;
+    }
+  }
+  else if (re_adhoc.find( this->kpf_target_arg() ))
   {
-    LOG_ERROR( main_logger, "KPF confidence source error: couldn't parse '"
-               << this->kpf_conf_src_arg() << "' as a KPF packet header" );
-    c.style = kpf_context_t::style_t::INVALID;
-    return false;
+    kpf_context_t& c = this->kpf_context;
+    c.style = kpf_context_t::style_t::ADHOC;
+    c.adhoc_field = re_adhoc.match(1);
+    c.artifact = re_adhoc.match(2);
   }
 
   return true;
@@ -1668,6 +1781,14 @@ score_events_args_type
 
   // scoring KPF object detections requires detection mode
   if ( (this->kpf_context.style == kpf_context_t::style_t::OBJECT)
+       && ( ! input_args.detection_mode() ))
+  {
+    LOG_ERROR( main_logger, "Scoring KPF objects requires --detection-mode" );
+    return false;
+  }
+
+  // scoring KPF adhoc detections requires detection mode
+  if ( (this->kpf_context.style == kpf_context_t::style_t::ADHOC)
        && ( ! input_args.detection_mode() ))
   {
     LOG_ERROR( main_logger, "Scoring KPF objects requires --detection-mode" );
@@ -1807,6 +1928,17 @@ score_events_args_type
     ret.activity_name = this->kpf_context.artifact;
     ret.activity_domain = this->kpf_context.domain;
     ret.kpf_conf_src = this->kpf_context.conf_src;
+    return ret;
+  }
+
+  //
+  // KPF adhoc scoring
+  //
+  if ( this->kpf_context.style == kpf_context_t::style_t::ADHOC )
+  {
+    ret.style = activity_style::KPF_ADHOC;
+    ret.activity_name = this->kpf_context.artifact;
+    ret.kpf_adhoc_field = this->kpf_context.adhoc_field;
     return ret;
   }
 
@@ -2662,6 +2794,7 @@ compute_roc( const track2track_phase1& p1,
       truth_tracks.empty()
       ? 0.0
       : 1.0 * nMatches / truth_tracks.size();
+
     roc_dump_str << vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u ; fa-norm = %e\n",
                                 threshold, pd, fp, nMatches, tp, fp, tn, fn, (tp+fn), (tp+fp), truth_tracks.size(), fp/fa_norm );
     roc_csv_dump_str << threshold << ", " << pd << ", " << fp << ", " << nMatches << ", " << tp << ", " << fp << ", "
