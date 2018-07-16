@@ -986,7 +986,10 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
               << " ( " << combined_stats.minmax_ts.second - combined_stats.minmax_ts.first << " )" );
 
     combined_stats.reset();
-    combined_stats.set_from_tracks( tr_list[i] );
+    for ( const auto& t: tr_list )
+    {
+      combined_stats.set_from_tracks( t );
+    }
 
     LOG_INFO( main_logger, "Processing gt/ct pair " << i << " : during: "
               << combined_stats.minmax_ts.first << " to " << combined_stats.minmax_ts.second
@@ -997,7 +1000,10 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
     computed_track_records[i].recompute_stats();
 
     combined_stats.reset();
-    combined_stats.set_from_tracks( tr_list[i] );
+    for ( const auto& t: tr_list )
+    {
+      combined_stats.set_from_tracks( t );
+    }
 
     LOG_INFO( main_logger, "Processing gt/ct pair " << i << " : after: "
               << combined_stats.minmax_ts.first << " to " << combined_stats.minmax_ts.second
