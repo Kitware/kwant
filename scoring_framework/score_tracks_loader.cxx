@@ -894,6 +894,12 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
 
   for (unsigned i=0; i<truth_track_records.size(); ++i)
   {
+    // skip pathological cases
+    if (truth_track_records[i].tracks().empty() && computed_track_records[i].tracks().empty())
+    {
+      continue;
+    }
+
     // not refs because we recompute at the end of the loop
     track_timestamp_stats_type truth_stats = truth_track_records[i].stats();
     track_timestamp_stats_type computed_stats = computed_track_records[i].stats();
