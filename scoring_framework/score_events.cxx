@@ -2529,6 +2529,22 @@ int main( int argc, char *argv[] )
       process_p1_debug_dump( p1, truth_tracks, computed_tracks, scoring_args.t2t_dump_fn_arg(), scoring_args.disable_t2t_dump_cmd_file() );
     }
 
+    // if requested, dump the matches file
+    if (output_args.matches_dump_fn.set())
+    {
+      track2track_phase2_hadwav p2( /* verbose flag = */ false );
+      p2.compute( truth_tracks, scored_computed_tracks, p1 );
+      ofstream os (output_args.matches_dump_fn().c_str() );
+      if ( os )
+      {
+        p2.debug_dump( os );
+      }
+      else
+      {
+        LOG_ERROR( main_logger, "Couldn't dump match info to '" << output_args.matches_dump_fn() << "'" );
+      }
+    }
+
     // compute the actual ROC, on only the activity tracks
 
     compute_roc( p1, truth_tracks, computed_tracks, fa_norm, scoring_args.max_n_roc_points_arg(), output_args );

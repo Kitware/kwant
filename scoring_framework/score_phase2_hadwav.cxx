@@ -21,6 +21,7 @@ using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
+using std::string;
 
 using kwiver::track_oracle::frame_handle_list_type;
 using kwiver::track_oracle::frame_handle_type;
@@ -28,6 +29,112 @@ using kwiver::track_oracle::track_field;
 using kwiver::track_oracle::track_handle_list_type;
 using kwiver::track_oracle::track_handle_type;
 using kwiver::track_oracle::track_oracle_core;
+using kwiver::kwant::track2track_type;
+using kwiver::kwant::track2track_scalars_hadwav;
+using kwiver::kwant::scorable_track_type;
+
+typedef map< track_handle_type, track_handle_list_type >::const_iterator t2t_it;
+
+
+namespace { // anon
+
+unsigned
+find_dominant( const map< track2track_type, track2track_scalars_hadwav >& t2t,
+               track_handle_type source,
+               const track_handle_list_type& tracks,
+               bool find_computed_dominated_by_target )
+{
+  // this searches down the value of an (c2t, t2c) entry, looking for
+  // the dominant match.  If the value is non-empty, there should be
+  // exactly one dominant match.
+  unsigned match_index = static_cast<unsigned>( -1 );
+  for ( unsigned i=0; i<tracks.size(); ++i )
+  {
+    // the fact that this idiom keeps appearing in the code is a clue
+    // that the design is... non-optimal. :)
+    track2track_type key =
+      (find_computed_dominated_by_target)
+      ? make_pair( tracks[i], source )   // source is computed
+      : make_pair( source, tracks[i] );  // source is ground truth
+
+    map< track2track_type, track2track_scalars_hadwav >::const_iterator probe = t2t.find( key );
+    if ( probe == t2t.end() )
+    {
+      ostringstream oss;
+      oss << "Logic bomb: lost t2t entry for " << key.first.row << ", " << key.second.row << " sense " << find_computed_dominated_by_target << "\n";
+      for (map< track2track_type, track2track_scalars_hadwav >::const_iterator j = t2t.begin();
+           j != t2t.end();
+           ++j )
+      {
+        oss << "key : " << j->first.first.row << ", " << j->first.second.row << "\n";
+      }
+      throw runtime_error( oss.str() );
+    }
+
+    bool is_match =
+      (find_computed_dominated_by_target)
+      ? probe->second.computed_is_dominated_by_target
+      : probe->second.target_is_dominated_by_computed;
+
+    if (is_match)
+    {
+      if ( match_index != static_cast<unsigned>( -1 ) )
+      {
+        ostringstream oss;
+        oss << "Logic bomb: source " << source.row << " has multiple dominators; key is " << key.first.row << ", " << key.second.row << "\n";
+        throw runtime_error( oss.str() );
+      }
+      match_index = i;
+    }
+  }
+
+  return match_index;
+}
+
+void
+debug_dump_output_key( ostream& os,
+                       const track_handle_type& t )
+{
+  static scorable_track_type scorable_track;
+  frame_handle_list_type frames = track_oracle_core::get_frames( t );
+  unsigned first_frame_num = scorable_track[ frames[0] ].timestamp_frame();
+  unsigned track_id = scorable_track( t ).external_id();
+  os << track_id << " " << frames.size() << " " << first_frame_num;
+}
+
+void
+debug_dump_entry( ostream& os,
+                 const map< track2track_type, track2track_scalars_hadwav >& t2t,
+                 const string& tag,
+                 t2t_it src,
+                 bool src_is_computed )
+{
+  const auto& matches = src->second;
+  os << tag
+     << " : ";
+  debug_dump_output_key( os, src->first );
+  os << " : "
+     << matches.size()
+     << " : ";
+
+  if ( ! matches.empty() )
+  {
+    //
+    // Always output the "dominant" match first
+    //
+
+    auto dominant_index = find_dominant( t2t, src->first, src->second, src_is_computed );
+    debug_dump_output_key( os, matches[ dominant_index ] );
+    for (unsigned j=0; j<matches.size(); ++j)
+    {
+      if (j == dominant_index) continue;
+      os << " ; ";
+      debug_dump_output_key( os, matches[j] );
+    }
+  }
+}
+
+} // ...anon
 
 namespace kwiver {
 namespace kwant {
@@ -370,107 +477,34 @@ track2track_phase2_hadwav
 
 }
 
-unsigned
-find_dominant( const map< track2track_type, track2track_scalars_hadwav >& t2t,
-               track_handle_type source,
-               const track_handle_list_type& tracks,
-               bool find_computed_dominated_by_target )
-{
-  // this searches down the value of an (c2t, t2c) entry, looking for
-  // the dominant match.  If the value is non-empty, there should be
-  // exactly one dominant match.
-  unsigned match_index = static_cast<unsigned>( -1 );
-  for ( unsigned i=0; i<tracks.size(); ++i )
-  {
-    // the fact that this idiom keeps appearing in the code is a clue
-    // that the design is... non-optimal. :)
-    track2track_type key =
-      (find_computed_dominated_by_target)
-      ? make_pair( tracks[i], source )   // source is computed
-      : make_pair( source, tracks[i] );  // source is ground truth
-
-    map< track2track_type, track2track_scalars_hadwav >::const_iterator probe = t2t.find( key );
-    if ( probe == t2t.end() )
-    {
-      ostringstream oss;
-      oss << "Logic bomb: lost t2t entry for " << key.first.row << ", " << key.second.row << " sense " << find_computed_dominated_by_target << "\n";
-      for (map< track2track_type, track2track_scalars_hadwav >::const_iterator j = t2t.begin();
-           j != t2t.end();
-           ++j )
-      {
-        oss << "key : " << j->first.first.row << ", " << j->first.second.row << "\n";
-      }
-      throw runtime_error( oss.str() );
-    }
-
-    bool is_match =
-      (find_computed_dominated_by_target)
-      ? probe->second.computed_is_dominated_by_target
-      : probe->second.target_is_dominated_by_computed;
-
-    if (is_match)
-    {
-      if ( match_index != static_cast<unsigned>( -1 ) )
-      {
-        ostringstream oss;
-        oss << "Logic bomb: source " << source.row << " has multiple dominators; key is " << key.first.row << ", " << key.second.row << "\n";
-        throw runtime_error( oss.str() );
-      }
-      match_index = i;
-    }
-  }
-
-  return match_index;
-}
 
 void
 track2track_phase2_hadwav
 ::debug_dump( ostream& os )
 {
-  // write out the list of matches, dominant (if any) first
+  // write out header
 
-  scorable_track_type scorable_track;
-  typedef map< track_handle_type, track_handle_list_type >::const_iterator it;
+  os << "# gt|ct : trk-id trk-len frm-id : n-matches : match-1-trk-id match-1-frm-id [ ; match-2-trk-id match-2-frm-id ... ]\n";
 
   // first, matches to ground truth
-  for ( it i = this->t2c.begin(); i != this->t2c.end(); ++i )
+  for ( t2t_it i = this->t2c.begin(); i != this->t2c.end(); ++i )
   {
-    const track_handle_list_type& matches = i->second;
-    os << "gt " << scorable_track( i->first ).external_id() << " : " << matches.size() << " : ";
-
-    if ( ! matches.empty() )
-    {
-      unsigned dominant_index = find_dominant( this->t2t, i->first, i->second, false );
-      os << scorable_track( matches[dominant_index] ).external_id();
-      for ( unsigned j=0; j<matches.size(); ++j )
-      {
-        if ( j != dominant_index )
-        {
-          os << " " << scorable_track( matches[j] ).external_id();
-        }
-      }
-    }
+    debug_dump_entry( os,
+                      this->t2t,
+                      "gt",
+                      i,
+                      /* src_is_computed */ false );
     os << "\n";
-  } // all gt tracks
+  }
 
   // next, all computed tracks
-  for ( it i = this->c2t.begin(); i != this->c2t.end(); ++i )
+  for ( t2t_it i = this->c2t.begin(); i != this->c2t.end(); ++i )
   {
-    const track_handle_list_type& matches = i->second;
-    os << "ct " << scorable_track( i->first ).external_id() << " : " << matches.size() << " : ";
-
-    if ( ! matches.empty() )
-    {
-      unsigned dominant_index = find_dominant( this->t2t, i->first, i->second, true );
-      os << scorable_track( matches[dominant_index] ).external_id();
-      for ( unsigned j=0; j<matches.size(); ++j )
-      {
-        if ( j != dominant_index )
-        {
-          os << " " << scorable_track( matches[j] ).external_id();
-        }
-      }
-    }
+    debug_dump_entry( os,
+                      this->t2t,
+                      "ct",
+                      i,
+                      /* src_is_computed */ true );
     os << "\n";
   } // all computed tracks
 }

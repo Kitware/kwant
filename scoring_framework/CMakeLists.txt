@@ -194,6 +194,7 @@ target_link_libraries( score_events
                        logging_map
                        data_terms
                        score_tracks_loader
+                       score_tracks_hadwav
                        scoring_aries_interface
                        timestamp_utilities track_oracle
                        track_oracle_format_base
