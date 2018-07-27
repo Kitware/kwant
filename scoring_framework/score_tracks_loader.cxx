@@ -684,6 +684,9 @@ track_record_type
   const track_timestamp_stats_type& my_stats = this->stats();
   const track_timestamp_stats_type& other_stats = other.stats();
 
+  // empty stats never overlap
+  if ( my_stats.is_empty || other_stats.is_empty) return false;
+
   if ( my_stats.minmax_ts.first > other_stats.minmax_ts.second ) return false;
   if ( my_stats.minmax_ts.second < other_stats.minmax_ts.first ) return false;
   return true;
@@ -915,15 +918,21 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
 
 
     //
+    // if we have computed tracks but haven't managed to get them timestamps, that's
+    // a dealbreaker
+    //
+
+    bool computed_tracks_okay = computed_track_records[i].tracks().empty() || computed_stats.has_timestamps;
+    if ( ! computed_tracks_okay )
+    {
+      LOG_ERROR( main_logger, "Processing gt/ct pair " << i << ": computed tracks exist, but have no timestamps?" );
+      return false;
+    }
+
+    //
     // If truth tracks don't have timestamps yet, we need to interpolate them in
     // so we can rebase them
     //
-
-    if ( ! computed_stats.has_timestamps )
-    {
-      LOG_ERROR( main_logger, "Processing gt/ct pair " << i << ": no timestamps in computed tracks?" );
-      return false;
-    }
 
     if ( ! truth_stats.has_timestamps )
     {
@@ -1094,6 +1103,16 @@ input_args_type
     {
       return false;
     }
+  }
+
+  //
+  // Haven't ported over time window filters with paired-gtct logic yet
+  //
+
+  if ( this->time_window.set() && this->paired_gtct() )
+  {
+    LOG_ERROR( main_logger, "Can't use time windows with paired-gtct yet" );
+    return false;
   }
 
   if ( ! (this->computed_tracks_fn.set() && this->truth_tracks_fn.set() ))

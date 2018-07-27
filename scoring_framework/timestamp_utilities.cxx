@@ -57,6 +57,7 @@ track_timestamp_stats_type
 ::track_timestamp_stats_type( const track_timestamp_stats_type& other )
   : timestamp_usecs( "timestamp_usecs" ),
     frame_number( "frame_number" ),
+    is_empty( other.is_empty ),
     has_frame_numbers( other.has_frame_numbers ),
     has_timestamps( other.has_timestamps ),
     all_have_frame_numbers( other.all_have_frame_numbers ),
@@ -72,6 +73,7 @@ void
 track_timestamp_stats_type
 ::reset()
 {
+  this->is_empty = true;
   this->has_timestamps = false;
   this->has_frame_numbers = false;
   this->all_have_timestamps = true;
@@ -110,6 +112,28 @@ void
 track_timestamp_stats_type
 ::combine_with_other( const track_timestamp_stats_type& other )
 {
+  // quick exit if other is empty
+  if (other.is_empty)
+  {
+    return;
+  }
+
+  // quick copy if we're empty
+  if (this->is_empty)
+  {
+    this->is_empty = other.is_empty;
+    this->has_timestamps = other.has_timestamps;
+    this->has_frame_numbers = other.has_frame_numbers;
+    this->all_have_timestamps = other.all_have_timestamps;
+    this->all_have_frame_numbers = other.all_have_frame_numbers;
+    this->ts_fn_count = other.ts_fn_count;
+    return;
+  }
+
+  //
+  // both this and other are not empty
+  //
+
   if (other.has_timestamps)
   {
     if ( ! this->has_timestamps )
@@ -174,6 +198,7 @@ track_timestamp_stats_type
 ::update_from_frame( const frame_handle_type& f )
 {
   const oracle_entry_handle_type& row = f.row;
+  this->is_empty = false;
 
   pair< bool, ts_type > ts_probe = this->timestamp_usecs.get( row );
   if ( ts_probe.first )
@@ -222,27 +247,34 @@ ostream&
 operator<<( ostream& os,
             const track_timestamp_stats_type& tts )
 {
-  os << "Has fn/ts? " << tts.has_frame_numbers << " " << tts.has_timestamps
-     << " ; all have fn/ts? " << tts.all_have_frame_numbers << " " << tts.all_have_timestamps
-     << " ;";
-  os << " #ts/fn: " << tts.ts_fn_count.first << " : "
-     << tts.ts_fn_count.second << " ; ";
-  os << " fn range ";
-  if (tts.has_frame_numbers)
+  if (tts.is_empty)
   {
-    os << tts.minmax_fn.first << " : " << tts.minmax_fn.second << " ";
+    os << "Is_empty";
   }
   else
   {
-    os << " na ";
-  }
-  if (tts.has_timestamps)
-  {
-    os << tts.minmax_ts.first << " : " << tts.minmax_ts.second;
-  }
-  else
-  {
-    os << " na";
+    os << "Has fn/ts? " << tts.has_frame_numbers << " " << tts.has_timestamps
+       << " ; all have fn/ts? " << tts.all_have_frame_numbers << " " << tts.all_have_timestamps
+       << " ;";
+    os << " #ts/fn: " << tts.ts_fn_count.first << " : "
+       << tts.ts_fn_count.second << " ; ";
+    os << " fn range ";
+    if (tts.has_frame_numbers)
+    {
+      os << tts.minmax_fn.first << " : " << tts.minmax_fn.second << " ";
+    }
+    else
+    {
+      os << " na ";
+    }
+    if (tts.has_timestamps)
+    {
+      os << tts.minmax_ts.first << " : " << tts.minmax_ts.second;
+    }
+    else
+    {
+      os << " na";
+    }
   }
   return os;
 }
@@ -329,7 +361,7 @@ timestamp_generator_factory
 {
   // can only calculate from the tts if it has both frame numbers and
   // timestamps
-  if ( ! ( tts.has_frame_numbers && tts.has_timestamps ))
+  if ( tts.is_empty || (! ( tts.has_frame_numbers && tts.has_timestamps )))
   {
     LOG_ERROR( main_logger, "timestamp_generator from_tts: tts needs both frame numbers and timestamps" );
     return timestamp_generator();
