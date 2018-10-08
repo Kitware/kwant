@@ -126,7 +126,10 @@ track_timestamp_stats_type
     this->has_frame_numbers = other.has_frame_numbers;
     this->all_have_timestamps = other.all_have_timestamps;
     this->all_have_frame_numbers = other.all_have_frame_numbers;
+    this->minmax_fn = other.minmax_fn;
+    this->minmax_ts = other.minmax_ts;
     this->ts_fn_count = other.ts_fn_count;
+
     return;
   }
 
