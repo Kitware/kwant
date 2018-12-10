@@ -2,10 +2,10 @@ OPTION(KWANT_ENABLE_MGRS  "Enable track_oracle's lat/lon <-> MGRS capabilities (
 
 if (KWANT_ENABLE_MGRS)
   message( FATAL_ERROR "Building the MGRS code is blocked until lat/lon <-> MGRS capabilities are available" )
+  #find_package( GeographicLib REQUIRED )
+  #include_directories ( ${GeographicLib_INCLUDE_DIR} )
+  #add_definitions(-DKWANT_ENABLE_MGRS)
 endif()
-
-#find_package( GeographicLib REQUIRED )
-#include_directories ( ${GeographicLib_INCLUDE_DIR} )
 
 ########################################
 # timestamp utilities
@@ -119,12 +119,15 @@ kwiver_add_library( score_tracks_loader
 target_link_libraries( score_tracks_loader
   PUBLIC               score_core
                        vul
-  PRIVATE              track_oracle_file_formats
+                       track_oracle_file_formats
+                       track_oracle_format_base
+                       track_kw18
+                       track_xgtf
                        track_kwxml
                        track_vpd
+                       track_kst
                        track_comms_xml
-                       track_oracle_format_base
-                       vital_logger
+  PRIVATE              vital_logger
 )
 
 ########################################
@@ -190,11 +193,18 @@ target_link_libraries( score_events
   PRIVATE              logging_map
                        data_terms
                        score_tracks_loader
-                       timestamp_utilities track_oracle
-                       track_kst track_kwxml
-                       track_oracle_file_formats
-                       track_oracle_format_base
-                       vital_logger vul
+                       score_tracks_hadwav
+                       scoring_aries_interface
+                       timestamp_utilities
+                       track_oracle
+                       vital_logger
+                       vibrant_descriptors
+                       track_filter_kpf_activity
+                       kwiver_algo_kpf
+                       kwiversys
+                       kpf_yaml
+                       kpf_utils
+                       ${YAML_CPP_LIBRARIES}
                        ${Boost_SYSTEM_LIBRARY} )
 
 ########################################

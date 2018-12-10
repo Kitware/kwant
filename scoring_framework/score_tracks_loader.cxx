@@ -18,6 +18,8 @@
 #include <vul/vul_file.h>
 #include <vul/vul_reg_exp.h>
 
+#include <vgl/vgl_area.h>
+
 #include <scoring_framework/score_core.h>
 #include <track_oracle/aries_interface/aries_interface.h>
 #include <track_oracle/file_formats/track_kwxml/file_format_kwxml.h>
@@ -82,6 +84,7 @@ using kwiver::track_oracle::xgtf_reader_opts;
 using kwiver::track_oracle::track_field;
 using kwiver::track_oracle::oracle_entry_handle_type;
 using kwiver::track_oracle::aries_interface;
+using kwiver::track_oracle::track_base_impl;
 
 using namespace kwiver::kwant;
 using namespace kwiver::kwant::timestamp_utilities;
@@ -681,6 +684,9 @@ track_record_type
   const track_timestamp_stats_type& my_stats = this->stats();
   const track_timestamp_stats_type& other_stats = other.stats();
 
+  // empty stats never overlap
+  if ( my_stats.is_empty || other_stats.is_empty) return false;
+
   if ( my_stats.minmax_ts.first > other_stats.minmax_ts.second ) return false;
   if ( my_stats.minmax_ts.second < other_stats.minmax_ts.first ) return false;
   return true;
@@ -891,6 +897,12 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
 
   for (unsigned i=0; i<truth_track_records.size(); ++i)
   {
+    // skip pathological cases
+    if (truth_track_records[i].tracks().empty() && computed_track_records[i].tracks().empty())
+    {
+      continue;
+    }
+
     // not refs because we recompute at the end of the loop
     track_timestamp_stats_type truth_stats = truth_track_records[i].stats();
     track_timestamp_stats_type computed_stats = computed_track_records[i].stats();
@@ -906,15 +918,21 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
 
 
     //
+    // if we have computed tracks but haven't managed to get them timestamps, that's
+    // a dealbreaker
+    //
+
+    bool computed_tracks_okay = computed_track_records[i].tracks().empty() || computed_stats.has_timestamps;
+    if ( ! computed_tracks_okay )
+    {
+      LOG_ERROR( main_logger, "Processing gt/ct pair " << i << ": computed tracks exist, but have no timestamps?" );
+      return false;
+    }
+
+    //
     // If truth tracks don't have timestamps yet, we need to interpolate them in
     // so we can rebase them
     //
-
-    if ( ! computed_stats.has_timestamps )
-    {
-      LOG_ERROR( main_logger, "Processing gt/ct pair " << i << ": no timestamps in computed tracks?" );
-      return false;
-    }
 
     if ( ! truth_stats.has_timestamps )
     {
@@ -977,7 +995,10 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
               << " ( " << combined_stats.minmax_ts.second - combined_stats.minmax_ts.first << " )" );
 
     combined_stats.reset();
-    combined_stats.set_from_tracks( tr_list[i] );
+    for ( const auto& t: tr_list )
+    {
+      combined_stats.set_from_tracks( t );
+    }
 
     LOG_INFO( main_logger, "Processing gt/ct pair " << i << " : during: "
               << combined_stats.minmax_ts.first << " to " << combined_stats.minmax_ts.second
@@ -988,7 +1009,10 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
     computed_track_records[i].recompute_stats();
 
     combined_stats.reset();
-    combined_stats.set_from_tracks( tr_list[i] );
+    for ( const auto& t: tr_list )
+    {
+      combined_stats.set_from_tracks( t );
+    }
 
     LOG_INFO( main_logger, "Processing gt/ct pair " << i << " : after: "
               << combined_stats.minmax_ts.first << " to " << combined_stats.minmax_ts.second
@@ -998,6 +1022,45 @@ timestamp_paired_gtct( vector< track_record_type >& truth_track_records,
   } //... for each truth track
   return true;
 }
+
+track_handle_list_type
+decompose_track_into_frames( const track_handle_type& t )
+{
+  // break the track into single-frame tracks for scoring detections.
+  // Note that ALL non-system fields are cloned; a track with ID 314
+  // and 20 frames will result in 20 additional one-frame tracks, all with
+  // ID 314.
+
+  track_base_impl tbi;
+
+  track_handle_list_type ret;
+
+  frame_handle_list_type frames = track_oracle_core::get_frames( t );
+  if (frames.size() == 1)
+  {
+    ret.push_back( t );
+  }
+  else
+  {
+    for (size_t i=0; i<frames.size(); ++i)
+    {
+      track_handle_type new_t = tbi.create();
+      bool all_okay = track_oracle_core::clone_nonsystem_fields( t, new_t );
+      if (all_okay)
+      {
+        frame_handle_type new_f = tbi.create_frame();
+        all_okay = track_oracle_core::clone_nonsystem_fields( frames[i], new_f );
+        if (all_okay)
+        {
+          ret.push_back( new_t );
+        }
+      }
+    }
+  }
+
+  return ret;
+}
+
 
 
 bool
@@ -1040,6 +1103,16 @@ input_args_type
     {
       return false;
     }
+  }
+
+  //
+  // Haven't ported over time window filters with paired-gtct logic yet
+  //
+
+  if ( this->time_window.set() && this->paired_gtct() )
+  {
+    LOG_ERROR( main_logger, "Can't use time windows with paired-gtct yet" );
+    return false;
   }
 
   if ( ! (this->computed_tracks_fn.set() && this->truth_tracks_fn.set() ))
@@ -1341,6 +1414,62 @@ input_args_type
   //
   // end hairy logic
   //
+
+
+  // if detection mode is set, break up the tracks into single frame tracks.
+  if (this->detection_mode())
+  {
+    for (size_t i=0; i<truth_track_records.size(); ++i)
+    {
+      track_record_type& r = truth_track_records[i];
+      track_handle_list_type tlist = r.tracks();
+      track_handle_list_type n;
+      for (size_t j=0; j<tlist.size(); ++j)
+      {
+        track_handle_list_type d = decompose_track_into_frames( tlist[j] );
+        n.insert( n.end(), d.begin(), d.end() );
+      }
+      LOG_INFO(main_logger, "Detection mode: truth tracks " << r.src_fn() << " from " << tlist.size() <<
+                " tracks to " << n.size() << " detections" );
+      r.set_tracks( n );
+    }
+    track_field< double > relevancy( "relevancy" );
+    for (size_t i=0; i<computed_track_records.size(); ++i)
+    {
+      track_record_type& r = computed_track_records[i];
+      track_handle_list_type tlist = r.tracks();
+      track_handle_list_type n;
+      for (size_t j=0; j<tlist.size(); ++j)
+      {
+        track_handle_list_type d = decompose_track_into_frames( tlist[j] );
+
+        // if kw19 hack is set, then the relevancy is set on the frames, not the tracks.
+        // copy up to tracks.
+
+        if (kw19_hack())
+        {
+          for (const auto& t: d)
+          {
+            auto frame_list = track_oracle_core::get_frames( t );
+            // should only be one
+            for (const auto& f: frame_list )
+            {
+              if (relevancy.exists( f.row ))
+              {
+                auto r = relevancy( f.row );
+                relevancy( t.row ) = r;
+              }
+            }
+          }
+        }
+
+        n.insert( n.end(), d.begin(), d.end() );
+      }
+      LOG_INFO(main_logger, "Detection mode: computed tracks " << r.src_fn() << " from " << tlist.size() <<
+                " tracks to " << n.size() << " detections" );
+      r.set_tracks( n );
+    }
+  }
 
   // if time window filtering has been requested, perform it here
   if (this->time_window.set())

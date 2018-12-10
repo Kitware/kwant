@@ -57,6 +57,7 @@ public:
   void update_from_frame( const kwto::frame_handle_type& f );
   void reset();
 
+  bool is_empty;
   bool has_frame_numbers;
   bool has_timestamps;
   bool all_have_frame_numbers;

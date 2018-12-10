@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -13,10 +13,14 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include <vgl/vgl_area.h>
 #include <vgl/vgl_box_2d.h>
 #include <vgl/vgl_intersection.h>
 
+#include <vul/vul_timer.h>
+
 #include <track_oracle/core/track_oracle_core.h>
+#include <track_oracle/data_terms/data_terms.h>
 #include <track_oracle/core/state_flags.h>
 #ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
@@ -163,6 +167,7 @@ test_if_overlap_passes_filters( const track2track_frame_overlap_record& overlap,
   bool use_min_pcent_gt = (params.min_pcent_overlap_gt_ct.first >= 0.0);
   bool use_min_pcent_ct = (params.min_pcent_overlap_gt_ct.second >= 0.0);
 
+  bool use_iou = (params.iou != -1.0 );
 
   if ( use_min_pcent_gt || use_min_pcent_ct )
   {
@@ -198,6 +203,15 @@ test_if_overlap_passes_filters( const track2track_frame_overlap_record& overlap,
                  local_track_view.timestamp_usecs( overlap.computed_frame.row) );
 
     }
+  }
+  else if (use_iou)
+  {
+    double i = overlap.overlap_area;
+    double u = overlap.truth_area + overlap.computed_area - i;
+    spatial_overlap_exists =
+      (u > 0)
+      ? i/u >= params.iou
+      : false;
   }
   else
   {
@@ -955,6 +969,86 @@ track2track_phase1
     }
   }
 
+}
+
+void
+track2track_phase1
+::compute_all_detection_mode( const track_handle_list_type& t,
+                              const track_handle_list_type& c )
+{
+  track_field<track_oracle::dt::tracking::frame_number> fn;
+  LOG_INFO( main_logger, "Phase 1 detection mode: aligning detections..." );
+
+  typedef map< track_oracle::dt::tracking::frame_number::Type, pair< track_handle_list_type, track_handle_list_type > >::iterator i_t;
+  map< track_oracle::dt::tracking::frame_number::Type, pair< track_handle_list_type, track_handle_list_type > > fn2gtct;
+  for ( unsigned i=0; i<t.size(); ++i )
+  {
+    frame_handle_list_type f = track_oracle_core::get_frames( t[i] );
+    if (f.size() != 1)
+    {
+      LOG_ERROR( main_logger, "Logic error: detection mode track had " << f.size() << " frames?" );
+      return;
+    }
+    track_oracle::dt::tracking::frame_number::Type frame_number = fn( f[0].row );
+    i_t probe = fn2gtct.find( frame_number );
+    if (probe == fn2gtct.end())
+    {
+      pair< track_handle_list_type, track_handle_list_type > e;
+      e.first.push_back( t[i] );
+      fn2gtct[ frame_number ] = e;
+    }
+    else
+    {
+      probe->second.first.push_back( t[i] );
+    }
+  }
+
+  LOG_INFO( main_logger, "Aligned truth; found " << fn2gtct.size() << " unique frame numbers" );
+
+  for ( unsigned i=0; i<c.size(); ++i )
+  {
+    frame_handle_list_type f = track_oracle_core::get_frames( c[i] );
+    if (f.size() != 1)
+    {
+      LOG_ERROR( main_logger, "Logic error: detection mode track had " << f.size() << " frames?" );
+      return;
+    }
+    track_oracle::dt::tracking::frame_number::Type frame_number = fn( f[0].row );
+    i_t probe = fn2gtct.find( frame_number );
+    if (probe == fn2gtct.end())
+    {
+      pair< track_handle_list_type, track_handle_list_type > e;
+      e.second.push_back( c[i] );
+      fn2gtct[ frame_number ] = e;
+    }
+    else
+    {
+      probe->second.second.push_back( c[i] );
+    }
+  }
+  LOG_INFO( main_logger, "Aligned truth and computed; found " << fn2gtct.size() << " unique frame numbers" );
+
+  vul_timer timer;
+  size_t counter=0;
+  for (i_t i=fn2gtct.begin(); i != fn2gtct.end(); ++i)
+  {
+    if (timer.real() > 5 * 1000)
+    {
+      LOG_INFO( main_logger, "phase 1: " << counter << " of " << fn2gtct.size() << "..." );
+      timer.mark();
+    }
+    ++counter;
+    const track_handle_list_type& t_frame = i->second.first;
+    const track_handle_list_type& c_frame = i->second.second;
+
+    for (size_t ii=0; ii<t_frame.size(); ++ii)
+    {
+      for (size_t jj=0; jj<c_frame.size(); ++jj)
+      {
+        this->compute_single( t_frame[ii], c_frame[jj] );
+      }
+    }
+  }
 }
 
 bool

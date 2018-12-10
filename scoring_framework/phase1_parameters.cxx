@@ -137,6 +137,10 @@ phase1_parameters
   this->min_frames_policy = m.min_frames_policy;
   this->pass_all_nonzero_overlaps = m.pass_nonzero_overlaps();
   this->frame_alignment_time_window_usecs = m.frame_alignment_secs() * 1e6;
+  this->iou =
+    m.iou.set()
+    ? m.iou()
+    : -1;
 
   if (m.aoi_string.set())
   {

@@ -36,10 +36,21 @@ the activity index is used.
 #include <vul/vul_sprintf.h>
 #include <vul/vul_awk.h>
 #include <vul/vul_reg_exp.h>
+#include <vul/vul_timer.h>
+
+#include <vgl/vgl_area.h>
+
+#include <arrows/kpf/yaml/kpf_reader.h>
+#include <arrows/kpf/yaml/kpf_yaml_parser.h>
+#include <arrows/kpf/yaml/kpf_packet_header.h>
+#include <arrows/kpf/yaml/kpf_parse_utils.h>
+
+#include <kwiversys/RegularExpression.hxx>
 
 #include <track_oracle/core/track_oracle_core.h>
 #include <track_oracle/core/track_base.h>
 #include <track_oracle/core/track_field.h>
+#include <track_oracle/file_formats/kpf_utils/kpf_utils.h>
 #include <track_oracle/file_formats/track_kst/track_kst.h>
 #include <track_oracle/file_formats/track_xgtf/track_xgtf.h>
 #include <track_oracle/file_formats/track_kwxml/track_kwxml.h>
@@ -52,6 +63,7 @@ the activity index is used.
 #include <track_oracle/utils/logging_map.h>
 #include <track_oracle/data_terms/data_terms.h>
 #include <track_oracle/aries_interface/aries_interface.h>
+#include <track_oracle/file_formats/track_filter_kpf_activity/track_filter_kpf_activity.h>
 
 #include <scoring_framework/score_phase1.h>
 #include <scoring_framework/score_tracks_hadwav.h>
@@ -81,6 +93,7 @@ using std::ofstream;
 using std::ostream;
 using std::ostringstream;
 using std::pair;
+using std::make_pair;
 using std::replace;
 using std::runtime_error;
 using std::string;
@@ -90,6 +103,7 @@ using std::vector;
 
 using kwiver::track_oracle::aries_interface;
 using kwiver::track_oracle::frame_handle_list_type;
+using kwiver::track_oracle::field_handle_type;
 using kwiver::track_oracle::oracle_entry_handle_type;
 using kwiver::track_oracle::track_field;
 using kwiver::track_oracle::track_handle_list_type;
@@ -101,10 +115,15 @@ using kwiver::track_oracle::track_oracle_core;
 using kwiver::track_oracle::track_kwxml_type;
 using kwiver::track_oracle::track_kst_type;
 using kwiver::track_oracle::aries_interface_exception;
+using kwiver::track_oracle::track_filter_kpf_activity;
+
+using kwiver::vital::kpf::packet_header_t;
 
 namespace { // anon
 
 using namespace kwiver::kwant;
+
+enum class activity_style { INVALID, VIRAT, VIRAT_AND_EXIT, PVO, PREFILTERED, KPF_ACTIVITY, KPF_OBJECT, KPF_ADHOC };
 
 struct pvo_request_type
 {
@@ -117,6 +136,276 @@ struct pvo_request_type
   bool set( const string& arg );
   track_handle_list_type process( const track_handle_list_type& tracks, bool is_gt ) const;
 };
+
+struct activity_selector_type
+{
+  activity_style style;
+  int activity_index;    // for VIRAT style
+  string activity_name;  // for KPF style
+  string kpf_adhoc_field; // for KPF adhoc
+  int activity_domain;   // for KPF style
+  packet_header_t kpf_conf_src; // for KPF style
+  pvo_request_type pvo_req; // for PVO style
+
+  activity_selector_type()
+    : style( activity_style::INVALID ), activity_index(0), activity_name("invalid")
+  {}
+};
+
+//
+// Abstract base class for various sources of relevancy
+//
+
+class relevancy_extractor_type
+{
+public:
+  relevancy_extractor_type() {}
+  virtual bool valid() const { return true; }
+  virtual ~relevancy_extractor_type() {}
+  virtual pair<bool, double> get( oracle_entry_handle_type row ) = 0;
+};
+
+//
+// returns a fixed value (typically 1.0 for ground truth)
+//
+
+class fixed_extractor_type: public relevancy_extractor_type
+{
+public:
+  explicit fixed_extractor_type( double v ): val(v) {}
+  virtual pair<bool, double> get( oracle_entry_handle_type ) { return make_pair( true, this->val ); }
+private:
+  double val;
+};
+
+//
+// obtains the value from a single column (which stores a double)
+//
+
+class simple_field_extractor_type: public relevancy_extractor_type
+{
+public:
+  explicit simple_field_extractor_type( field_handle_type fh): f(fh) {}
+  virtual pair<bool, double> get( oracle_entry_handle_type row )
+  {
+    return track_oracle_core::get<double>( row, this->f );
+  }
+private:
+  field_handle_type f;
+};
+
+//
+// obtains the value via a KPF cset
+//
+// KPF csets implemented (per track_oracle kpf_utils.cxx) as TWO fields:
+// each row has a map of size_t -> double, and a single instance
+// of a map resolving user-side strings to the size_t key of the per-row field.
+//
+
+class kpf_cset_extractor_type: public relevancy_extractor_type
+{
+public:
+  kpf_cset_extractor_type( const string& kpf_header_string, const string& target, bool zero_if_absent );
+  virtual bool valid() const { return this->valid_flag; }
+  virtual pair<bool, double> get( oracle_entry_handle_type row );
+private:
+  field_handle_type f; // field for the size_t -> double map
+  pair< bool, size_t> target_index; // index of the target string in the map@f (if true)
+  bool zero_flag;      // if true, return <true, 0.0> if the string isn't there
+  bool valid_flag;
+};
+
+
+//
+// obtains the value via a KPF activity
+//
+// KPF activities are stored directly as a map of <string, double>
+//
+class kpf_activity_extractor_type: public relevancy_extractor_type
+{
+public:
+  kpf_activity_extractor_type( field_handle_type fh, const string& t, bool zero_if_absent );
+  virtual pair< bool, double> get( oracle_entry_handle_type row );
+private:
+  field_handle_type f; // field for the actual string -> double map
+  string target;       // string we're looking for
+  bool zero_flag;      // if true, return <true, 0.0> if string isn't there
+};
+
+//
+// obtains the value via a track_field directly holding a cset
+//
+class kpf_adhoc_extractor_type: public relevancy_extractor_type
+{
+public:
+  kpf_adhoc_extractor_type( const string& field_name, const string& t, bool zero_if_absent );
+  virtual bool valid() const { return this->valid_flag; }
+  virtual pair< bool, double > get( oracle_entry_handle_type row );
+private:
+  field_handle_type f; // field for the field_name
+  string target;       // string we're looking for
+  bool zero_flag;      // if true, return <true, 0.0> if the string isn't there
+  bool valid_flag;
+};
+
+//
+// kpf_adhoc implementation
+//
+
+kpf_adhoc_extractor_type
+::kpf_adhoc_extractor_type( const string& field_name,
+                            const string& t,
+                            bool zero_if_absent )
+  : target( t ), zero_flag( zero_if_absent ), valid_flag( false )
+{
+  // lookup the field for the cset; return if not found
+  this->f = track_oracle_core::lookup_by_name( field_name );
+  if ( this->f == kwiver::track_oracle::INVALID_FIELD_HANDLE) return;
+
+  this->valid_flag = true;
+}
+
+pair< bool, double >
+kpf_adhoc_extractor_type
+::get( oracle_entry_handle_type row )
+{
+  if ( ! this->valid_flag ) return make_pair( false, 0.0 );
+
+  const auto& m = track_oracle_core::get< kwiver::track_oracle::kpf_cset_type >( row, this->f );
+  if ( ! m.first ) return make_pair( false, 0.0 );
+
+  const auto& p = m.second.find( this->target );
+  return
+    p != m.second.end()
+    ? make_pair( true, p->second )
+    : make_pair( this->zero_flag, 0.0 );
+}
+
+//
+// kpf_cset implementation
+//
+
+kpf_cset_extractor_type
+::kpf_cset_extractor_type( const string& kpf_header_string,
+                           const string& target,
+                           bool zero_if_absent)
+  : zero_flag( zero_if_absent ), valid_flag( false )
+{
+  // lookup the field for per-row index->double table, return if not found
+  this->f = track_oracle_core::lookup_by_name( kpf_header_string );
+  if (this->f == kwiver::track_oracle::INVALID_FIELD_HANDLE) return;
+
+  // lookup the single instance of string->index, return if not found
+  auto s2i_fh = track_oracle_core::lookup_by_name( kpf_header_string+"_s2i" );
+  if (s2i_fh == kwiver::track_oracle::INVALID_FIELD_HANDLE) return;
+
+  // obtain the string->index map; return if not found
+  const auto& s2i_map =
+    track_oracle_core::get< map<string, size_t > >(
+      kwiver::track_oracle::SYSTEM_ROW_HANDLE,
+      s2i_fh );
+  if ( ! s2i_map.first ) return;
+
+  // lookup and cache the index of the target string
+  // target_index is a pair; set the first to false when we have a valid
+  // string which nobody ever reported and therefore isn't in the map
+  auto p = s2i_map.second.find( target );
+  this->target_index =
+    p == s2i_map.second.end()
+    ? make_pair( false, static_cast<size_t>(0) )
+    : make_pair( true, p->second );
+
+  // all set!
+  this->valid_flag = true;
+}
+
+
+pair< bool, double >
+kpf_cset_extractor_type
+::get( oracle_entry_handle_type row )
+{
+  if ( ! this->valid_flag ) return make_pair( false, 0.0 );
+
+  // get the per-row size_t -> double map
+  const auto& m = track_oracle_core::get< map< size_t, double > >( row, this->f );
+  if ( ! m.first ) return make_pair( false, 0.0 );
+
+  // if the target index is false (i.e. it's a string we NEVER saw...)
+  if (! this->target_index.first )
+  {
+    // ... return (true, 0.0) if zero-if-absent flag is set, (false, 0.0) otherwise
+    return make_pair( this->zero_flag, 0.0 );
+  }
+
+  // lookup the index in the map, return value if found,
+  // otherwise return value conditioned on the zero-if-absent-flag
+  auto p = m.second.find( this->target_index.second );
+  return
+    p != m.second.end()
+    ? make_pair( true, p->second )
+    : make_pair( this->zero_flag, 0.0 );
+}
+
+//
+// kpf_activity implementation
+//
+
+kpf_activity_extractor_type
+::kpf_activity_extractor_type( field_handle_type fh, const string& t, bool zero_if_absent ):
+  f(fh), target(t), zero_flag( zero_if_absent )
+{
+}
+
+pair< bool, double >
+kpf_activity_extractor_type
+::get( oracle_entry_handle_type row )
+{
+  // get the per-row string->double map
+  const auto& m = track_oracle_core::get< kwiver::track_oracle::kpf_cset_type >( row, this->f );
+  if ( ! m.first ) return make_pair( false, 0.0 );
+
+  // look for the string; return val if found, else according to zero_flag
+  auto p = m.second.find( this->target );
+  return
+    p == m.second.end()
+    ? make_pair( true, p->second )
+    : make_pair( this->zero_flag, 0.0 );
+}
+
+
+ostream& operator<<( ostream& os, const activity_selector_type& a )
+{
+  switch (a.style)
+  {
+  case activity_style::INVALID:
+    os << "invalid";
+    break;
+  case activity_style::VIRAT:
+    os << "VIRAT: index " << a.activity_index;
+    break;
+  case activity_style::VIRAT_AND_EXIT:
+    os << "VIRAT (listing activities and exit)";
+    break;
+  case activity_style::PVO:
+    os << "PVO (index " << a.pvo_req.pvo_index << ")";
+    break;
+  case activity_style::PREFILTERED:
+    os << "prefiltered";
+    break;
+  case activity_style::KPF_ACTIVITY:
+    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via activity";
+    break;
+  case activity_style::KPF_OBJECT:
+    os << "KPF " << a.activity_name << " / " << a.activity_domain << " via object";
+    break;
+  case activity_style::KPF_ADHOC:
+    os << "KPF adhoc: " << a.activity_name << " via field " << a.kpf_adhoc_field;
+  default:
+    os << "UNKNOWN?";
+    break;
+  }
+  return os;
+}
 
 bool
 pvo_request_type
@@ -235,8 +524,11 @@ struct output_args_type
   vul_arg< string > matches_dump_fn;
   vul_arg< string > ts_dump_fn;
   vul_arg< string > roc_dump_fn;
+  vul_arg< string > roc_csv_dump_fn;
   vul_arg< string > pr_dump_fn;
   vul_arg< string > thresholds_arg;
+  vul_arg< bool > console_dump_arg;
+
 
   output_args_type()
     : track_stats_fn(  "--track-stats", "write track purity / continuity to file" ),
@@ -244,8 +536,10 @@ struct output_args_type
       matches_dump_fn( "--matches", "write track match info to file" ),
       ts_dump_fn( "--ts-dump", "write ground-truth frame -> timestamps to file" ),
       roc_dump_fn( "--roc-dump", "write the roc chart information to file" ),
+      roc_csv_dump_fn( "--roc-csv-dump", "write the roc chart information to file (CSV format)" ),
       pr_dump_fn( "--pr-dump", "write the P/R curve information to file (if not set, dump to cout" ),
-      thresholds_arg( "--thresholds", "Manually specified thresholds to score on (min[:max[:step]])" )
+      thresholds_arg( "--thresholds", "Manually specified thresholds to score on (min[:max[:step]])" ),
+      console_dump_arg( "--console", "Write ROC lines to the console" )
   {}
 };
 
@@ -258,7 +552,7 @@ compute_roc( const track2track_phase1& p1,
              output_args_type& output_args );
 
 void
-compute_pr( const phase1_parameters& p1_params,
+compute_pr( const track2track_phase1& p1,
             track_handle_list_type truth_tracks,
             track_handle_list_type computed_tracks,
             output_args_type& output_args );
@@ -390,12 +684,20 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
                            bool input_is_gt,
                            bool input_is_prefiltered,
                            bool probability_to_relevancy,
-                           int activity_index,
-                           const pvo_request_type& pvo_req )
+                           const activity_selector_type& what_act )
 {
-  if ( pvo_req.valid )
+  //
+  // KPF activity tracks have already been normalized
+  //
+
+  if (what_act.style == activity_style::KPF_ACTIVITY)
   {
-    return pvo_req.process( input_tracks, input_is_gt );
+    return input_tracks;
+  }
+
+  if ( what_act.pvo_req.valid )
+  {
+    return what_act.pvo_req.process( input_tracks, input_is_gt );
   }
 
   kwiver::logging_map_type wmap( main_logger, KWIVER_LOGGER_SITE );
@@ -413,6 +715,116 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
   enum {NONE = 0, HAS_XGTF = 1, HAS_KWXML = 2, HAS_KST = 4};
 
   track_handle_list_type ret;
+
+  //
+  // KPF objects
+  //
+
+  if (what_act.style == activity_style::KPF_OBJECT)
+  {
+    ostringstream oss;
+    oss << kwiver::vital::kpf::style2str( kwiver::vital::kpf::packet_style::CSET )
+        << "_"
+        << what_act.activity_domain;
+
+    // for ground-truth, absence means exclude
+    // for computed, absence means assume 0.0
+    bool zero_if_absent = (! input_is_gt );
+
+    relevancy_extractor_type* r =
+      new kpf_cset_extractor_type( oss.str(), what_act.activity_name, zero_if_absent );
+    LOG_DEBUG( main_logger, "KPF cset extractor from " << oss.str() << " for " << what_act );
+    for (const auto& i: input_tracks )
+    {
+      size_t match_count = 0;
+      double last_r = 0.0;
+      for (const auto &f: track_oracle_core::get_frames( i ))
+      {
+        auto p = r->get( f.row );
+        if (input_is_prefiltered || p.first)
+        {
+          relevancy( f.row ) = p.second;
+          last_r = p.second;
+          ++match_count;
+        }
+      }
+      if (match_count == track_oracle_core::get_n_frames( i ))
+      {
+        //        LOG_DEBUG( main_logger, "all frames match; setting track to " << last_r );
+        relevancy( i.row ) = last_r;
+        ret.push_back( i );
+      }
+      else if (match_count > 0)
+      {
+        LOG_WARN( main_logger, "Inconsistent detection flags for multi-detection track: matched "
+                  << match_count << " detections out of " << track_oracle_core::get_n_frames( i )
+                  << "; not counting as match" );
+      }
+      else if (match_count == 0)
+      {
+        // do nothing, it's just a straight miss
+      }
+    }
+    delete r;
+    return ret;
+  }
+
+  //
+  // KPF adhoc
+  //
+
+  if (what_act.style == activity_style::KPF_ADHOC)
+  {
+    // for ground-truth, absence means exclude
+    // for computed, absence means assume 0.0
+    bool zero_if_absent = (! input_is_gt );
+
+    relevancy_extractor_type* r =
+      new kpf_adhoc_extractor_type( what_act.kpf_adhoc_field, what_act.activity_name, zero_if_absent );
+
+    LOG_INFO( main_logger, "KPF adhoc extractor for " << what_act.activity_name << " from " << what_act.kpf_adhoc_field << ": valid? " << r->valid() );
+    if (! r->valid())
+    {
+      delete r;
+      return ret;
+    }
+
+    for (const auto& i: input_tracks )
+    {
+      size_t match_count = 0;
+      double last_r = 0.0;
+      for (const auto& f: track_oracle_core::get_frames( i ))
+      {
+        auto p = r->get( f.row );
+        if (input_is_prefiltered || p.first )
+        {
+          relevancy( f.row ) = p.second;
+          last_r = p.second;
+          ++match_count;
+        }
+      }
+      if (match_count == track_oracle_core::get_n_frames( i ))
+      {
+        //        LOG_DEBUG( main_logger, "all frames match; setting track to " << last_r );
+        relevancy( i.row ) = last_r;
+        ret.push_back( i );
+      }
+      else if (match_count > 0)
+      {
+        LOG_WARN( main_logger, "Inconsistent detection flags for multi-detection track: matched "
+                  << match_count << " detections out of " << track_oracle_core::get_n_frames( i )
+                  << "; not counting as match" );
+      }
+      else if (match_count == 0)
+      {
+        // do nothing; it's just a straight miss
+      }
+    }
+
+    delete r;
+    return ret;
+  }
+
   for (size_t i=0; i<input_tracks.size(); ++i)
   {
     const oracle_entry_handle_type& row = input_tracks[i].row;
@@ -448,57 +860,84 @@ normalize_activity_tracks( const track_handle_list_type& input_tracks,
 
     case HAS_XGTF:
       {
-        wmap.add_msg( "track activity style XGTF" );
-        if ( activity( row ) == activity_index )
+        if (what_act.style == activity_style::VIRAT)
         {
-          double p = activity_probability( row );
-          if ((input_is_gt) && (p != 1.0))
+          wmap.add_msg( "track activity style XGTF" );
+          if (activity( row ) == what_act.activity_index )
           {
-            LOG_WARN( main_logger, "XGTF-style probability for activity " << activity_index << " is " << p << "?" );
+            double p = activity_probability( row );
+            if ((input_is_gt) && (p != 1.0))
+            {
+              LOG_WARN( main_logger, "XGTF-style probability for activity " << what_act.activity_index << " is " << p << "?" );
+            }
+            relevancy( row ) = p;
+            keep_this_track = true;
           }
-          relevancy( row ) = p;
-          keep_this_track = true;
+        }
+        else
+        {
+          ostringstream oss;
+          oss << "XGTF input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
         }
       }
       break;
 
     case HAS_KWXML:
       {
-        wmap.add_msg( "track activity style kwxml" );
-        vector< double > probs = descriptor_classifier( row );
-        double p = probs [ activity_index ];
-        if (input_is_gt)
+        if (what_act.style == activity_style::VIRAT)
         {
-          // If we're claiming this is ground truth, only keep tracks of the
-          // desired style whose probability is 1.0
-          keep_this_track = ( p == 1.0 );
+          wmap.add_msg( "track activity style kwxml" );
+          vector< double > probs = descriptor_classifier( row );
+          double p = probs [ what_act.activity_index ];
+          if (input_is_gt)
+          {
+            // If we're claiming this is ground truth, only keep tracks of the
+            // desired style whose probability is 1.0
+            keep_this_track = ( p == 1.0 );
+          }
+          else
+          {
+            // If it's not ground truth, always keep
+            keep_this_track = true;
+          }
+          if (keep_this_track)
+          {
+            relevancy( row ) = p;
+          }
         }
         else
         {
-          // If it's not ground truth, always keep
-          keep_this_track = true;
-        }
-        if (keep_this_track)
-        {
-          relevancy( row ) = p;
+          ostringstream oss;
+          oss << "KWXML input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
         }
       }
       break;
 
     case HAS_KST:
       {
-        wmap.add_msg( "track activity style kst" );
-        if (probability_to_relevancy)
+        if (what_act.style == activity_style::VIRAT)
         {
-          vector< double > probs = descriptor_classifier( row );
-          double p = probs [ activity_index ];
-          if ((input_is_gt) && (p != 1.0))
+          wmap.add_msg( "track activity style kst" );
+          if (probability_to_relevancy)
           {
-            LOG_WARN( main_logger, "KWXML-style probability for activity " << activity_index << " is " << p << "?" );
+            vector< double > probs = descriptor_classifier( row );
+            double p = probs [ what_act.activity_index ];
+            if ((input_is_gt) && (p != 1.0))
+            {
+              LOG_WARN( main_logger, "KWXML-style probability for activity " << what_act.activity_index << " is " << p << "?" );
+            }
+            relevancy( row ) = p;
           }
-          relevancy( row ) = p;
+          keep_this_track = true;
         }
-        keep_this_track = true;
+        else
+        {
+          ostringstream oss;
+          oss <<  "KST input detected but activity selector is " << what_act;
+          wmap.add_msg( oss.str() );
+        }
       }
       break;
 
@@ -1155,32 +1594,688 @@ process_full_match_stats( const track2track_phase1& activity_p1,
 
 }
 
+struct score_events_args_type
+{
+  struct kpf_context_t
+  {
+    enum class style_t {INVALID, OBJECT, ACTIVITY, ADHOC};
+
+    style_t style;             // scoring for objects, activity, or an adhoc cset field
+    string adhoc_field;        // if adhoc, cset field name
+    string artifact;           // object or activity name
+    int domain;                // the KPF domain we're scoring, or -1
+    packet_header_t conf_src;  // KPF packet in computed data containing the confidence
+    kpf_context_t(): style(style_t::INVALID) {}
+  };
+
+  vul_arg<bool> verbose_flag;
+  vul_arg<bool> disable_sanity_checks_arg;
+  vul_arg<string> activity_names_arg;
+  vul_arg<unsigned> top_n_arg;
+  vul_arg<bool> ct_in_rank_arg;
+  vul_arg< string > t2t_dump_fn_arg;
+  vul_arg< bool > disable_t2t_dump_cmd_file;
+  vul_arg< string > task_arg;
+  vul_arg< bool > convert_prob_to_relevancy_arg;
+  vul_arg< bool > link_tracks_arg;
+  vul_arg< int > max_n_roc_points_arg;
+  vul_arg< bool > gt_prefiltered_arg;
+  vul_arg< bool > ct_prefiltered_arg;
+  vul_arg< string > track_style_arg;
+  vul_arg< string > dump_filtered_gt_arg;
+  vul_arg< string > dump_filtered_ct_arg;
+  vul_arg< string > pvo_filename_arg;
+  vul_arg< bool > display_git_hash_only_arg;
+  vul_arg< string > kwe_gt_arg;
+  vul_arg< string > kwe_ct_arg;
+  vul_arg< string > kwe_track_style_arg;
+  vul_arg< string > activity_match_arg;
+  vul_arg< string > track_dump_fn_arg;
+
+  vul_arg< string > kpf_target_arg;
+  vul_arg< string > kpf_conf_src_arg;
+  vul_arg< string > kpf_types_gt_arg;
+  vul_arg< string > kpf_types_ct_arg;
+  vul_arg< string > kpf_activity_gt_arg;
+  vul_arg< string > kpf_activity_ct_arg;
+  kpf_context_t kpf_context;
+
+
+  score_events_args_type():
+    verbose_flag( "-v", "dump more debugging information", false ),
+    disable_sanity_checks_arg( "--disable-sanity-checks", "Check for basic track overlaps before scoring", false ),
+    activity_names_arg( "--a", "comma-separated activities described by computed results (leave blank for list)" ),
+    top_n_arg( "--top-n", "The top n events to use from the computed file. (unsigned) ('0' refers to using all events)", 0),
+    ct_in_rank_arg( "--ct-in-rank", "Flag notifying that the computed tracks were already sorted by rank when written, so they will be in rank order when read in", false ),
+    t2t_dump_fn_arg( "--t2t-dump-file", "dump track-to-track details here" ),
+    disable_t2t_dump_cmd_file( "--t2t-disable-cmd-file", "set to disable default creation of 'plot-{t2t-dump-file}-cmd.txt'" ),
+    task_arg( "--do", "tasks to do: 'roc', 'pr', 'pr,roc'", "roc" ),
+    convert_prob_to_relevancy_arg( "--p2r", "copy probability score to relevancy to score on probability" ),
+    link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" ),
+    max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", -1 ),
+    gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false ),
+    ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false ),
+    track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" ),
+    dump_filtered_gt_arg( "--dump-filtered-gt", "write final filtered ground-truth tracks as kwxml" ),
+    dump_filtered_ct_arg( "--dump-filtered-ct", "write final filtered computed tracks as kwxml" ),
+    pvo_filename_arg( "--pvo", "filename:{p,v,o} - read pvo values from file; use p,v, or o values; no activity required", "" ),
+    display_git_hash_only_arg( "--git-hash", "Display git hash and exit", false),
+    kwe_gt_arg( "--kwe-gt", "load KWE of gt events" ),
+    kwe_ct_arg( "--kwe-ct", "load KWE of ct events" ),
+    kwe_track_style_arg( "--kwe-track-style", "Set track style of events from KWE to this", "" ),
+    activity_match_arg( "--activity-matches", "write activity match status here (increases run time) "),
+    track_dump_fn_arg( "--write-tracks", "Write annotated input tracks to this file (either .kwcsv or .kwiver)" ),
+    kpf_target_arg( "--kpf-target", "[object|activity]:$type:$domain, e.g 'object:person:2' or 'activity:walking:3'" ),
+    kpf_conf_src_arg( "--kpf-conf-src", "KPF packet type / domain containing the confidence we're scoring, e.g. cset2" ),
+    kpf_types_gt_arg( "--kpf-types-gt", "KPF types file for ground-truth" ),
+    kpf_types_ct_arg( "--kpf-types-ct", "KPF types file for computed" ),
+    kpf_activity_gt_arg( "--kpf-activity-gt", "KPF activity file for ground-truth" ),
+    kpf_activity_ct_arg( "--kpf-activity-ct", "KPF activity file for computed" )
+  {}
+
+  // not const because many vul_arg methods aren't marked const
+
+  bool set_kpf_context();
+
+  bool sanity_check( input_args_type& input_args,
+                     matching_args_type& matching_args );
+
+  activity_selector_type deduce_activity();
+
+  void process_track_dumps( const track_handle_list_type& truth_tracks,
+                            const track_handle_list_type& computed_tracks ) const;
+
+  bool filter_activity_tracks( const activity_selector_type& what_act,
+                               track_handle_list_type& truth_tracks,
+                               track_handle_list_type& computed_tracks );
+
+  bool copy_kpf_activities( const track_handle_list_type& kpf_activities,
+                            track_handle_list_type& geometry_tracks,
+                            const activity_selector_type& what_act,
+                            bool is_gt );
+
+  bool set_kpf_object_types( const string& types_fn,
+                             const activity_selector_type& what_act,
+                             track_handle_list_type& tracks );
+
+};
+
+bool
+score_events_args_type
+::set_kpf_context()
+{
+  // only do anything if kpf target is set
+  if (! this->kpf_target_arg.set()) return true;
+
+  // expecting three colon-separated fields: string, string, integer
+  kwiversys::RegularExpression re( "^([^:]+):([^:]+):([0-9]+)$" );
+  // ...or two fields: fieldname, artifact
+  kwiversys::RegularExpression re_adhoc( "^([^:]+):([^:]+)$" );
+
+  if ( re.find( this->kpf_target_arg() ))
+  {
+
+    kpf_context_t& c = this->kpf_context;
+    // first field must be either 'object' or 'activity'
+    if ( re.match(1) == "object" )
+    {
+      c.style = kpf_context_t::style_t::OBJECT;
+    }
+    else if ( re.match(1) == "activity" )
+    {
+      c.style = kpf_context_t::style_t::ACTIVITY;
+    }
+    else
+    {
+      LOG_ERROR( main_logger, "KPF target parse error: first field '"
+                 << re.match(1) << "' must be either 'object' or 'activity'");
+      return false;
+    }
+
+    // just accept the second and third fields
+    c.artifact = re.match(2);
+    c.domain = std::stoi( re.match(3) );
+
+    // need to know where the computed confidence comes from
+    c.conf_src = kwiver::vital::kpf::packet_header_parser( this->kpf_conf_src_arg() );
+    if ( c.conf_src.style == kwiver::vital::kpf::packet_style::INVALID )
+    {
+      LOG_ERROR( main_logger, "KPF confidence source error: couldn't parse '"
+                 << this->kpf_conf_src_arg() << "' as a KPF packet header" );
+      c.style = kpf_context_t::style_t::INVALID;
+      return false;
+    }
+  }
+  else if (re_adhoc.find( this->kpf_target_arg() ))
+  {
+    kpf_context_t& c = this->kpf_context;
+    c.style = kpf_context_t::style_t::ADHOC;
+    c.adhoc_field = re_adhoc.match(1);
+    c.artifact = re_adhoc.match(2);
+  }
+
+  return true;
+}
+
+bool
+score_events_args_type
+::sanity_check( input_args_type& input_args,
+                matching_args_type& matching_args )
+{
+
+  // can't set both kwe_gt and kpf data set
+  if ( this->kwe_gt_arg.set() &&
+       (this->kpf_activity_gt_arg.set() || this->kpf_types_gt_arg.set() ))
+  {
+    LOG_ERROR( main_logger, "Can't filter truth tracks by both KWE and KPF" );
+    return false;
+  }
+
+  // can't set both kwe_ct and kpf_ct
+  if ( this->kwe_ct_arg.set() &&
+       (this->kpf_activity_ct_arg.set() || this->kpf_types_ct_arg.set() ))
+  {
+    LOG_ERROR( main_logger, "Can't filter computed tracks by both KWE and KPF" );
+    return false;
+  }
+
+  // scoring KPF object detections requires detection mode
+  if ( (this->kpf_context.style == kpf_context_t::style_t::OBJECT)
+       && ( ! input_args.detection_mode() ))
+  {
+    LOG_ERROR( main_logger, "Scoring KPF objects requires --detection-mode" );
+    return false;
+  }
+
+  // scoring KPF adhoc detections requires detection mode
+  if ( (this->kpf_context.style == kpf_context_t::style_t::ADHOC)
+       && ( ! input_args.detection_mode() ))
+  {
+    LOG_ERROR( main_logger, "Scoring KPF objects requires --detection-mode" );
+    return false;
+  }
+
+  // makes no sense to set types except in object mode
+  if ( (this->kpf_types_gt_arg.set() || this->kpf_types_ct_arg.set())
+       && (this->kpf_context.style != kpf_context_t::style_t::OBJECT))
+  {
+    LOG_ERROR( main_logger, "Only set KPF object types when scoring objects" );
+    return false;
+  }
+
+  // makes no sense to set activities except in activity mode
+  if ( (this->kpf_activity_gt_arg.set() || this->kpf_activity_ct_arg.set())
+       && (this->kpf_context.style != kpf_context_t::style_t::ACTIVITY))
+  {
+    LOG_ERROR( main_logger, "Only set KPF activity types when scoring activities" );
+    return false;
+  }
+
+  // cannot use detection mode and match-frames-lower-bound
+  if ( input_args.detection_mode() && matching_args.min_frames_arg.set() && (matching_args.min_frames_arg() != "1"))
+  {
+    LOG_ERROR( main_logger, "Cannot use --detection-mode with --match-frames-lower-bound set to anything other than 1" );
+    return false;
+  }
+
+  // if the user requested annotated track output, make sure the format is unambiguous
+  if ( this->track_dump_fn_arg.set() )
+  {
+    vector< file_format_enum > fmts = file_format_manager::globs_match( track_dump_fn_arg() );
+    if ( fmts.size() != 1 )
+    {
+      LOG_ERROR( main_logger, "Track output filename matches " << fmts.size() << " formats; use either .kwcsv or .kwiver" );
+      return false;
+    }
+  }
+
+  if ( ( ! matching_args.sanity_check()) || ( ! matching_args.parse_min_frames_arg() ))
+  {
+    return false;
+  }
+
+  if ( this->activity_match_arg.set() && this->top_n_arg.set() )
+  {
+    // Setting top-n filters the set of tracks the ROC is computed
+    // over; this would lead to misleading activity matching
+    // statistics in the full activity match file. For example: if you
+    // only compute a ROC on the top-10, and #11 is a hit, how would you
+    // reconcile that in the stats file?
+
+    LOG_ERROR( main_logger, "Currently cannot simultaneously set '" << this->activity_match_arg.option() << "' and '"
+               << this->top_n_arg.option() << "'" );
+    return false;
+  }
+
+  if ( this->activity_match_arg.set() &&
+       ( ! ( this->kwe_gt_arg.set() && this->kwe_ct_arg.set() )))
+  {
+    // Computing the match status matrix requires a rational method to derive
+    // the underlying moving-object track from the activity track.  For this first
+    // pass, we only support the KWE hack.  Moving forward, we could also support
+    // kwxml by extracting the trackObjectKitware tracks.
+
+    LOG_ERROR( main_logger, "Currently can only compute activity match status with events via KWE; exiting" );
+    return false;
+  }
+
+  // validate top-n arg before bothering to load tracks
+  if ( this->top_n_arg.set() && ( this->top_n_arg() == 0))
+  {
+    LOG_INFO( main_logger, this->top_n_arg.option() << " cannot explicitly be set to 0; exiting");
+    return false;
+  }
+
+  return true;
+
+}
+
+activity_selector_type
+score_events_args_type
+::deduce_activity()
+{
+  //
+  // There are too many ways to indicate which activity we're scoring:
+  //
+  // 1) An old-style VIRAT activity via '--a'
+  // 2) A PVO specifier.
+  // 3) Asserting that all tracks are the (unspecified) activity via
+  //    gt-prefiltered.
+  // 4) Naming a KPF activity.
+  //
+
+  activity_selector_type ret;
+
+  this->set_kpf_context();
+
+  //
+  // First check for PVO. If set() fails, it's an error. If it succeeds
+  // and pvo_req is valid, then we're PVO; set and return. Otherwise,
+  // continue deducing.
+  //
+
+  if ( ! ret.pvo_req.set( this->pvo_filename_arg() ))
+  {
+    return ret;
+  }
+  if ( ret.pvo_req.valid )
+  {
+    ret.style = activity_style::PVO;
+    return ret;
+  }
+
+  //
+  // If we're prefiltered, set the style and return.
+  //
+
+  if ( this->gt_prefiltered_arg() )
+  {
+    ret.style = activity_style::PREFILTERED;
+    return ret;
+  }
+
+  //
+  // KPF activity scoring
+  //
+
+  if (( this->kpf_context.style == kpf_context_t::style_t::ACTIVITY ) ||
+      ( this->kpf_context.style == kpf_context_t::style_t::OBJECT ) )
+  {
+    ret.style =
+      this->kpf_context.style == kpf_context_t::style_t::ACTIVITY
+      ? activity_style::KPF_ACTIVITY
+      : activity_style::KPF_OBJECT;
+    ret.activity_name = this->kpf_context.artifact;
+    ret.activity_domain = this->kpf_context.domain;
+    ret.kpf_conf_src = this->kpf_context.conf_src;
+    return ret;
+  }
+
+  //
+  // KPF adhoc scoring
+  //
+  if ( this->kpf_context.style == kpf_context_t::style_t::ADHOC )
+  {
+    ret.style = activity_style::KPF_ADHOC;
+    ret.activity_name = this->kpf_context.artifact;
+    ret.kpf_adhoc_field = this->kpf_context.adhoc_field;
+    return ret;
+  }
+
+  //
+  // If nothing else fits, see if we can find a VIRAT activity
+  //
+
+  vector<int> activity_indices;
+  bool dump_activity_list = true;
+  if ( this->activity_names_arg.set() )
+  {
+    vector<string> activity_names;
+
+    boost::split(activity_names, activity_names_arg(), boost::is_any_of(","), boost::token_compress_on);
+
+    try
+    {
+      transform( activity_names.begin(),
+                 activity_names.end(),
+                 back_inserter( activity_indices ),
+                 aries_interface::activity_to_index );
+      dump_activity_list = false;
+    }
+    catch ( aries_interface_exception& e )
+    {
+      LOG_INFO( main_logger, "At least one of '" << activity_names_arg()
+                << "' is not a valid activity name: " << e.what() );
+    }
+
+    if ( ! activity_indices.empty() )
+    {
+      ret.activity_index = activity_indices[0];
+      ret.style = activity_style::VIRAT;
+    }
+  }
+  if ( dump_activity_list )
+  {
+    ret.style = activity_style::VIRAT_AND_EXIT;
+    const map< size_t, string >& i2a_map = aries_interface::index_to_activity_map();
+    map<size_t, string>::const_iterator probe;
+    for (probe = i2a_map.begin(); probe != i2a_map.end(); ++probe )
+    {
+      LOG_INFO( main_logger, probe->second << "");
+    }
+  }
+
+
+  return ret;
+}
+
+void
+score_events_args_type
+::process_track_dumps( const track_handle_list_type& truth_tracks,
+                       const track_handle_list_type& computed_tracks ) const
+{
+  //
+  // if requested, write out the final filtered tracks
+  //
+
+  if ( this->dump_filtered_gt_arg.set() )
+  {
+    bool rc = file_format_manager::write( this->dump_filtered_gt_arg(), truth_tracks );
+    if (rc)
+    {
+      LOG_INFO( main_logger, "Wrote " << truth_tracks.size() << " filtered truth tracks to " << this->dump_filtered_gt_arg() );
+    }
+    else
+    {
+      LOG_WARN( main_logger, "Couldn't write filtered truth tracks to " << this->dump_filtered_gt_arg() );
+    }
+  }
+
+  if ( this->dump_filtered_ct_arg.set() )
+  {
+    bool rc = file_format_manager::write( this->dump_filtered_ct_arg(), computed_tracks );
+    if (rc)
+    {
+      LOG_INFO( main_logger, "Wrote " << computed_tracks.size() << " filtered computed tracks to " << this->dump_filtered_ct_arg() );
+    }
+    else
+    {
+      LOG_WARN( main_logger, "Couldn't write filtered computed tracks to " << this->dump_filtered_ct_arg() );
+    }
+  }
+}
+
+bool
+score_events_args_type
+::copy_kpf_activities( const track_handle_list_type& kpf_activities,
+                       track_handle_list_type& geometry_tracks,
+                       const activity_selector_type& what_act,
+                       bool is_gt )
+{
+  if (what_act.style != activity_style::KPF_ACTIVITY)
+  {
+    LOG_ERROR( main_logger, "Logic error: copying KPF activities for " << what_act << "?" );
+    return false;
+  }
+
+  //
+  // This is actually a mini-version of normalize_activity_tracks().
+  //
+  // We could try to defer this logic until then, but that would
+  // mean passing track_filter_kpf_activity (rather than typical
+  // geometry-bearing tracks) out of the filter_activity_tracks()
+  // call into the main(). Better to quickly copy things here
+  // and set the relevancy and so forth and just no-op out the
+  // filter_on_track_style and normalize_activity_tracks for KPF.
+  //
+
+  field_handle_type fh = track_oracle_core::lookup_by_name( "kpf_activity_labels" );
+  if (fh == kwiver::track_oracle::INVALID_FIELD_HANDLE)
+  {
+    LOG_ERROR( main_logger, "KPF activity normalization requested but kpf_activity_labels not present?" );
+    return false;
+  }
+
+  track_handle_list_type ret;
+  relevancy_extractor_type* r = nullptr;
+  if ( is_gt )
+  {
+    // For ground-truth, if the tag isn't there, mark as absent
+    r = new kpf_activity_extractor_type( fh, what_act.activity_name, /* zero if absent = */ false );
+  }
+  else if (what_act.style == activity_style::KPF_ACTIVITY)
+  {
+    // For computed, if the tag isn't there, assume the value is zero
+    r = new kpf_activity_extractor_type( fh, what_act.activity_name, /* zero if absent = */ true );
+  }
+  else
+  {
+    LOG_ERROR( main_logger, "Logic error: no relevancy extractor for " << what_act );
+    return false;
+  }
+
+  if ( ! r->valid() )
+  {
+    LOG_ERROR( main_logger, "Invalid KPF extractor for " << what_act );
+    return false;
+  }
+
+  track_field< double > relevancy( "relevancy" );
+  track_filter_kpf_activity act_schema;
+  for (const auto& kpf_src: kpf_activities )
+  {
+    auto p = r->get( kpf_src.row );
+    if (! p.first )
+    {
+      // no match
+      continue;
+    }
+    else if (what_act.style == activity_style::KPF_ACTIVITY)
+    {
+      // for each of the actors, set the relevancy
+      for (const auto& actor: act_schema( kpf_src ).actors() )
+      {
+        relevancy( actor.row ) = p.second;
+        ret.push_back( actor );
+      }
+    }
+    else
+    {
+      LOG_ERROR( main_logger, "logic error: no KPF filter extractor case" );
+      return false;
+    }
+  }
+
+  delete r;
+  geometry_tracks = ret;
+  return true;
+}
+
+bool
+score_events_args_type
+::filter_activity_tracks( const activity_selector_type& what_act,
+                          track_handle_list_type& truth_tracks,
+                          track_handle_list_type& computed_tracks )
+{
+  // If the user specified KWE events, insert them now
+  if ( this->kwe_gt_arg.set() )
+  {
+#ifdef KWANT_ENABLE_KWE
+    track_handle_list_type kwe_tracks;
+    if ( ! track_filter_kwe_type::read( this->kwe_gt_arg(), truth_tracks, this->kwe_track_style_arg(), kwe_tracks ))
+    {
+      return false;
+    }
+    truth_tracks.insert( truth_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
+#else
+    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
+    return false;
+#endif
+  }
+  if ( this->kwe_ct_arg.set() )
+  {
+#ifdef KWANT_ENABLE_KWE
+    track_handle_list_type kwe_tracks;
+    if ( ! track_filter_kwe_type::read( this->kwe_ct_arg(), computed_tracks, this->kwe_track_style_arg(), kwe_tracks ))
+    {
+      return false
+    }
+    computed_tracks.insert( computed_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
+#else
+    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
+    return false;
+#endif
+  }
+
+  if (this->kpf_activity_gt_arg.set())
+  {
+    track_handle_list_type kpf_activities;
+    if ( ! track_filter_kpf_activity::read( this->kpf_activity_gt_arg(),
+                                            truth_tracks,
+                                            this->kpf_context.domain,
+                                            kpf_activities ))
+    {
+      return false;
+    }
+    size_t old_size = truth_tracks.size();
+    if (! this->copy_kpf_activities( kpf_activities,
+                                     truth_tracks,
+                                     what_act,
+                                     /*truth = */ true ) )
+    {
+      return false;
+    }
+    LOG_INFO( main_logger, "KPF filtering truth tracks: " << old_size
+              << " tracks before; " << truth_tracks.size() << " tracks after" );
+  }
+  if (this->kpf_activity_ct_arg.set())
+  {
+    track_handle_list_type kpf_activities;
+    if ( ! track_filter_kpf_activity::read( this->kpf_activity_ct_arg(),
+                                            computed_tracks,
+                                            this->kpf_context.domain,
+                                            kpf_activities ))
+    {
+      return false;
+    }
+    size_t old_size = computed_tracks.size();
+    if ( ! this->copy_kpf_activities( kpf_activities,
+                                      computed_tracks,
+                                      what_act,
+                                      /* truth = */ false ) )
+    {
+      return false;
+    }
+    LOG_INFO( main_logger, "KPF filtering computed tracks: " << old_size
+              << " tracks before; " << computed_tracks.size() << " tracks after" );
+  }
+
+  return true;
+}
+
+bool
+score_events_args_type
+::set_kpf_object_types( const string& types_fn,
+                        const activity_selector_type& what_act,
+                        track_handle_list_type& tracks )
+{
+  namespace KPF=::kwiver::vital::kpf;
+  // load the YAML
+
+  ifstream is( types_fn.c_str() );
+  if (! is )
+  {
+    LOG_ERROR( main_logger, "Couldn't load types file '" << types_fn << "'" );
+    return false;
+  }
+  KPF::kpf_yaml_parser_t parser( is );
+  KPF::kpf_reader_t reader( parser );
+  kwiver::logging_map_type wmsgs( main_logger, KWIVER_LOGGER_SITE );
+
+  kwiver::track_oracle::track_field< kwiver::track_oracle::dt::tracking::external_id > id;
+  kwiver::track_oracle::track_field< kwiver::track_oracle::dt::tracking::frame_number > frame_number;
+
+  size_t track_c = 0;
+  size_t det_c = 0;
+  while (reader.next())
+  {
+    namespace KPFC = ::kwiver::vital::kpf::canonical;
+
+    auto kpf_track_id_probe = reader.transfer_packet_from_buffer(
+      KPF::packet_header_t( KPF::packet_style::ID, KPFC::id_t::TRACK_ID ));
+    auto cset_probe = reader.transfer_packet_from_buffer(
+      KPF::packet_header_t( KPF::packet_style::CSET, what_act.activity_domain ));
+
+    if (! kpf_track_id_probe.first )
+    {
+      wmsgs.add_msg( "Couldn't find ID1 packet" );
+      continue;
+    }
+    if (! cset_probe.first)
+    {
+      ostringstream oss;
+      oss << "Couldn't find cset " << what_act.activity_domain << " packet";
+      wmsgs.add_msg( oss.str() );
+      continue;
+    }
+
+    // loop over all the tracks-- there may be duplicate instances of a track ID due to detection mode
+    for (auto t: tracks )
+    {
+      auto id_probe = id.get( t.row );
+      if ( ! id_probe.first )
+      {
+        LOG_ERROR( main_logger, "Track without a track ID?" );
+        return false;
+      }
+      if ( id_probe.second != kpf_track_id_probe.second.id.d )
+      {
+        continue;
+      }
+      for (auto f: track_oracle_core::get_frames( t ))
+      {
+        kwiver::track_oracle::kpf_utils::add_to_row( wmsgs, f.row, cset_probe.second );
+        ++det_c;
+      }
+      ++track_c;
+    }
+    reader.flush();
+  }
+  LOG_INFO( main_logger, "Set " << track_c << " objects / " << det_c << " detections from " << types_fn );
+  if ( ! wmsgs.empty() )
+  {
+    LOG_INFO( main_logger, "Messages begin ");
+    wmsgs.dump_msgs();
+    LOG_INFO( main_logger, "Messages end" );
+  }
+  return true;
+}
+
+
 int main( int argc, char *argv[] )
 {
-  vul_arg<bool> verbose_flag( "-v", "dump more debugging information", false );
-  vul_arg<bool> disable_sanity_checks_arg( "--disable-sanity-checks", "Check for basic track overlaps before scoring", false );
-  vul_arg<string> activity_names_arg( "--a", "comma-separated activities described by computed results (leave blank for list)" );
-  vul_arg<unsigned> top_n_arg( "--top-n", "The top n events to use from the computed file. (unsigned) ('0' refers to using all events)", 0);
-  vul_arg<bool> ct_in_rank_arg( "--ct-in-rank", "Flag notifying that the computed tracks were already sorted by rank when written, so they will be in rank order when read in", false );
-  vul_arg< string > t2t_dump_fn_arg( "--t2t-dump-file", "dump track-to-track details here" );
-  vul_arg< bool > disable_t2t_dump_cmd_file( "--t2t-disable-cmd-file", "set to disable default creation of 'plot-{t2t-dump-file}-cmd.txt'" );
-  vul_arg< string > task_arg( "--do", "tasks to do: 'roc', 'pr', 'pr,roc'", "roc" );
-  vul_arg< bool > convert_prob_to_relevancy_arg( "--p2r", "copy probability score to relevancy to score on probability" );
-  vul_arg< bool > link_tracks_arg( "--link", "link KWXML descriptor tracks based on source track ID" );
-  vul_arg< int > max_n_roc_points_arg( "--n-roc-points", "maxmimum number of roc points, -1 for all", -1 );
-  vul_arg< bool > gt_prefiltered_arg( "--gt-prefiltered", "Set if ground truth tracks are pre-filtered for activity", false );
-  vul_arg< bool > ct_prefiltered_arg( "--ct-prefiltered", "Set if computed tracks are pre-filtered for activity", false );
-  vul_arg< string > track_style_arg( "--kwxml_ts", "kwxml track style to copy", "PVMovementDescriptor" );
-  vul_arg< string > dump_filtered_gt_arg( "--dump-filtered-gt", "write final filtered ground-truth tracks as kwxml" );
-  vul_arg< string > dump_filtered_ct_arg( "--dump-filtered-ct", "write final filtered computed tracks as kwxml" );
-  vul_arg< string > pvo_filename_arg( "--pvo", "filename:{p,v,o} - read pvo values from file; use p,v, or o values; no activity required", "" );
-  vul_arg< bool > display_git_hash_only_arg( "--git-hash", "Display git hash and exit", false);
-  vul_arg< string > kwe_gt_arg( "--kwe-gt", "load KWE of gt events" );
-  vul_arg< string > kwe_ct_arg( "--kwe-ct", "load KWE of ct events" );
-  vul_arg< string > kwe_track_style_arg( "--kwe-track-style", "Set track style of events from KWE to this", "" );
-  vul_arg< string > activity_match_arg( "--activity-matches", "write activity match status here (increases run time) ");
-  vul_arg< string > track_dump_fn_arg( "--write-tracks", "Write annotated input tracks to this file (either .kwcsv or .kwiver)" );
 
+  score_events_args_type scoring_args;
   input_args_type input_args;
   output_args_type output_args;
   matching_args_type matching_args;
@@ -1192,107 +2287,27 @@ int main( int argc, char *argv[] )
 
   //  LOG_INFO( main_logger, "GIT-HASH: " << VIDTK_GIT_VERSION );
   LOG_INFO( main_logger, "GIT-HASH: output not supported yet" );
-  if (display_git_hash_only_arg())
+  if (scoring_args.display_git_hash_only_arg())
   {
     return EXIT_SUCCESS;
   }
 
-  // if the user requested annotated track output, make sure the format is unambiguous
-  if ( track_dump_fn_arg.set() )
-  {
-    vector< file_format_enum > fmts = file_format_manager::globs_match( track_dump_fn_arg() );
-    if ( fmts.size() != 1 )
-    {
-      LOG_ERROR( main_logger, "Track output filename matches " << fmts.size() << " formats; use either .kwcsv or .kwiver" );
-      return EXIT_FAILURE;
-    }
-  }
+  activity_selector_type what_act = scoring_args.deduce_activity();
+  LOG_INFO( main_logger, "Activity deduction: " << what_act );
 
-  if ( ( ! matching_args.sanity_check()) || ( ! matching_args.parse_min_frames_arg() ))
+  if ( ! scoring_args.sanity_check( input_args, matching_args ) )
   {
     return EXIT_FAILURE;
   }
 
-  if ( activity_match_arg.set() && top_n_arg.set() )
+  if ( what_act.style == activity_style::INVALID )
   {
-    // Setting top-n filters the set of tracks the ROC is computed
-    // over; this would lead to misleading activity matching
-    // statistics in the full activity match file. For example: if you
-    // only compute a ROC on the top-10, and #11 is a hit, how would you
-    // reconcile that in the stats file?
-
-    LOG_ERROR( main_logger, "Currently cannot simultaneously set '" << activity_match_arg.option() << "' and '"
-               << top_n_arg.option() << "'" );
+    LOG_ERROR( main_logger, "Couldn't deduce an activity type; exiting" );
     return EXIT_FAILURE;
   }
-
-  if ( activity_match_arg.set() &&
-       ( ! ( kwe_gt_arg.set() && kwe_ct_arg.set() )))
+  if ( what_act.style == activity_style::VIRAT_AND_EXIT )
   {
-    // Computing the match status matrix requires a rational method to derive
-    // the underlying moving-object track from the activity track.  For this first
-    // pass, we only support the KWE hack.  Moving forward, we could also support
-    // kwxml by extracting the trackObjectKitware tracks.
-
-    LOG_ERROR( main_logger, "Currently can only compute activity match status with events via KWE; exiting" );
-    return EXIT_FAILURE;
-  }
-
-  pvo_request_type pvo_req;
-  if (! pvo_req.set( pvo_filename_arg() ))
-  {
-    return EXIT_FAILURE;
-  }
-
-  int activity_index = 0;
-
-  if (( ! pvo_req.valid ) && (! gt_prefiltered_arg() ))
-  {
-    // make sure we have a valid activity
-    vector<int> activity_indices;
-    bool dump_activity_list = true;
-    if ( activity_names_arg.set() )
-    {
-      vector<string> activity_names;
-
-      boost::split(activity_names, activity_names_arg(), boost::is_any_of(","), boost::token_compress_on);
-
-      try
-      {
-        transform( activity_names.begin(),
-                       activity_names.end(),
-                       back_inserter( activity_indices ),
-                       aries_interface::activity_to_index );
-        dump_activity_list = false;
-      }
-      catch ( aries_interface_exception& e )
-      {
-        LOG_INFO( main_logger, "At least one of '" << activity_names_arg()
-                  << "' is not a valid activity name: " << e.what() );
-      }
-
-      if ( ! activity_indices.empty() )
-      {
-        activity_index = activity_indices[0];
-      }
-    }
-    if ( dump_activity_list )
-    {
-      const map< size_t, string >& i2a_map = aries_interface::index_to_activity_map();
-      map<size_t, string>::const_iterator probe;
-      for (probe = i2a_map.begin(); probe != i2a_map.end(); ++probe )
-      {
-        LOG_INFO( main_logger, probe->second << "");
-      }
-      return activity_names_arg.set() ? EXIT_FAILURE : EXIT_SUCCESS;
-    }
-  }
-
-  // validate top-n arg before bothering to load tracks
-  if (top_n_arg.set() && (top_n_arg() == 0))
-  {
-    LOG_INFO( main_logger, top_n_arg.option() << " cannot explicitly be set to 0; exiting");
-    return EXIT_FAILURE;
+    return EXIT_SUCCESS;
   }
 
   // This is a good point to emit the command line for logging
@@ -1321,70 +2336,78 @@ int main( int argc, char *argv[] )
   track_handle_list_type unfiltered_truth_tracks = truth_tracks;
   track_handle_list_type unfiltered_computed_tracks = computed_tracks;
 
-  // If the user specified KWE events, insert them now
-  if (kwe_gt_arg.set())
+  //
+  // filter_activity_tracks only applies when an external activity file (KWE, KPF)
+  // carries information about whether tracks may have the target.
+  //
+  // We treat ground-truth differently from computed: in a set of 100 ground-truth
+  // tracks, 50 of which are "{running: 1.0}", we keep those fifty and discard the
+  // other 50. In a set of 100 computed tracks, 50 of which are "{running: 1.0}", we
+  // keep them ALL, so that at p(running)==0.0, 100 tracks are eligble.
+  //
+
+  if (! scoring_args.filter_activity_tracks( what_act, truth_tracks, computed_tracks ))
   {
-#ifdef KWANT_ENABLE_KWE
-    track_handle_list_type kwe_tracks;
-    if ( ! track_filter_kwe_type::read( kwe_gt_arg(), truth_tracks, kwe_track_style_arg(), kwe_tracks ))
-    {
-      return EXIT_FAILURE;
-    }
-    truth_tracks.insert( truth_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
-#else
-    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
     return EXIT_FAILURE;
-#endif
-  }
-  if (kwe_ct_arg.set())
-  {
-#ifdef KWANT_ENABLE_KWE
-    track_handle_list_type kwe_tracks;
-    if ( ! track_filter_kwe_type::read( kwe_ct_arg(), computed_tracks, kwe_track_style_arg(), kwe_tracks ))
-    {
-      return EXIT_FAILURE;
-    }
-    computed_tracks.insert( computed_tracks.end(), kwe_tracks.begin(), kwe_tracks.end() );
-#else
-    LOG_ERROR( main_logger, "KWE filtering requested but KWE support not yet ported" );
-    return EXIT_FAILURE;
-#endif
   }
 
+  //
+  // if KPF types are supplied, load them in
+  //
+  if ( (scoring_args.kpf_context.style == score_events_args_type::kpf_context_t::style_t::OBJECT)
+       && scoring_args.kpf_types_gt_arg.set())
+  {
+    LOG_INFO( main_logger, "Setting ground-truth KPF objects from " << scoring_args.kpf_types_gt_arg() );
+    if (! scoring_args.set_kpf_object_types( scoring_args.kpf_types_gt_arg(), what_act, truth_tracks ))
+    {
+      return EXIT_FAILURE;
+    }
+    LOG_INFO( main_logger, "Ground-truth objects complete" );
+  }
+  if ( (scoring_args.kpf_context.style == score_events_args_type::kpf_context_t::style_t::OBJECT)
+       && scoring_args.kpf_types_ct_arg.set())
+  {
+    LOG_INFO( main_logger, "Setting computed objects from " << scoring_args.kpf_types_ct_arg() );
+    if (! scoring_args.set_kpf_object_types( scoring_args.kpf_types_ct_arg(), what_act, computed_tracks ))
+    {
+      return EXIT_FAILURE;
+    }
+    LOG_INFO( main_logger, "Computed objects complete" );
+  }
 
   // First: throw out all ground-truth tracks not matching activity_name_arg()
   // (since they'd be misses anyway.)
 
-  if (gt_prefiltered_arg() )
+  if ( scoring_args.gt_prefiltered_arg() )
   {
     LOG_INFO( main_logger, truth_tracks.size() << " truth tracks prefiltered for activity");
   }
   else
   {
-    track_handle_list_type filtered_tracks = filter_on_track_style( truth_tracks, track_style_arg );
+    track_handle_list_type filtered_tracks = filter_on_track_style( truth_tracks, scoring_args.track_style_arg );
     LOG_INFO( main_logger, "Truth track style filtering: " << truth_tracks.size() << " before; "
               << filtered_tracks.size() << " after" );
     truth_tracks = filtered_tracks;
   }
+
   // all truth tracks must be able to support normalization
   track_handle_list_type norm_gt = normalize_activity_tracks( truth_tracks,
                                                               /* input_is_gt = */ true,
-                                                              gt_prefiltered_arg(),
-                                                              convert_prob_to_relevancy_arg(),
-                                                              activity_index,
-                                                              pvo_req );
+                                                              scoring_args.gt_prefiltered_arg(),
+                                                              scoring_args.convert_prob_to_relevancy_arg(),
+                                                              what_act );
   LOG_INFO( main_logger, "Truth track activity normalization: " << truth_tracks.size() << " before; "
             << norm_gt.size() << " after" );
 
 
   // Second: filter the computed tracks
-  if (ct_prefiltered_arg() )
+  if ( scoring_args.ct_prefiltered_arg() )
   {
     LOG_INFO( main_logger, computed_tracks.size() << " computed tracks prefiltered for activity" );
   }
   else
   {
-    track_handle_list_type filtered_tracks = filter_on_track_style( computed_tracks, track_style_arg );
+    track_handle_list_type filtered_tracks = filter_on_track_style( computed_tracks, scoring_args.track_style_arg );
     LOG_INFO( main_logger, "Computed track style filtering: " << computed_tracks.size() << " before; "
               << filtered_tracks.size() << " after" );
     computed_tracks = filtered_tracks;
@@ -1393,45 +2416,16 @@ int main( int argc, char *argv[] )
   // all computed tracks must be able to support normalization
   track_handle_list_type norm_comp = normalize_activity_tracks( computed_tracks,
                                                                 /* input_is_gt = */ false,
-                                                                ct_prefiltered_arg(),
-                                                                convert_prob_to_relevancy_arg(),
-                                                                activity_index,
-                                                                pvo_req );
+                                                                scoring_args.ct_prefiltered_arg(),
+                                                                scoring_args.convert_prob_to_relevancy_arg(),
+                                                                what_act );
   LOG_INFO( main_logger, "computed track activity normalization: " << computed_tracks.size() << " before; "
             << norm_comp.size() << " after" );
 
   truth_tracks = norm_gt;
   computed_tracks = norm_comp;
 
-  //
-  // if requested, write out the final filtered tracks
-  //
-
-  if ( dump_filtered_gt_arg.set() )
-  {
-    bool rc = file_format_manager::write( dump_filtered_gt_arg(), truth_tracks );
-    if (rc)
-    {
-      LOG_INFO( main_logger, "Wrote " << truth_tracks.size() << " filtered truth tracks to " << dump_filtered_gt_arg() );
-    }
-    else
-    {
-      LOG_WARN( main_logger, "Couldn't write filtered truth tracks to " << dump_filtered_gt_arg() );
-    }
-  }
-
-  if ( dump_filtered_ct_arg.set() )
-  {
-    bool rc = file_format_manager::write( dump_filtered_ct_arg(), computed_tracks );
-    if (rc)
-    {
-      LOG_INFO( main_logger, "Wrote " << computed_tracks.size() << " filtered computed tracks to " << dump_filtered_ct_arg() );
-    }
-    else
-    {
-      LOG_WARN( main_logger, "Couldn't write filtered computed tracks to " << dump_filtered_ct_arg() );
-    }
-  }
+  scoring_args.process_track_dumps( truth_tracks, computed_tracks );
 
   //
   // need to consolidate normalization
@@ -1447,80 +2441,149 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
 #endif
   }
+  else if (input_args.detection_mode() )
+  {
+    track_field<kwiver::track_oracle::dt::tracking::timestamp_usecs> ts;
+    std::set< kwiver::track_oracle::dt::tracking::timestamp_usecs::Type > ts_set;
+    track_handle_list_type all_tracks( truth_tracks );
+    all_tracks.insert( all_tracks.end(), computed_tracks.begin(), computed_tracks.end() );
+    for (size_t i=0; i<all_tracks.size(); ++i)
+    {
+      frame_handle_list_type f = track_oracle_core::get_frames( all_tracks[i] );
+      for (size_t j=0; j<f.size(); ++j)
+      {
+        ts_set.insert( ts( f[j].row ));
+      }
+    }
+    fa_norm = static_cast<double>( ts_set.size() );
+    LOG_INFO( main_logger, "FA normalization: detection mode; factor: " << fa_norm << " frames" );
+  }
+  else
+  {
+    LOG_INFO( main_logger, "FA normalization: none; factor: " << fa_norm );
+  }
+
 
   phase1_parameters p1_params;
-  p1_params.perform_sanity_checks = ( ! disable_sanity_checks_arg() );
+  p1_params.perform_sanity_checks = ( ! scoring_args.disable_sanity_checks_arg() );
   if ( ! p1_params.processMatchingArgs( matching_args ))
   {
     return EXIT_FAILURE;
   }
 
-  if ( link_tracks_arg() )
+  if ( scoring_args.link_tracks_arg() )
   {
+    if ( what_act.style != activity_style::VIRAT )
+    {
+      LOG_ERROR( main_logger, "kwxml linking requested but only available for VIRAT activities; selected " << what_act );
+      return EXIT_FAILURE;
+    }
     LOG_INFO( main_logger, "relinking kwxml...");
     int activity_index_to_relevancy =
-      convert_prob_to_relevancy_arg()
-      ? activity_index
+      scoring_args.convert_prob_to_relevancy_arg()
+      ? what_act.activity_index
       : -1;
     track_handle_list_type linked_tracks = relink_kwxml_on_source_ids( computed_tracks, activity_index_to_relevancy );
     LOG_INFO( main_logger, computed_tracks.size() << " tracks in; " << linked_tracks.size() << " out");
     computed_tracks = linked_tracks;
   }
 
+  // everybody needs a phase1 object
+  // if requested, filter out the top N tracks
 
-  if ( task_arg().find( "roc" ) != string::npos )
+  track_handle_list_type scored_computed_tracks =
+    scoring_args.top_n_arg.set()
+    ? process_top_n_tracks( computed_tracks, scoring_args.top_n_arg(), scoring_args.ct_in_rank_arg() )
+    : computed_tracks;
+
+  // compute the association matrix.  Note that activity tracks are not
+  // typically subsets of the full track set.
+
+  track2track_phase1 p1( p1_params );
   {
-    // if requested, filter out the top N tracks
+    track_handle_list_type filtered_truth, filtered_computed;
+    p1_params.filter_track_list_on_aoi( truth_tracks, filtered_truth );
+    p1_params.filter_track_list_on_aoi( scored_computed_tracks, filtered_computed );
+    LOG_INFO( main_logger, "p1: AOI kept "
+              << filtered_truth.size() << " of " << truth_tracks.size() << " truth tracks; "
+              << filtered_computed.size() << " of " << scored_computed_tracks.size() << " computed tracks");
+    truth_tracks = filtered_truth;
+    scored_computed_tracks = filtered_computed;
+  }
 
-    track_handle_list_type roc_computed_tracks =
-      top_n_arg.set()
-      ? process_top_n_tracks( computed_tracks, top_n_arg(), ct_in_rank_arg() )
-      : computed_tracks;
+  if (input_args.detection_mode())
+  {
+    p1.compute_all_detection_mode( truth_tracks, scored_computed_tracks );
+  }
+  else
+  {
+    p1.compute_all( truth_tracks, scored_computed_tracks );
+  }
 
-    // compute the association matrix.  Note that activity tracks are not
-    // typically subsets of the full track set.
 
-    track2track_phase1 p1( p1_params );
-    p1.compute_all( truth_tracks, roc_computed_tracks );
+  if ( scoring_args.task_arg().find( "roc" ) != string::npos )
+  {
     // if requested, write the time-axis track overlap debug plots
-    if ( t2t_dump_fn_arg.set() )
+    if ( scoring_args.t2t_dump_fn_arg.set() )
     {
-      process_p1_debug_dump( p1, truth_tracks, roc_computed_tracks, t2t_dump_fn_arg(), disable_t2t_dump_cmd_file() );
+      process_p1_debug_dump( p1, truth_tracks, computed_tracks, scoring_args.t2t_dump_fn_arg(), scoring_args.disable_t2t_dump_cmd_file() );
+    }
+
+    // if requested, dump the matches file
+    if (output_args.matches_dump_fn.set())
+    {
+      track2track_phase2_hadwav p2( /* verbose flag = */ false );
+      p2.compute( truth_tracks, scored_computed_tracks, p1 );
+      ofstream os (output_args.matches_dump_fn().c_str() );
+      if ( os )
+      {
+        p2.debug_dump( os );
+      }
+      else
+      {
+        LOG_ERROR( main_logger, "Couldn't dump match info to '" << output_args.matches_dump_fn() << "'" );
+      }
     }
 
     // compute the actual ROC, on only the activity tracks
 
-    compute_roc( p1, truth_tracks, roc_computed_tracks, fa_norm, max_n_roc_points_arg(), output_args );
+    compute_roc( p1, truth_tracks, computed_tracks, fa_norm, scoring_args.max_n_roc_points_arg(), output_args );
 
 
     // if requested, process full match stats
-    bool full_match_stats_requested = activity_match_arg.set();
+    bool full_match_stats_requested = scoring_args.activity_match_arg.set();
 
     if (full_match_stats_requested)
     {
       process_full_match_stats( p1,
                                 p1_params,
                                 truth_tracks,
-                                roc_computed_tracks,
+                                computed_tracks,
                                 unfiltered_truth_tracks,
                                 unfiltered_computed_tracks,
-                                activity_match_arg() );
+                                scoring_args.activity_match_arg() );
     }
   }
 
-  if ( task_arg().find( "pr" ) != string::npos )
+  if ( scoring_args.task_arg().find( "pr" ) != string::npos )
   {
-    compute_pr( p1_params, truth_tracks, computed_tracks, output_args );
+    compute_pr( p1, truth_tracks, computed_tracks, output_args );
   }
 
-  if ( track_dump_fn_arg.set() )
+  if ( scoring_args.track_dump_fn_arg.set() )
   {
     track_handle_list_type all_tracks;
     all_tracks.insert( all_tracks.end(), truth_tracks.begin(), truth_tracks.end() );
     all_tracks.insert( all_tracks.end(), computed_tracks.begin(), computed_tracks.end() );
-    bool rc = file_format_manager::write( track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
+    bool rc = file_format_manager::write( scoring_args.track_dump_fn_arg(), all_tracks, kwiver::track_oracle::TF_INVALID_TYPE );
     LOG_INFO( main_logger, "Write returned " << rc );
   }
+
+  //
+  // all done!
+  //
+
+  return EXIT_SUCCESS;
 }
 
 
@@ -1625,7 +2688,6 @@ generate_roc_thresholds( const track_handle_list_type& computed_tracks,
 
   return roc_threshold;
 }
-
 void
 compute_roc( const track2track_phase1& p1,
              const track_handle_list_type& truth_tracks,
@@ -1650,30 +2712,23 @@ compute_roc( const track2track_phase1& p1,
                              output_args );
 
   // iterate over thresholds, printing out ROC stats
-  string roc_dump_str("");
-
   // Record which truth tracks each computed track matches
-  typedef map<track_handle_type, track_handle_list_type> c2t_match_type;
-  typedef map<track_handle_type, track_handle_list_type>::iterator c2t_match_it;
-  typedef map<track_handle_type, track_handle_list_type>::const_iterator c2t_match_cit;
-
-  c2t_match_type computed_to_truth_match_list;
-  for ( size_t i=0; i < computed_tracks.size(); ++i )
+  map< track_handle_type, track_handle_list_type > computed_to_truth_match_list;
+  for (size_t i=0; i<computed_tracks.size(); ++i)
   {
-    computed_to_truth_match_list[ computed_tracks[i] ] = track_handle_list_type();
+    track_handle_list_type matches;
+    computed_to_truth_match_list[ computed_tracks[i] ] = matches;
   }
 
-  // precompute the ROC probes
   map< track2track_type, track2track_score >::const_iterator c2t_probe;
   for (c2t_probe = p1.t2t.begin(); c2t_probe != p1.t2t.end(); ++c2t_probe )
   {
     const track_handle_type& t = c2t_probe->first.first;
     const track_handle_type& c = c2t_probe->first.second;
-    c2t_match_it match_probe = computed_to_truth_match_list.find( c );
+    map< track_handle_type, track_handle_list_type >::iterator match_probe = computed_to_truth_match_list.find( c );
     if (match_probe == computed_to_truth_match_list.end() )
     {
-      // shouldn't happen
-      LOG_ERROR( main_logger, "ROC fallthrough?" );
+      LOG_DEBUG( main_logger, "ROC fallthrough" );
     }
     else
     {
@@ -1681,15 +2736,20 @@ compute_roc( const track2track_phase1& p1,
     }
   }
 
+  ostringstream roc_dump_str;
+  ostringstream roc_csv_dump_str;
+  roc_csv_dump_str << "threshold, PD, FA, nMatches, TP, FP, TN, FN, matched, relevant, nTrueTracks, faNorm\n";
+
   track_field< double > relevancy( "relevancy" );
-  vector< c2t_match_cit > matches_cache;
+  vector< map<track_handle_type, track_handle_list_type>::const_iterator > matches_cache;
   vector< double > relevancy_cache;
   for (size_t i=0; i<computed_tracks.size(); ++i)
   {
-    c2t_match_cit probe = computed_to_truth_match_list.find( computed_tracks[i] );
-    if (probe == computed_to_truth_match_list.end() )
+    map< track_handle_type, track_handle_list_type >::const_iterator probe
+      = computed_to_truth_match_list.find( computed_tracks[i] );
+    if ( probe == computed_to_truth_match_list.end() )
     {
-      throw runtime_error( "Lost computed track handle building cache when computing ROC?" );
+      throw runtime_error( "Lost computed track handle in computed_to_truth_match_list map?" );
     }
     matches_cache.push_back( probe );
     relevancy_cache.push_back( relevancy( computed_tracks[i].row ));
@@ -1701,12 +2761,13 @@ compute_roc( const track2track_phase1& p1,
   {
     double threshold = roc_it->first;
 
-    map< track_handle_type, bool> true_matches;
+    map< oracle_entry_handle_type, bool> true_matches;
 
     unsigned tp=0, fp=0, fn=0, tn=0;
     for (unsigned i=0; i < computed_tracks.size(); ++i)
     {
-      // Computed track c has two attributes:
+
+      // Computed track[i] has two attributes:
       // - R (relevance): true if its relevancy >= threshold
       // - M (match): true if it matches a true track
       //
@@ -1723,7 +2784,8 @@ compute_roc( const track2track_phase1& p1,
       bool r_flag = ( relevancy_cache[i] >= threshold );
 
       // establish M: did we match a true track?
-      c2t_match_cit probe = matches_cache[i];
+      map< track_handle_type, track_handle_list_type >::const_iterator probe
+        = matches_cache[ i ];
 
       const track_handle_list_type& matches = probe->second;
       bool m_flag = ( ! matches.empty());
@@ -1731,7 +2793,7 @@ compute_roc( const track2track_phase1& p1,
       {
         for (size_t j=0; j<matches.size(); ++j)
         {
-          true_matches[ matches[j] ] = true;
+          true_matches[ matches[j].row ] = true;
         }
       }
 
@@ -1749,32 +2811,58 @@ compute_roc( const track2track_phase1& p1,
       ? 0.0
       : 1.0 * nMatches / truth_tracks.size();
 
-    roc_dump_str += vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u; fa-norm = %e\n",
+    roc_dump_str << vul_sprintf("roc threshold = %e ; pd = %e ; fa = %-5u ; nMatches = %-5u ; tp = %-5u ; fp = %-5u ; tn = %-5u ; fn = %-5u ; matched = %-5u ; relevant = %-5u ; nTrueTracks = %-5u ; fa-norm = %e\n",
                                 threshold, pd, fp, nMatches, tp, fp, tn, fn, (tp+fn), (tp+fp), truth_tracks.size(), fp/fa_norm );
+    roc_csv_dump_str << threshold << ", " << pd << ", " << fp << ", " << nMatches << ", " << tp << ", " << fp << ", "
+                     << tn << ", " << fn << ", " << (tp+fn) << ",  " << (tp+fp) << ", " << truth_tracks.size() << ", "
+                     << (fp / fa_norm) << "\n";
+
+    if (roc_it == roc_threshold.begin())
+    {
+      LOG_INFO( main_logger, "ROC: first line: " << roc_dump_str.str() );
+    }
   } // ... for each roc threshold
 
-  LOG_INFO( main_logger, "ROC:\n" << roc_dump_str );
+  if ( ! output_args.console_dump_arg())
+  {
+    LOG_INFO( main_logger, "ROC: output not written to console (use --console to dump)" );
+  }
+  else
+  {
+    LOG_INFO( main_logger, "ROC:\n" << roc_dump_str.str() );
+  }
   if (output_args.roc_dump_fn.set())
   {
     LOG_INFO( main_logger, "[score_events] Dumping roc data to '" << output_args.roc_dump_fn().c_str() << "'" );
 
     fstream dump_stream(output_args.roc_dump_fn().c_str(),
                             fstream::out);
-    dump_stream << roc_dump_str;
+    dump_stream << roc_dump_str.str();
     dump_stream.flush();
     dump_stream.close();
   }
+  if (output_args.roc_csv_dump_fn.set())
+  {
+    ofstream ofs( output_args.roc_csv_dump_fn().c_str() );
+    if ( ! ofs )
+    {
+      LOG_ERROR( main_logger, "Couldn't write to '" << output_args.roc_csv_dump_fn() << "'" );
+    }
+    else
+    {
+      LOG_INFO( main_logger, "[score_events] Writing ROC CSV to '" << output_args.roc_csv_dump_fn() << "'" );
+      ofs << roc_csv_dump_str.str();
+    }
+  }
 }
 
+
 void
-compute_pr( const phase1_parameters& p1_params,
+compute_pr( const track2track_phase1& p1,
             track_handle_list_type truth_tracks,
             track_handle_list_type computed_tracks,
             output_args_type& output_args )
 {
-  track2track_phase1 p1(p1_params);
-  p1.compute_all( truth_tracks, computed_tracks );
-
   // always sort computed tracks
   sort( computed_tracks.begin(), computed_tracks.end(), compare_kst_track_handle);
 
@@ -1820,26 +2908,59 @@ compute_pr( const phase1_parameters& p1_params,
     }
   }
 
+  typedef vector< track2track_type > matches_t;
+  map< oracle_entry_handle_type, matches_t* > matches_map;
+  vul_timer timer;
+
+  LOG_INFO( main_logger, "PR: matches map setup...") ;
+  for (map< track2track_type, track2track_score >::const_iterator i = p1.t2t.begin();
+       i != p1.t2t.end();
+       ++i)
+  {
+    if (timer.real() > 5 * 1000)
+    {
+      LOG_INFO( main_logger, "PR: matches map " << matches_map.size() << " of " << computed_tracks.size() );
+      timer.mark();
+    }
+    oracle_entry_handle_type key = i->first.second.row;
+    if (matches_map.find( key ) == matches_map.end() )
+    {
+      matches_map[ key ] = new matches_t;
+    }
+    matches_map[key]->push_back( i->first );
+  }
+  LOG_INFO( main_logger, "PR: Matches map complete; contains " << matches_map.size() << " entries");
+  timer.mark();
+
+
+  matches_t empty_matches;
   for (unsigned i=0; i<computed_tracks.size(); ++i)
   {
+    if (timer.real() > 5 * 1000)
+    {
+      LOG_INFO( main_logger, "pr curve: " << i << " of " << computed_tracks.size() << "..." );
+      timer.mark();
+    }
+
     track_handle_type c = computed_tracks[i];
     double r = kst_schema( c ).relevancy();
 
-    bool matched_truth_track = false;
-    for (unsigned j=0; j < truth_tracks.size(); ++j)
-    {
-      track_handle_type t = truth_tracks[j];
+    map< oracle_entry_handle_type, matches_t* >::const_iterator probe = matches_map.find( c.row );
+    const matches_t& matches =
+      probe == matches_map.end()
+      ? empty_matches
+      : *probe->second;
 
-      track2track_type key(t,c);
-      map< track2track_type, track2track_score >::const_iterator probe = p1.t2t.find( key );
-      if ( probe != p1.t2t.end() )
+    bool matched_truth_track = false;
+    for (unsigned j=0; j < matches.size(); ++j)
+    {
+      track_handle_type t = matches[j].first;
+
+      matched_truth_track = true;
+      if ( ! truth_track_hit_map[ t ] )
       {
-        matched_truth_track = true;
-        if ( ! truth_track_hit_map[ t ] )
-        {
-          truth_track_hit_map[ t ] = true;
-          ++td;
-        }
+        truth_track_hit_map[ t ] = true;
+        ++td;
       }
     } // ...for all truth tracks
 
@@ -1853,11 +2974,20 @@ compute_pr( const phase1_parameters& p1_params,
       ? 0
       : 1.0 * td / nTrue;
     (*pr_os) << "PR-curve: " << i << " relevancy= " << r << " tp= " << tp << " fp= " << fp << " prec= " << prec << " td= " << td << " nTrue= " << nTrue << "  recall= " << recall << "\n";
+
     if (r > last_r)
     {
       LOG_INFO( main_logger, "Inverted relevancy!  last was " << last_r << " ; this was " << r << "");
     }
     last_r = r;
+
+  }
+
+  for (map< oracle_entry_handle_type, matches_t* >::const_iterator probe = matches_map.begin();
+       probe != matches_map.end();
+       ++probe)
+  {
+    delete probe->second;
   }
 
   LOG_INFO( main_logger, "Sample plot command:\nplot \"running-pr.dat\" using 16:10 w lp, \"\" using 16:10 every 10::10 with points ls 3 ps 3  t \"every 10th\"");

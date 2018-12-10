@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <vgl_area.h>
+
 #ifdef KWANT_ENABLE_MGRS
 #include <track_oracle/file_formats/track_scorable_mgrs/track_scorable_mgrs.h>
 #endif

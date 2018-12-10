@@ -1,5 +1,5 @@
 /*ckwg +5
- * Copyright 2010-2016 by Kitware, Inc. All Rights Reserved. Please refer to
+ * Copyright 2010-2017 by Kitware, Inc. All Rights Reserved. Please refer to
  * KITWARE_LICENSE.TXT for licensing information, or contact General Counsel,
  * Kitware, Inc., 28 Corporate Drive, Clifton Park, NY 12065.
  */
@@ -24,7 +24,11 @@ matching_args_type
 {
   bool ret = true;
   bool use_radial = (this->radial_overlap() >= 0.0);
-  bool use_spatial = this->bbox_expansion.set() || (this->min_bound_area() > 0.0) || this->min_pcent_gt_ct.set();
+  bool use_spatial =
+    this->bbox_expansion.set()
+    || (this->min_bound_area() > 0.0)
+    || this->min_pcent_gt_ct.set()
+    || this->iou.set();
   if ( use_radial && use_spatial )
   {
     LOG_ERROR( main_logger, "Both spatial (bounding box) and radial overlap options have been set.\n" <<
@@ -35,6 +39,14 @@ matching_args_type
 
   // non-const because vul_arg_base.option() is not const
   matching_args_type* mutable_me = const_cast< matching_args_type * >( this );
+
+  if (this->min_pcent_gt_ct.set() && this->iou.set())
+  {
+    LOG_ERROR( main_logger, string("\n")
+               << "Can't specify both " << mutable_me->min_pcent_gt_ct.option() << " and "
+               << mutable_me->iou.option() << "\n\n" );
+    ret = false;
+  }
 
   // pass_nonzero_overlaps and radial_overlap don't make sense when specified together
   if ( use_radial && (this->pass_nonzero_overlaps()))

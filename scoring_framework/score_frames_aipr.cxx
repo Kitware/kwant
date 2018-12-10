@@ -11,6 +11,7 @@
 #include <fstream>
 
 #include <vil/vil_math.h>
+#include <vgl/vgl_area.h>
 #include <vgl/vgl_point_3d.h>
 #include <vgl/vgl_distance.h>
 #include <vgl/vgl_intersection.h>
@@ -96,9 +97,11 @@ void compute_frame_based_metrics(vector<frame_based_metrics>& fbm,
         vgl_box_2d<unsigned> intersection = vgl_intersection(gt->history()[0]->amhi_bbox_,comp->history()[0]->amhi_bbox_);
 
         double overlap_score = 0;
-        if(intersection.volume() != 0)
+        if( intersection.volume() != 0 )
         {
-          overlap_score = (gt->history()[0]->amhi_bbox_.volume()+comp->history()[0]->amhi_bbox_.volume()-intersection.volume())/intersection.volume();
+          overlap_score = ( gt->history()[0]->amhi_bbox_.volume() +
+                            comp->history()[0]->amhi_bbox_.volume() -
+                            intersection.volume() ) / intersection.volume();
         }
 
         if(!intersection.is_empty() && overlap_score >= min_overlap_ratio)
