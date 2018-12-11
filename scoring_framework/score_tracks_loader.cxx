@@ -75,6 +75,10 @@ using kwiver::track_oracle::track_handle_type;
 using kwiver::track_oracle::track_oracle_core;
 using kwiver::track_oracle::file_format_schema_type;
 using kwiver::track_oracle::file_format_manager;
+using kwiver::track_oracle::file_format_enum;
+using kwiver::track_oracle::file_format_base;
+using kwiver::track_oracle::file_format_type;
+using kwiver::track_oracle::format_map_type;
 using kwiver::track_oracle::track_vpd_track_type;
 using kwiver::track_oracle::track_vpd_event_type;
 using kwiver::track_oracle::track_comms_xml_type;
@@ -124,6 +128,8 @@ private:
 // ground-truth and computed tracks.  If timestamp_generator_map is
 // empty, then the source time already had timestamps (e.g. kw18).
 //
+// If the tf_type is not invalid, only load that type of file or fail.
+//
 // When the input file is a VIRAT scenario, also return a map of
 // query_id -> activity_list.  When the other input is a comms_xml
 // from the test harness, which only has query_ids, we can use this
@@ -132,11 +138,16 @@ private:
 
 struct input_source_type
 {
-  input_source_type( const string& arg, vul_arg< string >& path_override, double fps, size_t min_track_length_param );
+  input_source_type( const string& arg,
+                     vul_arg< string >& path_override,
+                     double fps,
+                     size_t min_track_length_param,
+                     file_format_enum tft );
   vector< string > fn_list;
   timestamp_generator_map_type timestamp_generator_map;
   map< string, vector< size_t > > qid2activity_map;
   size_t min_track_length;
+  file_format_enum tf_type;
 };
 
 ///
@@ -343,8 +354,9 @@ input_source_type
 ::input_source_type( const string& arg,
                      vul_arg< string >& path_override,
                      double fps,
-                     size_t min_track_length_param )
-  : min_track_length( min_track_length_param )
+                     size_t min_track_length_param,
+                     file_format_enum tft )
+  : min_track_length( min_track_length_param ), tf_type( tft )
 {
   // Either arg starts with "@", in which case it's a list,
   // or it can be loaded as a scenario file,
@@ -846,13 +858,28 @@ load_tracks_from_file( const input_source_type& src )
   {
     track_record_type r;
     r.set_src_fn( src.fn_list[i] );
-    LOG_INFO( main_logger, "About to load file " << i+1 << " of " << src.fn_list.size() << " : " << r.src_fn() << "...");
     track_handle_list_type input_tracks;
-    if ( ! file_format_manager::read( r.src_fn(), input_tracks ))
+    if (src.tf_type != kwiver::track_oracle::TF_INVALID_TYPE )
     {
-      LOG_ERROR( main_logger, "Couldn't load tracks from '" << r.src_fn() << "'");
-      ret.clear();
-      return ret;
+      file_format_base* b = file_format_manager::get_format( src.tf_type );
+      LOG_INFO( main_logger, "About to load file '" << i+1 << " of " << src.fn_list.size() <<
+                " (forced format " << file_format_type::to_string( src.tf_type ) << ") : " << r.src_fn() << " ...");
+      if (! b->read( r.src_fn(), input_tracks ))
+      {
+        LOG_ERROR( main_logger, "Couldn't load tracks from '" << r.src_fn() << "'");
+        ret.clear();
+        return ret;
+      }
+    }
+    else
+    {
+      LOG_INFO( main_logger, "About to load file " << i+1 << " of " << src.fn_list.size() << " : " << r.src_fn() << "...");
+      if ( ! file_format_manager::read( r.src_fn(), input_tracks ))
+      {
+        LOG_ERROR( main_logger, "Couldn't load tracks from '" << r.src_fn() << "'");
+        ret.clear();
+        return ret;
+      }
     }
     LOG_INFO( main_logger, "read " << input_tracks.size() << " tracks");
     // only keep tracks longer than the requested number of states
@@ -1061,12 +1088,24 @@ decompose_track_into_frames( const track_handle_type& t )
   return ret;
 }
 
-
-
 bool
 input_args_type
-::process( track_handle_list_type& computed_tracks, track_handle_list_type& truth_tracks )
+::sanity_check()
 {
+  if ((this->computed_format() == "help") || (this->truth_format() == "help"))
+  {
+    LOG_INFO( main_logger, "Valid file format names: " );
+    for (const auto f: file_format_manager::get_format_map() )
+    {
+      if (f.first != track_oracle::TF_INVALID_TYPE)
+      {
+        LOG_INFO( main_logger, file_format_type::to_string( f.first ) << " : " << f.second->format_description() );
+      }
+    }
+    return false;
+  }
+
+
   if (this->time_window() == "help")
   {
     LOG_INFO( main_logger, string( "\n" ) <<
@@ -1089,6 +1128,14 @@ input_args_type
                << "', but this directory does not exist" );
     return false;
   }
+  return true;
+}
+
+
+bool
+input_args_type
+::process( track_handle_list_type& computed_tracks, track_handle_list_type& truth_tracks )
+{
 
   // Even though we don't use the time window filter for a while, create it here
   // to find parsing errors quickly.  We can catch parsing errors of explicit
@@ -1133,8 +1180,17 @@ input_args_type
   // Create input sources from computed and truth tracks args
   //
 
-  input_source_type computed_src( this->computed_tracks_fn(), this->computed_path, this->computed_fps(), min_computed_length );
-  input_source_type truth_src( this->truth_tracks_fn(), this->truth_path, this->truth_fps(), min_truth_length );
+  file_format_enum forced_computed_type =
+    this->computed_format.set()
+    ? file_format_type::from_string( this->computed_format() )
+    : track_oracle::TF_INVALID_TYPE;
+  input_source_type computed_src( this->computed_tracks_fn(), this->computed_path, this->computed_fps(), min_computed_length, forced_computed_type  );
+
+  file_format_enum forced_truth_type =
+    this->truth_format.set()
+    ? file_format_type::from_string( this->truth_format() )
+    : track_oracle::TF_INVALID_TYPE;
+  input_source_type truth_src( this->truth_tracks_fn(), this->truth_path, this->truth_fps(), min_truth_length, forced_truth_type );
 
   // verify we have plausible data in the input sources
   if (computed_src.fn_list.empty())

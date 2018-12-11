@@ -2292,6 +2292,11 @@ int main( int argc, char *argv[] )
     return EXIT_SUCCESS;
   }
 
+  if (! input_args.sanity_check() )
+  {
+    return EXIT_SUCCESS;
+  }
+
   activity_selector_type what_act = scoring_args.deduce_activity();
   LOG_INFO( main_logger, "Activity deduction: " << what_act );
 
