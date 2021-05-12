@@ -15,6 +15,7 @@
 #include <track_oracle/core/track_oracle_core.h>
 #include <track_oracle/core/track_base.h>
 #include <track_oracle/core/track_field.h>
+#include <track_oracle/data_terms/data_terms.h>
 
 // The central scoring framework assumption is: Everything you need to
 // know in order to score two sets of tracks can be localized to two
@@ -31,6 +32,7 @@ namespace kwant {
 
 namespace kwto = ::kwiver::track_oracle;
 
+
 typedef std::pair< kwto::track_handle_type, kwto::track_handle_type > track2track_type;
 typedef unsigned long long ts_type;
 typedef std::pair<ts_type,ts_type> ts_frame_range;
@@ -41,20 +43,20 @@ enum FRAME_MATCH_STATE { IN_AOI_UNMATCHED = 0, OUTSIDE_AOI, IN_AOI_MATCHED };
 
 struct SCORE_CORE_EXPORT scorable_track_type: public kwto::track_base< scorable_track_type >
 {
-  kwto::track_field< unsigned >& external_id;
-  kwto::track_field< vgl_box_2d<double> >& bounding_box;
-  kwto::track_field< unsigned >& timestamp_frame;
-  kwto::track_field< ts_type >& timestamp_usecs;
+  kwto::track_field< kwto::dt::tracking::external_id > external_id;
+  kwto::track_field< kwto::dt::tracking::bounding_box > bounding_box;
+  kwto::track_field< kwto::dt::tracking::frame_number > timestamp_frame;
+  kwto::track_field< kwto::dt::tracking::timestamp_usecs > timestamp_usecs;
   kwto::track_field< int >& frame_has_been_matched;
   kwto::track_field< unsigned >& frames_in_aoi;
   scorable_track_type()
-    : external_id( Track.add_field< unsigned >( "external_id" ) ),
-      bounding_box( Frame.add_field< vgl_box_2d<double> >( "bounding_box" )),
-      timestamp_frame( Frame.add_field< unsigned >( "frame_number" )),
-      timestamp_usecs( Frame.add_field< ts_type > ( "timestamp_usecs" )),
-      frame_has_been_matched( Frame.add_field< int >( "frame_has_been_matched" )),
+    : frame_has_been_matched( Frame.add_field< int >( "frame_has_been_matched" )),
       frames_in_aoi(Track.add_field< unsigned >("frames_in_aoi"))
   {
+    Track.add_field( external_id );
+    Frame.add_field( bounding_box );
+    Frame.add_field( timestamp_frame );
+    Frame.add_field( timestamp_usecs );
   }
 };
 
