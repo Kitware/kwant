@@ -97,12 +97,11 @@ void compute_frame_based_metrics(vector<frame_based_metrics>& fbm,
         vgl_box_2d<unsigned> intersection = vgl_intersection(gt->history()[0]->amhi_bbox_,comp->history()[0]->amhi_bbox_);
 
         double overlap_score = 0;
-        if( vgl_area( intersection ) != 0)
+        if( intersection.volume() != 0 )
         {
-          overlap_score = ( vgl_area( gt->history()[0]->amhi_bbox_) +
-                            vgl_area( comp->history()[0]->amhi_bbox_) -
-                            vgl_area( intersection ))
-            / vgl_area( intersection );
+          overlap_score = ( gt->history()[0]->amhi_bbox_.volume() +
+                            comp->history()[0]->amhi_bbox_.volume() -
+                            intersection.volume() ) / intersection.volume();
         }
 
         if(!intersection.is_empty() && overlap_score >= min_overlap_ratio)

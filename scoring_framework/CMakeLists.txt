@@ -179,32 +179,30 @@ if (fletch_ENABLED_libjson)
 
   kwiver_add_executable( score_tracks score_tracks.cxx)
   target_link_libraries( score_tracks
-                         vital_logger
-                         score_tracks_loader
+    PRIVATE              score_tracks_loader
                          score_tracks_hadwav
                          track_oracle
                          track_oracle_file_formats
                          timestamp_utilities
+                         vital_logger
                          ${json_lib} )
 endif()
 
 kwiver_add_executable( score_events score_events.cxx )
 target_link_libraries( score_events
-                       vital_logger
-                       logging_map
+  PRIVATE              logging_map
                        data_terms
                        score_tracks_loader
                        score_tracks_hadwav
                        scoring_aries_interface
-                       timestamp_utilities track_oracle
-                       track_oracle_format_base
-                       track_oracle_file_formats
+                       timestamp_utilities
+                       track_oracle
+                       vital_logger
                        vibrant_descriptors
-                       vul
                        track_filter_kpf_activity
                        kwiver_algo_kpf
-                       kpf_yaml
                        kwiversys
+                       kpf_yaml
                        kpf_utils
                        ${YAML_CPP_LIBRARIES}
                        ${Boost_SYSTEM_LIBRARY} )

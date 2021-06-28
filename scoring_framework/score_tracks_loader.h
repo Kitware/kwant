@@ -43,6 +43,12 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
   vul_arg< std::string > computed_tracks_fn;
   vul_arg< std::string > truth_tracks_fn;
 
+  // if set, will override autodetection of file formats
+  // 'help' to list valid formats
+
+  vul_arg< std::string > computed_format;
+  vul_arg< std::string > truth_format;
+
   // if set, will override path components in file when loading
   // Example: if --truth-path=/data/foo/bar, then:
   //
@@ -129,6 +135,8 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
   input_args_type()
     : computed_tracks_fn( "--computed-tracks", "Computed tracks file, or @filelist reads list of files" ),
       truth_tracks_fn(    "--truth-tracks", "Truth tracks files, scenario, or @filelist reads list of files" ),
+      computed_format(    "--computed-format", "Disable computed format auto-detection; force to be this format; 'help' to list" ),
+      truth_format(       "--truth-format", "Disable truth format auto-detection; force to be this format; 'help' to list" ),
       computed_path(      "--computed-path", "All computed files will be loaded from this directory, overriding other paths", "" ),
       truth_path(         "--truth-path", "All truth files will be loaded from this directory, overriding other paths", "" ),
       computed_fps(       "--computed-fps", "Computed tracks frames-per-second", 29.97 / 3 ),
@@ -149,6 +157,8 @@ struct SCORE_TRACKS_LOADER_EXPORT input_args_type
       compute_mgrs_data( false )
   {}
 
+
+  bool sanity_check();
 
   bool process( kwiver::track_oracle::track_handle_list_type& computed_tracks,
                 kwiver::track_oracle::track_handle_list_type& truth_tracks );
