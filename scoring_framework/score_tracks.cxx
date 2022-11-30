@@ -31,7 +31,6 @@
 #include <scoring_framework/timestamp_utilities.h>
 
 #include <vital/config/config_block.h>
-#include <json.h>
 
 #include <vital/logger/logger.h>
 static kwiver::vital::logger_handle_t main_logger( kwiver::vital::get_logger( __FILE__ ) );
@@ -64,14 +63,12 @@ struct output_args_type
 {
   vul_arg< string > track_stats_fn;
   vul_arg< string > target_stats_fn;
-  vul_arg< string > json_dump_fn;
   vul_arg< string > matches_dump_fn;
   vul_arg< string > frame_level_matches_fn;
 
   output_args_type()
     : track_stats_fn(  "--track-stats", "write track purity / continuity to file" ),
       target_stats_fn( "--target-stats", "write target purity / continuity to file" ),
-      json_dump_fn(    "--j", "write results in json format to file" ),
       matches_dump_fn( "--matches", "write track match info to file" ),
       frame_level_matches_fn( "--frame-level-match","writes out gt to cp frame level match information")
   {}
@@ -668,8 +665,6 @@ int main( int argc, char *argv[] )
     write_activity_overlay( os, aoi_filtered_truth_tracks, aoi_filtered_computed_tracks, p1 );
   }
 
-  JSONNode json_root(JSON_NODE);  // for json output option
-
   if(score_hadwav_flag())
   {
     track2track_phase2_hadwav p2( verbose_flag() );
@@ -755,61 +750,6 @@ int main( int argc, char *argv[] )
     cout << "  Avg target (continuity, purity ): " << p3.avg_target_continuity << ", "
              << p3.avg_target_purity << endl;
     cout <<  "  Track-frame-precision: " << p2.trackFramePrecision << endl;
-
-    if ( output_args.json_dump_fn.set() )
-    {
-      // Add json objects
-      JSONNode hadwav_node(JSON_NODE);
-      hadwav_node.set_name("hadwav-results");
-
-      hadwav_node.push_back(JSONNode("detection-pd", p2.detectionPD));
-      hadwav_node.push_back(JSONNode("detection-false-alarms", p2.detectionFalseAlarms));
-      hadwav_node.push_back(JSONNode("detection-probability-false-alarms", p2.detectionPFalseAlarm));
-      hadwav_node.push_back(JSONNode("track-pd", p3.trackPd));
-      hadwav_node.push_back(JSONNode("track-fa", p3.trackFA));
-      hadwav_node.push_back(JSONNode("track-fp", p2.trackFramePrecision));
-      if (norm.first)
-      {
-        hadwav_node.push_back(JSONNode("frame-nfar", p2.frameFA/norm.second));
-        hadwav_node.push_back(JSONNode("track-nfar", p3.trackFA/norm.second));
-      }
-      else
-      {
-        hadwav_node.push_back(JSONNode("frame-nfar", "not computed"));
-        hadwav_node.push_back(JSONNode("track-nfar", "not computed"));
-      }
-      hadwav_node.push_back(JSONNode("avg-track-continuity", p3.avg_track_continuity));
-      hadwav_node.push_back(JSONNode("avg-track-purity", p3.avg_track_purity));
-      hadwav_node.push_back(JSONNode("avg-target-continuity", p3.avg_target_continuity));
-      hadwav_node.push_back(JSONNode("avg-target-purity", p3.avg_target_purity));
-
-      json_root.push_back(hadwav_node);
-    }
-  }
-
-  if ( output_args.json_dump_fn.set() )
-  {
-    // Add json objects
-    JSONNode version_node(JSON_NODE);
-    version_node.set_name("vidtk-meta");
-    //    version_node.push_back(JSONNode("version", VIDTK_GIT_VERSION));
-    version_node.push_back(JSONNode("version", "not-available" ));
-    json_root.push_back(version_node);
-  }
-
-  if ( output_args.json_dump_fn.set() )
-  {
-    ofstream os( output_args.json_dump_fn().c_str() );
-    if ( ! os )
-    {
-      LOG_ERROR( main_logger, "Couldn't dump results to '" << output_args.json_dump_fn() << "'?");
-    }
-    else
-    {
-      string json_output = json_root.write_formatted();
-      os << json_output;
-      os.close();
-    }
   }
 
   if ( track_dump_fn_arg.set() )
