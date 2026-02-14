@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 project( KWANT )
 
@@ -9,6 +9,10 @@ set(KWANT_VERSION_MAJOR 0)
 set(KWANT_VERSION_MINOR 1)
 set(KWANT_VERSION_PATCH 0)
 set(KWANT_VERSION "${KWANT_VERSION_MAJOR}.${KWANT_VERSION_MINOR}.${KWANT_VERSION_PATCH}")
+
+# C++17 is required for latest KWIVER
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 ###
 # Ask for kwiver build directory
